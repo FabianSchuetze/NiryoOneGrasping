@@ -62,8 +62,8 @@ int main(int argc, char** argv) {
     if (!nodes.isOpened()) {
         std::cerr << "Failed to open " << file << std::endl;
     }
-    int n_iter = (int)nodes["frameCount"];
-    static const std::string PLANNING_GROUP = "panda_arm";
+    const int n_iter = (int)nodes["frameCount"];
+    const std::string PLANNING_GROUP = "arm";
 
     // The :move_group_interface:`MoveGroupInterface` class can be easily
     // setup using just the name of the planning group you would like to control
