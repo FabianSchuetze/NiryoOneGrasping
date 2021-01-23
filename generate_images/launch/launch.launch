@@ -1,0 +1,8 @@
+<launch>
+    <arg name="filename" type="str"/>
+  <node pkg="generate_images" type="DisplayImage" name="DisplayImage" output="screen">
+  <!-- handeye_calib_camodocal arg pass -->
+    <param name="transformations_file"       type="str" value="$(arg filename)" />
+</node>
+</launch>
+        

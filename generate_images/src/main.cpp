@@ -1,13 +1,12 @@
+#include <moveit/move_group_interface/move_group_interface.h>
+#include <moveit/planning_scene_interface/planning_scene_interface.h>
+#include <moveit_msgs/DisplayRobotState.h>
 #include <ros/ros.h>
 
 #include <Eigen/Geometry>
 #include <iostream>
 #include <opencv2/core.hpp>
 #include <opencv2/core/eigen.hpp>
-#include <moveit/move_group_interface/move_group_interface.h>
-#include <moveit/planning_scene_interface/planning_scene_interface.h>
-
-#include <moveit_msgs/DisplayRobotState.h>
 //#include <moveit_msgs/DisplayTrajectory.h>
 
 //#include <moveit_msgs/AttachedCollisionObject.h>
@@ -49,13 +48,19 @@ int main(int argc, char** argv) {
     ros::init(argc, argv, "generate_images");
     ros::NodeHandle node_handle;
     ros::AsyncSpinner spinner(1);
+    std::string file;
+    if ((node_handle.getParam("/DisplayImage/transformations_file", file))) {
+        std::cout << "the file locatio is: " << file.c_str() << std::endl;
+        ROS_DEBUG("the file locatio is: %s", file.c_str());
+    } else {
+        ROS_DEBUG("that did not work: %s", file.c_str());
+        ros::shutdown();
+        return 1;
+    }
     spinner.start();
-    std::string file(
-        "/home/fabian/Documents/work/transforms/TransformPairsInput.yml");
     cv::FileStorage nodes = read_file(file);
     if (!nodes.isOpened()) {
         std::cerr << "Failed to open " << file << std::endl;
-        return 1;
     }
     int n_iter = (int)nodes["frameCount"];
     static const std::string PLANNING_GROUP = "panda_arm";
@@ -88,18 +93,18 @@ int main(int argc, char** argv) {
 
     // We can get a list of all the groups in the robot: not available in
     // kinect
-    //ROS_INFO_NAMED("tutorial", "Available Planning Groups:");
-    //std::copy(move_group.getJointModelGroupNames().begin(),
-              //move_group.getJointModelGroupNames().end(),
-              //std::ostream_iterator<std::string>(std::cout, ", "));
+    // ROS_INFO_NAMED("tutorial", "Available Planning Groups:");
+    // std::copy(move_group.getJointModelGroupNames().begin(),
+    // move_group.getJointModelGroupNames().end(),
+    // std::ostream_iterator<std::string>(std::cout, ", "));
 
-    //std::vector<geometry_msgs::Pose> target_poses(
-        //{target_pose1, target_pose2, target_pose3});
-    //for (const auto& pose : target_poses) {
+    // std::vector<geometry_msgs::Pose> target_poses(
+    //{target_pose1, target_pose2, target_pose3});
+    // for (const auto& pose : target_poses) {
     //}
 
-    //ros::shutdown();
-    //return 0;
+    // ros::shutdown();
+    // return 0;
     for (int i = 0; i < n_iter; ++i) {
         std::string pos("T1_" + std::to_string(i));
         Eigen::Affine3d trans = read_transformation(nodes, pos);
@@ -107,4 +112,6 @@ int main(int argc, char** argv) {
         move_group.setPoseTarget(pose);
         move_group.move();
     }
+    ros::shutdown();
+    return 0;
 }
