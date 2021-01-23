@@ -86,11 +86,12 @@ int main(int argc, char** argv) {
     ROS_INFO_NAMED("tutorial", "End effector link: %s",
                    move_group.getEndEffectorLink().c_str());
 
-    // We can get a list of all the groups in the robot:
-    ROS_INFO_NAMED("tutorial", "Available Planning Groups:");
-    std::copy(move_group.getJointModelGroupNames().begin(),
-              move_group.getJointModelGroupNames().end(),
-              std::ostream_iterator<std::string>(std::cout, ", "));
+    // We can get a list of all the groups in the robot: not available in
+    // kinect
+    //ROS_INFO_NAMED("tutorial", "Available Planning Groups:");
+    //std::copy(move_group.getJointModelGroupNames().begin(),
+              //move_group.getJointModelGroupNames().end(),
+              //std::ostream_iterator<std::string>(std::cout, ", "));
 
     //std::vector<geometry_msgs::Pose> target_poses(
         //{target_pose1, target_pose2, target_pose3});
