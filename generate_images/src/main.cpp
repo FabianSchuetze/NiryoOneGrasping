@@ -2,6 +2,8 @@
 #include <moveit/planning_scene_interface/planning_scene_interface.h>
 #include <moveit_msgs/DisplayRobotState.h>
 #include <ros/ros.h>
+#include <tf2_ros/transform_listener.h>
+#include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 
 #include <Eigen/Geometry>
 #include <iostream>
@@ -44,6 +46,14 @@ geometry_msgs::Pose convert_to_ros(const Eigen::Affine3d& transform) {
     return target_pose;
 }
 
+void print_output(const geometry_msgs::TransformStamped& transformStamped) {
+    geometry_msgs::Pose pose;
+    geometry_msgs::Transform transform(transformStamped.transform);
+    float x = transform.translation.x;
+    float y = transform.translation.y;
+    float z = transform.translation.z;
+    ROS_INFO("The 3d position is: (x, y, z): (%.2f, %.2f, %.2f)", x, y, z);
+}
 int main(int argc, char** argv) {
     ros::init(argc, argv, "generate_images");
     ros::NodeHandle node_handle;
@@ -105,12 +115,26 @@ int main(int argc, char** argv) {
 
     // ros::shutdown();
     // return 0;
+    tf2_ros::Buffer tfBuffer;
+    tf2_ros::TransformListener listener(tfBuffer);
     for (int i = 0; i < n_iter; ++i) {
         std::string pos("T1_" + std::to_string(i));
         Eigen::Affine3d trans = read_transformation(nodes, pos);
         geometry_msgs::Pose pose = convert_to_ros(trans);
         move_group.setPoseTarget(pose);
-        move_group.move();
+        moveit::planning_interface::MoveGroupInterface::Plan my_plan;
+        bool success = (move_group.plan(my_plan) ==
+                        moveit::planning_interface::MoveItErrorCode::SUCCESS);
+        if (success) {
+            move_group.move();
+        }
+        geometry_msgs::TransformStamped transformStamped;
+        try {
+            transformStamped =
+                tfBuffer.lookupTransform("turtle2", "turtle1", ros::Time(0));
+        } catch (tf2::TransformException& ex) {
+            ROS_ERROR("%s", ex.what());
+        }
     }
     ros::shutdown();
     return 0;
