@@ -39,5 +39,5 @@ catkin_package(
 
 include_directories(SYSTEM ${catkin_INCLUDE_DIRS} ${EIGEN3_INCLUDE_DIRS} ${OpenCV_INCLUDE_DIRS} )
 add_executable(DisplayImage src/main.cpp )
-target_link_libraries(DisplayImage ${OpenCV_LIBS} Eigen3::Eigen
+target_link_libraries(DisplayImage ${OpenCV_LIBS} 
     ${catkin_LIBRARIES})

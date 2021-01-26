@@ -30,13 +30,15 @@ Eigen::Affine3d read_transformation(const cv::FileStorage& fs,
 geometry_msgs::Pose convert_to_ros(const Eigen::Affine3d& transform) {
     geometry_msgs::Pose target_pose;
     Eigen::Quaterniond quat(transform.rotation());
-    target_pose.position.x = transform.translation().x();
-    target_pose.position.y = transform.translation().y();
-    target_pose.position.z = transform.translation().z();
-    target_pose.orientation.w = quat.w();
-    target_pose.orientation.x = quat.x();
-    target_pose.orientation.y = quat.y();
-    target_pose.orientation.z = quat.z();
+    float x = target_pose.position.x = transform.translation().x();
+    float y = target_pose.position.y = transform.translation().y();
+    float z = target_pose.position.z = transform.translation().z();
+    std::cout << "Planner: The  position is: (x, y, z): " << x << ", " <<  y << ", " << z << std::endl;
+    float w = target_pose.orientation.w = quat.w();
+    x = target_pose.orientation.x = quat.x();
+    y = target_pose.orientation.y = quat.y();
+    z = target_pose.orientation.z = quat.z();
+    std::cout << "planner: quternion : (w, x, y, z): " << w << ", " << x << ", "  <<  y << ", " << z << std::endl;
     return target_pose;
 }
 
@@ -46,7 +48,13 @@ void print_output(const geometry_msgs::TransformStamped& transformStamped) {
     float x = transform.translation.x;
     float y = transform.translation.y;
     float z = transform.translation.z;
-    ROS_INFO("The 3d position is: (x, y, z): (%.2f, %.2f, %.2f)", x, y, z);
+    std::cout << "Listener: The  position is: (x, y, z): " << x << ", " <<  y << ", " << z << std::endl;
+    float w = transform.rotation.w;
+    x = transform.rotation.x;
+    y = transform.rotation.y;
+    z = transform.rotation.z;
+    std::cout << "Listener: quternion : (w, x, y, z): " << w << ", " << x << ", "  <<  y << ", " << z << std::endl;
+    std::cout << "\n";
 }
 int main(int argc, char** argv) {
     ros::init(argc, argv, "generate_images");
@@ -125,10 +133,11 @@ int main(int argc, char** argv) {
         geometry_msgs::TransformStamped transformStamped;
         try {
             transformStamped =
-                tfBuffer.lookupTransform("turtle2", "turtle1", ros::Time(0));
+                tfBuffer.lookupTransform("world", "tool_link", ros::Time(0));
         } catch (tf2::TransformException& ex) {
             ROS_ERROR("%s", ex.what());
         }
+	print_output(transformStamped);
     }
     ros::shutdown();
     return 0;
