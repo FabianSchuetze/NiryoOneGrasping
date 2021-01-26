@@ -9,12 +9,6 @@
 #include <iostream>
 #include <opencv2/core.hpp>
 #include <opencv2/core/eigen.hpp>
-//#include <moveit_msgs/DisplayTrajectory.h>
-
-//#include <moveit_msgs/AttachedCollisionObject.h>
-//#include <moveit_msgs/CollisionObject.h>
-
-//#include <moveit_visual_tools/moveit_visual_tools.h>
 
 cv::FileStorage read_file(std::string& path) {
     cv::FileStorage fs;
