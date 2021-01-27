@@ -62,13 +62,16 @@ void print_output(const geometry_msgs::TransformStamped& transformStamped) {
     std::cout << "\n";
 }
 
-void get_transform(const tf2_ros::Buffer& buffer,
+bool get_transform(const tf2_ros::Buffer& buffer,
                    geometry_msgs::TransformStamped& trans) {
+    bool success(false);
     try {
-        trans = buffer.lookupTransform("tool_link", "hand", ros::Time(0));
+        trans = buffer.lookupTransform("hand_link", "tool_link", ros::Time(0));
+	success = true;
     } catch (tf2::TransformException& ex) {
         ROS_ERROR("%s", ex.what());
     }
+    return success;
 }
 
 int main(int argc, char** argv) {
@@ -122,7 +125,10 @@ int main(int argc, char** argv) {
     tf2_ros::TransformListener listener(tfBuffer);
     geometry_msgs::TransformStamped transformStamped;
     for (int i = 0; i < n_iter; ++i) {
-        get_transform(tfBuffer, transformStamped);
+        bool obtained_transform = get_transform(tfBuffer, transformStamped);
+	if (!obtained_transform) {
+	    continue;
+	}
         std::string pos("T1_" + std::to_string(i));
         Eigen::Affine3d T_base_finger = read_transformation(nodes, pos);
         Eigen::Affine3d T_finger_hand = tf2::transformToEigen(transformStamped);
