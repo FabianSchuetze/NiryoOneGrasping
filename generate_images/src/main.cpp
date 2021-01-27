@@ -141,8 +141,15 @@ int main(int argc, char** argv) {
         if (success) {
             move_group.move();
         }
+        geometry_msgs::TransformStamped location;
+        try {
+            location =
+                tfBuffer.lookupTransform("world", "tool_link", ros::Time(0));
+        } catch (tf2::TransformException& ex) {
+            ROS_ERROR("%s", ex.what());
+        }
 
-        print_output(transformStamped);
+        print_output(location);
     }
     ros::shutdown();
     return 0;
