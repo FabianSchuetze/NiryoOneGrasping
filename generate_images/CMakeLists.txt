@@ -22,8 +22,8 @@ find_package(realsense2 REQUIRED)
 
 
 catkin_package(
-  LIBRARIES
-  INCLUDE_DIRS
+  LIBRARIES ${PROJECT_NAME}
+  INCLUDE_DIRS include
   CATKIN_DEPENDS
     moveit_core
     moveit_visual_tools
@@ -37,12 +37,18 @@ catkin_package(
 ###########
 ## Build ##
 ###########
-
+#set(${PROJECT_NAME}_SRC
+    #src/io_helper_functions.cpp
+#)
 include_directories(SYSTEM ${catkin_INCLUDE_DIRS} ${EIGEN3_INCLUDE_DIRS} ${OpenCV_INCLUDE_DIRS} )
 include_directories(${REALSENSE2_INCLUDE_DIR})
+include_directories(include)
+add_library(test_lib src/io_helper_functions.cpp)
+#add_library(${LIBRARY_TARGET_NAME} SHARED ${${LIBRARY_TARGET_NAME}_SRC})
+
 add_executable(DisplayImage src/main.cpp )
-add_executable(WriteImagesToFile src/write_images_to_file.cpp )
+add_executable(WriteImagesToFile src/write_images_to_file.cpp)
 target_link_libraries(DisplayImage ${OpenCV_LIBS} 
     ${catkin_LIBRARIES})
 target_link_libraries(WriteImagesToFile ${OpenCV_LIBS} 
-    ${catkin_LIBRARIES} realsense2)
+    ${catkin_LIBRARIES} realsense2 test_lib)
