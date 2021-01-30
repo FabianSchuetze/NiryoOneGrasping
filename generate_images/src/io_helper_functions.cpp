@@ -2,10 +2,11 @@
 
 #include <filesystem>
 #include <fstream>
-namespace fs = std::filesystem;
+#include <iostream>
 
-#include "opencv2/imgproc.hpp"
 #include <opencv2/highgui.hpp>
+#include <opencv2/core/eigen.hpp>
+#include <opencv2/imgproc.hpp>
 
 template <typename... Args>
 std::string string_format(const std::string& format, Args... args) {
@@ -20,6 +21,28 @@ std::string string_format(const std::string& format, Args... args) {
                        buf.get() + size - 1);  // We don't want the '\0' inside
 }
 
+std::string get_param(const ros::NodeHandle& node_handle,
+                      const std::string name, const std::string identifier) {
+    std::string result;
+    if ((node_handle.getParam(name, result))) {
+        std::string msg = "the " + identifier + " is at " + result;
+        std::cout << msg << std::endl;
+        ROS_DEBUG(msg.c_str());
+    } else {
+        std::string failure = "Could not load " + identifier;
+        ROS_DEBUG(failure.c_str());
+        ros::shutdown();
+        throw std::ios_base::failure(failure);
+    }
+    return result;
+}
+
+cv::FileStorage read_open_cv_file(const std::string& path) {
+    cv::FileStorage fs;
+    fs.open(path, cv::FileStorage::READ);
+    return fs;
+}
+
 namespace vision {
 void extract_frames(const rs2::frameset& stream, cv::Mat& depth_img,
                     cv::Mat& color_img) {
@@ -29,9 +52,9 @@ void extract_frames(const rs2::frameset& stream, cv::Mat& depth_img,
     static const int h = depth.as<rs2::video_frame>().get_height();
     depth_img = cv::Mat(cv::Size(w, h), CV_16UC1, (void*)depth.get_data(),
                         cv::Mat::AUTO_STEP);
-    color_img =  cv::Mat(cv::Size(w, h), CV_8UC3, (void*)color.get_data(),
-                  cv::Mat::AUTO_STEP);
-    //cv::cvtColor(r_rgb, color_img, cv::COLOR_RGB2BGR);
+    color_img = cv::Mat(cv::Size(w, h), CV_8UC3, (void*)color.get_data(),
+                        cv::Mat::AUTO_STEP);
+    // cv::cvtColor(r_rgb, color_img, cv::COLOR_RGB2BGR);
 }
 
 void write_intrinsics_to_file(const rs2::pipeline_profile& profile,
@@ -56,11 +79,12 @@ void write_intrinsics_to_file(const rs2::pipeline_profile& profile,
     if (!img_details.is_open()) {
         throw std::ios_base::failure("Could not open intrinics file");
     }
-    img_details << "Height: " << Kc.height <<"\n";
-    img_details << "Width: " << Kc.width <<"\n";
+    img_details << "Height: " << Kc.height << "\n";
+    img_details << "Width: " << Kc.width << "\n";
 }
 
 void create_folders_if_neccessary(const std::string& root) {
+    namespace fs = std::filesystem;
     if (!fs::is_directory(root) || !fs::exists(root)) {
         fs::create_directory(root);
     }
@@ -82,4 +106,33 @@ void write_frames_to_file(cv::Mat color, cv::Mat depth, const std::string& root,
     cv::imwrite(depth_file, depth);
     cv::imwrite(col_file, color);
 }
+
+Paras get_paras(const ros::NodeHandle& node_handle) {
+    Paras paras;
+    paras.root_dir =
+        get_param(node_handle, "/WriteImagesToFile/root_dir", "root director");
+    paras.transform_file = get_param(
+        node_handle, "/WriteImagesToFile/transform_file", "trasformation file");
+    return paras;
+}
+
+Eigen::Matrix4d read_transformation(const cv::FileStorage& fs,
+                                    const std::string& pos) {
+    cv::Mat transformation;
+    fs[pos] >> transformation;
+    Eigen::Matrix4d tmp;
+    cv::cv2eigen(transformation, tmp);
+    return tmp;
+}
+
+const Eigen::Matrix4d read_hand_to_eye_transform(const std::string& loc) {
+    cv::FileStorage nodes = read_open_cv_file(loc);
+    if (!nodes.isOpened()) {
+        std::cerr << "Failed to open " << loc << std::endl;
+    }
+    const Eigen::Matrix4d mat = read_transformation(nodes, "handToEyeTransform");
+    std::cout << "The tranformation is:\n" << mat << std::endl;
+    return mat;
+}
+
 }  // namespace vision

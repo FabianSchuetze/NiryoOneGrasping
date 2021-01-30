@@ -12,21 +12,21 @@
 #include <opencv2/core.hpp>
 #include <opencv2/core/eigen.hpp>
 
-cv::FileStorage read_file(std::string& path) {
-    cv::FileStorage fs;
-    fs.open(path, cv::FileStorage::READ);
-    return fs;
-}
+//cv::FileStorage read_file(std::string& path) {
+    //cv::FileStorage fs;
+    //fs.open(path, cv::FileStorage::READ);
+    //return fs;
+//}
 
-Eigen::Affine3d read_transformation(const cv::FileStorage& fs,
-                                             const std::string& pos) {
-    cv::Mat transformation;
-    fs[pos] >> transformation;
-    Eigen::Matrix4d tmp;
-    cv::cv2eigen(transformation, tmp);
-    Eigen::Affine3d trans(tmp);
-    return trans;
-}
+//Eigen::Affine3d read_transformation(const cv::FileStorage& fs,
+                                             //const std::string& pos) {
+    //cv::Mat transformation;
+    //fs[pos] >> transformation;
+    //Eigen::Matrix4d tmp;
+    //cv::cv2eigen(transformation, tmp);
+    //Eigen::Affine3d trans(tmp);
+    //return trans;
+//}
 
 geometry_msgs::Pose convert_to_ros(const Eigen::Affine3d& transform) {
     geometry_msgs::Pose target_pose;
@@ -94,33 +94,12 @@ int main(int argc, char** argv) {
     }
     const int n_iter = (int)nodes["frameCount"];
     const std::string PLANNING_GROUP = "arm";
-
-    // The :move_group_interface:`MoveGroupInterface` class can be easily
-    // setup using just the name of the planning group you would like to control
-    // and plan for.
     moveit::planning_interface::MoveGroupInterface move_group(PLANNING_GROUP);
-
-    // We will use the :planning_scene_interface:`PlanningSceneInterface`
-    // class to add and remove collision objects in our "virtual world" scene
     moveit::planning_interface::PlanningSceneInterface planning_scene_interface;
-
-    // Raw pointers are frequently used to refer to the planning group for
-    // improved performance.
-    //const robot_state::JointModelGroup* joint_model_group =
-        //move_group.getCurrentState()->getJointModelGroup(PLANNING_GROUP);
-
-    // Visualization
-    // ^^^^^^^^^^^^^ No visualization so far
-    //
-    //
-    // We can print the name of the reference frame for this robot.
     ROS_INFO_NAMED("tutorial", "Planning frame: %s",
                    move_group.getPlanningFrame().c_str());
-
-    // We can also print the name of the end-effector link for this group.
     ROS_INFO_NAMED("tutorial", "End effector link: %s",
                    move_group.getEndEffectorLink().c_str());
-
     tf2_ros::Buffer tfBuffer;
     tf2_ros::TransformListener listener(tfBuffer);
     geometry_msgs::TransformStamped transformStamped;

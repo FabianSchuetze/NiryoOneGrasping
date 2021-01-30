@@ -45,9 +45,9 @@ include_directories(${REALSENSE2_INCLUDE_DIR})
 include_directories(include)
 add_library(${PROJECT_NAME} SHARED ${${PROJECT_NAME}_SRC})
 
-add_executable(DisplayImage src/main.cpp )
+#add_executable(DisplayImage src/main.cpp )
 add_executable(WriteImagesToFile src/write_images_to_file.cpp)
-target_link_libraries(DisplayImage ${OpenCV_LIBS} 
-    ${catkin_LIBRARIES})
+#target_link_libraries(DisplayImage ${OpenCV_LIBS} 
+    #${catkin_LIBRARIES})
 target_link_libraries(WriteImagesToFile ${OpenCV_LIBS} 
     ${catkin_LIBRARIES} realsense2 ${PROJECT_NAME})
