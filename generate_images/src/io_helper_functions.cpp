@@ -1,11 +1,12 @@
 #include "../include/io_helper_functions.hpp"
 
+#include <tf2_eigen/tf2_eigen.h>
+
 #include <filesystem>
 #include <fstream>
 #include <iostream>
-
-#include <opencv2/highgui.hpp>
 #include <opencv2/core/eigen.hpp>
+#include <opencv2/highgui.hpp>
 #include <opencv2/imgproc.hpp>
 
 template <typename... Args>
@@ -125,14 +126,34 @@ Eigen::Matrix4d read_transformation(const cv::FileStorage& fs,
     return tmp;
 }
 
-const Eigen::Matrix4d read_hand_to_eye_transform(const std::string& loc) {
+const Eigen::Affine3d read_hand_to_eye_transform(const std::string& loc) {
     cv::FileStorage nodes = read_open_cv_file(loc);
     if (!nodes.isOpened()) {
         std::cerr << "Failed to open " << loc << std::endl;
     }
-    const Eigen::Matrix4d mat = read_transformation(nodes, "handToEyeTransform");
-    std::cout << "The tranformation is:\n" << mat << std::endl;
-    return mat;
+    const Eigen::Matrix4d mat =
+        read_transformation(nodes, "handToEyeTransform");
+    Eigen::Affine3d trans(mat);
+    std::cout << "The tranformation is:\n" << trans.matrix() << std::endl;
+    return trans;
 }
+
+bool obtain_transform(std::string from, std::string to,
+                      const tf2_ros::Buffer& buffer, Eigen::Affine3d& T_curr) {
+    static geometry_msgs::TransformStamped trans;
+    try {
+        trans = buffer.lookupTransform(from, to, ros::Time(0));
+    } catch (tf2::TransformException& ex) {
+        ROS_ERROR("%s", ex.what());
+        return false;
+    }
+    T_curr = tf2::transformToEigen(trans);
+    return true;
+}
+
+void base_to_camera_transform(
+    const Eigen::Matrix4d& hand_to_eye,
+    const geometry_msgs::TransformStamped& current_hand_pose,
+    Eigen::Matrix4d& T_base_camera) {}
 
 }  // namespace vision
