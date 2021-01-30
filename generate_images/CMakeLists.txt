@@ -17,7 +17,8 @@ find_package(catkin REQUIRED
 )
 
 find_package(OpenCV REQUIRED)
-find_package(Eigen3)
+find_package(Eigen3 REQUIRED)
+find_package(realsense2 REQUIRED)
 
 
 catkin_package(
@@ -38,6 +39,10 @@ catkin_package(
 ###########
 
 include_directories(SYSTEM ${catkin_INCLUDE_DIRS} ${EIGEN3_INCLUDE_DIRS} ${OpenCV_INCLUDE_DIRS} )
+include_directories(${REALSENSE2_INCLUDE_DIR})
 add_executable(DisplayImage src/main.cpp )
+add_executable(WriteImagesToFile src/write_images_to_file.cpp )
 target_link_libraries(DisplayImage ${OpenCV_LIBS} 
     ${catkin_LIBRARIES})
+target_link_libraries(WriteImagesToFile ${OpenCV_LIBS} 
+    ${catkin_LIBRARIES} realsense2)
