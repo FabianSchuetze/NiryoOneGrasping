@@ -12,21 +12,21 @@
 #include <opencv2/core.hpp>
 #include <opencv2/core/eigen.hpp>
 
-//cv::FileStorage read_file(std::string& path) {
-    //cv::FileStorage fs;
-    //fs.open(path, cv::FileStorage::READ);
-    //return fs;
-//}
+cv::FileStorage read_file(std::string& path) {
+    cv::FileStorage fs;
+    fs.open(path, cv::FileStorage::READ);
+    return fs;
+}
 
-//Eigen::Affine3d read_transformation(const cv::FileStorage& fs,
-                                             //const std::string& pos) {
-    //cv::Mat transformation;
-    //fs[pos] >> transformation;
-    //Eigen::Matrix4d tmp;
-    //cv::cv2eigen(transformation, tmp);
-    //Eigen::Affine3d trans(tmp);
-    //return trans;
-//}
+Eigen::Affine3d read_transformation(const cv::FileStorage& fs,
+                                             const std::string& pos) {
+    cv::Mat transformation;
+    fs[pos] >> transformation;
+    Eigen::Matrix4d tmp;
+    cv::cv2eigen(transformation, tmp);
+    Eigen::Affine3d trans(tmp);
+    return trans;
+}
 
 geometry_msgs::Pose convert_to_ros(const Eigen::Affine3d& transform) {
     geometry_msgs::Pose target_pose;
