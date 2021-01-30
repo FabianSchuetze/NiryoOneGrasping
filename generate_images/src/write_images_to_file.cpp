@@ -6,6 +6,7 @@
 
 #include "opencv2/highgui.hpp"
 #include "opencv2/imgproc.hpp"
+#include <fstream>
 
 void extract_frames(const rs2::frameset& stream, cv::Mat& depth_img,
                     cv::Mat& color_img) {
@@ -22,17 +23,26 @@ void extract_frames(const rs2::frameset& stream, cv::Mat& depth_img,
 
 void write_intrinsics_to_file(const rs2::pipeline_profile& profile) {
     rs2::video_stream_profile vsp(profile.get_stream(RS2_STREAM_COLOR));
-    const rs2_intrinsics intrincis = vsp.get_intrinsics();
+    const rs2_intrinsics intrinsics = vsp.get_intrinsics();
+    std::ofstream intrinsics_file;
+    intrinsics_file.open("intrinsics.txt");
+    float zero = 0.0;
+    float one = 1.0;
+    intrinsics_file << std::scientific;
+    intrinsics_file << intrinsics.fx << " " << zero << " " << intrinsics.ppx << "\n";
+    intrinsics_file << zero << " " << intrinsics.fy << " " << intrinsics.ppy << "\n";
+    intrinsics_file << zero << " " << zero << " " << one << "\n";
 }
 
 int main() {
     rs2::pipeline pipe;
     rs2::align align_to(RS2_STREAM_COLOR);
-    pipe.start();
+    rs2::pipeline_profile profile = pipe.start();
     const std::string color_file("color.png"), depth_file("depth.png");
     const std::string window_name = "Display Image";
     cv::namedWindow(window_name, cv::WINDOW_AUTOSIZE);
     cv::Mat depth_img, color_img;
+    write_intrinsics_to_file(profile);
     while (cv::waitKey(1) < 0 &&
            getWindowProperty(window_name, cv::WND_PROP_AUTOSIZE) >= 0) {
         rs2::frameset data = pipe.wait_for_frames();  // Wait for next frame
