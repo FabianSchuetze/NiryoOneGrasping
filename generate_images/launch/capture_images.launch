@@ -1,0 +1,7 @@
+<launch>
+    <arg name="root_dir"/>
+  <node pkg="generate_images" type="WriteImagesToFile" name="WriteImagesToFile" output="screen">
+  <!-- handeye_calib_camodocal arg pass -->
+    <param name="root_dir"       type="str" value="$(arg root_dir)" />
+</node>
+</launch>
