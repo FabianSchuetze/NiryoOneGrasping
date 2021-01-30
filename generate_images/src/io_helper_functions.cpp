@@ -29,9 +29,9 @@ void extract_frames(const rs2::frameset& stream, cv::Mat& depth_img,
     static const int h = depth.as<rs2::video_frame>().get_height();
     depth_img = cv::Mat(cv::Size(w, h), CV_16UC1, (void*)depth.get_data(),
                         cv::Mat::AUTO_STEP);
-    cv::Mat r_rgb(cv::Size(w, h), CV_8UC3, (void*)color.get_data(),
+    color_img =  cv::Mat(cv::Size(w, h), CV_8UC3, (void*)color.get_data(),
                   cv::Mat::AUTO_STEP);
-    cv::cvtColor(r_rgb, color_img, cv::COLOR_RGB2BGR);
+    //cv::cvtColor(r_rgb, color_img, cv::COLOR_RGB2BGR);
 }
 
 void write_intrinsics_to_file(const rs2::pipeline_profile& profile,

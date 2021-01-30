@@ -1,6 +1,5 @@
 #include <librealsense2/rs.hpp>  // Include RealSense Cross Platform API
 #include <opencv2/core.hpp>
-//#include <opencv2/highgui.hpp>
 #include <ros/ros.h>
 
 #include "io_helper_functions.hpp"
@@ -13,7 +12,7 @@ std::string get_paras(const ros::NodeHandle& node_handle) {
     } else {
         ROS_DEBUG("that did not work: %s", root_dir.c_str());
         ros::shutdown();
-        //return 1;
+        throw std::ios_base::failure("Error during formatting.");
     }
     return root_dir;
 }
@@ -30,13 +29,17 @@ int main(int argc, char** argv) {
     cv::Mat depth_img, color_img;
     vision::create_folders_if_neccessary(root_dir);
     vision::write_intrinsics_to_file(profile, root_dir);
+    for (int i = 0; i < 30; ++i) {
+        rs2::frameset data = pipe.wait_for_frames();
+        rs2::frameset aligned_set = align_to.process(data);
+    } // needs to warm up
     size_t counter(0);
     ros::Rate rate(5);
     while (ros::ok()) {
         rs2::frameset data = pipe.wait_for_frames();  // Wait for next frame
         rs2::frameset aligned_set = align_to.process(data);
         vision::extract_frames(aligned_set, depth_img, color_img);
-        vision::write_frames_to_file(depth_img, color_img, root_dir, counter);
+        vision::write_frames_to_file(color_img, depth_img, root_dir, counter);
         ++counter;
         rate.sleep();
     }
