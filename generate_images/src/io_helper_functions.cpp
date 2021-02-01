@@ -30,7 +30,8 @@ std::string get_param(const ros::NodeHandle& node_handle,
         std::cout << msg << std::endl;
         ROS_DEBUG(msg.c_str());
     } else {
-        std::string failure = "Could not load " + identifier;
+        std::string failure = "Could not load " + identifier + " with name:\n"
+            + name;
         ROS_DEBUG(failure.c_str());
         ros::shutdown();
         throw std::ios_base::failure(failure);
@@ -108,12 +109,28 @@ void write_frames_to_file(cv::Mat color, cv::Mat depth, const std::string& root,
     cv::imwrite(col_file, color);
 }
 
+void write_transform_to_file(const Eigen::Affine3d& transform,
+                             const std::string& root, size_t counter) {
+    static const std::string rgbd_dir = root + "/rgbd/";
+    const std::string number = string_format("%04d", counter);
+    const std::string pose_loc = rgbd_dir + "frame-" + number + ".pose.txt";
+    std::ofstream pose_file;
+    pose_file << std::scientific;
+    pose_file.open(pose_loc);
+    if (!pose_file.is_open()) {
+        throw std::ios_base::failure("Could not open pose file");
+    }
+    pose_file << transform.matrix() << "\n";
+}
+
+// This does not work! This is a fixed namespace, but it must be for each
+// exetcuable!
 Paras get_paras(const ros::NodeHandle& node_handle) {
     Paras paras;
     paras.root_dir =
-        get_param(node_handle, "/WriteImagesToFile/root_dir", "root director");
+        get_param(node_handle, "/BroadcastTransform/root_dir", "root director");
     paras.transform_file = get_param(
-        node_handle, "/WriteImagesToFile/transform_file", "trasformation file");
+        node_handle, "/BroadcastTransform/transform_file", "trasformation file");
     return paras;
 }
 
@@ -151,9 +168,5 @@ bool obtain_transform(std::string from, std::string to,
     return true;
 }
 
-void base_to_camera_transform(
-    const Eigen::Matrix4d& hand_to_eye,
-    const geometry_msgs::TransformStamped& current_hand_pose,
-    Eigen::Matrix4d& T_base_camera) {}
 
 }  // namespace vision

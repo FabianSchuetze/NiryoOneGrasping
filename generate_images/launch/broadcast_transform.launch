@@ -1,0 +1,9 @@
+<launch>
+    <arg name="root_dir"/>
+    <arg name="transform_file"/>
+  <node pkg="generate_images" type="BroadcastTransform" name="BroadcastTransform" output="screen">
+  <!-- handeye_calib_camodocal arg pass -->
+    <param name="root_dir"       type="str" value="$(arg root_dir)" />
+    <param name="transform_file"       type="str" value="$(arg transform_file)" />
+</node>
+</launch>

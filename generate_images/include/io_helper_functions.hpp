@@ -3,7 +3,7 @@
 #include <tf2_ros/transform_listener.h>
 
 #include <Eigen/Geometry>
-#include <librealsense2/rs.hpp>  // Include RealSense Cross Platform API
+#include <librealsense2/rs.hpp>
 #include <opencv2/core.hpp>
 #include <string>
 namespace vision {
@@ -19,7 +19,6 @@ Paras get_paras(const ros::NodeHandle&);
 const Eigen::Affine3d read_hand_to_eye_transform(const std::string&);
 bool obtain_transform(std::string, std::string, const tf2_ros::Buffer&,
                       Eigen::Affine3d&);
-//void base_to_camera_transform(const eigen::matrix4d&,
-                              //const geometry_msgs::transformstamped&,
-                              //eigen::matrix4d&);
+void write_transform_to_file(const Eigen::Affine3d&, const std::string&,
+                             size_t);
 }  // namespace vision
