@@ -32,7 +32,7 @@ int main(int argc, char** argv) {
     tf2_ros::Buffer tfBuffer;
     tf2_ros::TransformListener listener(tfBuffer);
     Eigen::Affine3d T_base_hand, T_base_camera;
-    ros::Rate rate(5);
+    ros::Rate rate(1);
     while (ros::ok()) {
         rs2::frameset data = pipe.wait_for_frames();  // Wait for next frame
         if (!vision::obtain_transform(from, to, tfBuffer, T_base_hand)) {
@@ -43,6 +43,7 @@ int main(int argc, char** argv) {
         vision::extract_frames(aligned_set, depth_img, color_img);
         vision::write_frames_to_file(color_img, depth_img, paras.root_dir,
                                      counter);
+        vision::write_transform_to_file(T_base_camera, paras.root_dir, counter);
         ++counter;
         rate.sleep();
     }

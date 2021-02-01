@@ -30,8 +30,8 @@ std::string get_param(const ros::NodeHandle& node_handle,
         std::cout << msg << std::endl;
         ROS_DEBUG(msg.c_str());
     } else {
-        std::string failure = "Could not load " + identifier + " with name:\n"
-            + name;
+        std::string failure =
+            "Could not load " + identifier + " with name:\n" + name;
         ROS_DEBUG(failure.c_str());
         ros::shutdown();
         throw std::ios_base::failure(failure);
@@ -129,13 +129,14 @@ Paras get_paras(const ros::NodeHandle& node_handle) {
     Paras paras;
     paras.root_dir =
         get_param(node_handle, "/BroadcastTransform/root_dir", "root director");
-    paras.transform_file = get_param(
-        node_handle, "/BroadcastTransform/transform_file", "trasformation file");
+    paras.transform_file =
+        get_param(node_handle, "/BroadcastTransform/transform_file",
+                  "trasformation file");
     return paras;
 }
 
-Eigen::Matrix4d read_transformation(const cv::FileStorage& fs,
-                                    const std::string& pos) {
+Eigen::Matrix4d read_transform(const cv::FileStorage& fs,
+                               const std::string& pos) {
     cv::Mat transformation;
     fs[pos] >> transformation;
     Eigen::Matrix4d tmp;
@@ -148,8 +149,7 @@ const Eigen::Affine3d read_hand_to_eye_transform(const std::string& loc) {
     if (!nodes.isOpened()) {
         std::cerr << "Failed to open " << loc << std::endl;
     }
-    const Eigen::Matrix4d mat =
-        read_transformation(nodes, "handToEyeTransform");
+    const Eigen::Matrix4d mat = read_transform(nodes, "handToEyeTransform");
     Eigen::Affine3d trans(mat);
     std::cout << "The tranformation is:\n" << trans.matrix() << std::endl;
     return trans;
@@ -167,6 +167,5 @@ bool obtain_transform(std::string from, std::string to,
     T_curr = tf2::transformToEigen(trans);
     return true;
 }
-
 
 }  // namespace vision
