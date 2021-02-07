@@ -77,8 +77,8 @@ def box_points():
 # further[0, 3] = -20
 # further[1, 3] = 40
 if __name__ == "__main__":
-    box = create_box()
-    room = load_room()
-    points1 = np.load('points1.npy')
-    points2 = box_points()
-    distance, transform = ransac(points1, points2)
+    BOX = create_box()
+    ROOM = load_room()
+    POINTS1 = np.load('points1.npy')
+    POINTS2 = box_points()
+    DISTANCE, TRANSFORM = ransac(POINTS1, POINTS2)

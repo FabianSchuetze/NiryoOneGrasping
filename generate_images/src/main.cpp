@@ -3,9 +3,9 @@
 #include <moveit/planning_scene_interface/planning_scene_interface.h>
 #include <moveit_msgs/DisplayRobotState.h>
 #include <ros/ros.h>
+#include <tf2_eigen/tf2_eigen.h>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 #include <tf2_ros/transform_listener.h>
-#include <tf2_eigen/tf2_eigen.h>
 
 #include <Eigen/Geometry>
 #include <iostream>
@@ -19,7 +19,7 @@ cv::FileStorage read_file(std::string& path) {
 }
 
 Eigen::Affine3d read_transformation(const cv::FileStorage& fs,
-                                             const std::string& pos) {
+                                    const std::string& pos) {
     cv::Mat transformation;
     fs[pos] >> transformation;
     Eigen::Matrix4d tmp;
@@ -67,7 +67,7 @@ bool get_transform(const tf2_ros::Buffer& buffer,
     bool success(false);
     try {
         trans = buffer.lookupTransform("hand_link", "tool_link", ros::Time(0));
-	success = true;
+        success = true;
     } catch (tf2::TransformException& ex) {
         ROS_ERROR("%s", ex.what());
     }
@@ -95,7 +95,7 @@ int main(int argc, char** argv) {
     const int n_iter = (int)nodes["frameCount"];
     const std::string PLANNING_GROUP = "arm";
     moveit::planning_interface::MoveGroupInterface move_group(PLANNING_GROUP);
-    moveit::planning_interface::PlanningSceneInterface planning_scene_interface;
+    //moveit::planning_interface::PlanningSceneInterface planning_scene_interface;
     ROS_INFO_NAMED("tutorial", "Planning frame: %s",
                    move_group.getPlanningFrame().c_str());
     ROS_INFO_NAMED("tutorial", "End effector link: %s",
@@ -105,9 +105,9 @@ int main(int argc, char** argv) {
     geometry_msgs::TransformStamped transformStamped;
     for (int i = 0; i < n_iter; ++i) {
         bool obtained_transform = get_transform(tfBuffer, transformStamped);
-	if (!obtained_transform) {
-	    continue;
-	}
+        if (!obtained_transform) {
+            continue;
+        }
         std::string pos("T1_" + std::to_string(i));
         Eigen::Affine3d T_base_finger = read_transformation(nodes, pos);
         Eigen::Affine3d T_finger_hand = tf2::transformToEigen(transformStamped);
