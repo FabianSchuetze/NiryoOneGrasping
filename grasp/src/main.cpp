@@ -5,6 +5,7 @@
 #include <tf2_eigen/tf2_eigen.h>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 #include <tf2_ros/transform_listener.h>
+#include <thread>
 
 std::vector<geometry_msgs::Pose> convert_message(
     const gpd_ros::GraspConfigList& msg) {
@@ -14,9 +15,6 @@ std::vector<geometry_msgs::Pose> convert_message(
         pose.position = grasp.position;
         poses.push_back(pose);
     }
-    // gpd_ros::GraspConfig first = msg;
-    // geometry_msgs::Pose pose;
-    // pose.position = first.position;
     std::cout << "received the message" << std::endl;
     return poses;
 }
@@ -26,7 +24,9 @@ void move_arm(const gpd_ros::GraspConfigList& msg) {
     static moveit::planning_interface::MoveGroupInterface move_group(
         PLANNING_GROUP);
     std::vector<geometry_msgs::Pose> poses = convert_message(msg);
+    int i(0);
     for (const geometry_msgs::Pose& pose: poses) {
+        std::cout << "iteration: " << i << " pose\n" << pose << std::endl;
         move_group.setPoseTarget(pose);
         moveit::planning_interface::MoveGroupInterface::Plan my_plan;
         bool success = (move_group.plan(my_plan) ==
@@ -37,6 +37,8 @@ void move_arm(const gpd_ros::GraspConfigList& msg) {
         } else {
             std::cout << "not working" << std::endl;
         }
+        std::this_thread::sleep_for(std::chrono::seconds(1));
+        ++i;
     }
 }
 
