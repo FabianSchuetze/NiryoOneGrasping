@@ -15,6 +15,7 @@
 
 typedef actionlib::SimpleActionClient<niryo_one_msgs::RobotMoveAction>
     NiryoClient;
+typedef std::pair<geometry_msgs::Point, niryo_one_msgs::RPY> NiryoPose;
 
 void establish_connection(NiryoClient& ac) {
     ROS_INFO("Connecting to robot  ========================");
@@ -42,42 +43,44 @@ void setGripper(ros::NodeHandle& node, int toolID) {
     ROS_INFO("Success");
 }
 
-std::vector<float> parseInput(const std::string& input) {
+std::vector<double> parseInput(const std::string& input) {
     const std::string tmp =
         "Enter" + input + " elements, separated by whitespace";
     ROS_INFO("%s", tmp.c_str());
     std::string parse;
     std::getline(std::cin, parse);
-    std::vector<float> variables;
-    const char split_char = ':';
+    std::vector<double> variables;
+    const char split_char = ' ';
     std::istringstream split(parse);
     for (std::string each; std::getline(split, each, split_char);
-         variables.push_back(std::stof(each)))
+         variables.push_back(std::stod(each)))
         ;
     return variables;
 }
 
 bool positionGoal(NiryoClient& ac) {
-    std::vector<float> positions = parseInput("7");
-    geometry_msgs::Pose pose_quat;
-    pose_quat.position.x = positions[0];
-    pose_quat.position.y = positions[1];  // for better demonstration purposes
-    pose_quat.position.z = positions[2];
-    pose_quat.orientation.x = positions[3];
-    pose_quat.orientation.y = positions[4];
-    pose_quat.orientation.z = positions[5];
-    pose_quat.orientation.w = positions[6];
+    std::vector<double> positions = parseInput("7");
+    geometry_msgs::Point p;
+    p.x = positions[0];
+    p.y = positions[1];  // for better demonstration purposes
+    p.z = positions[2];
+    niryo_one_msgs::RPY rot;
+    rot.roll = positions[3];
+    rot.pitch = positions[4];
+    rot.yaw = positions[5];
+    NiryoPose pose1(p, rot);
     niryo_one_msgs::RobotMoveCommand cmd;
-    cmd.cmd_type = 8;
-    cmd.pose_quat = pose_quat;
+    cmd.cmd_type = 2;
+    cmd.position = pose1.first;
+    cmd.rpy = pose1.second;
+    niryo_one_msgs::RobotMoveActionGoal action;
+    action.goal.cmd = cmd;
     ROS_INFO("  Sending command :");
     ROS_INFO("    position: %f, %f, %f", cmd.pose_quat.position.x,
              cmd.pose_quat.position.y, cmd.pose_quat.position.z);
     ROS_INFO("    orientation (x,y,z,w):  %f, %f, %f, %f",
              cmd.pose_quat.orientation.x, cmd.pose_quat.orientation.y,
              cmd.pose_quat.orientation.z, cmd.pose_quat.orientation.w);
-    niryo_one_msgs::RobotMoveActionGoal action;
-    action.goal.cmd = cmd;
     ac.sendGoal(action.goal);
     bool success = ac.waitForResult(ros::Duration(5.0));
     return success;
