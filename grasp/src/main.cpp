@@ -10,8 +10,9 @@
 std::vector<geometry_msgs::Pose> convert_message(
     const gpd_ros::GraspConfigList& msg) {
     std::vector<geometry_msgs::Pose> poses;
-    for (const auto& grasp : msg.grasps) {
+    for (const gpd_ros::GraspConfig& grasp : msg.grasps) {
         geometry_msgs::Pose pose;
+        pose.orientation.w= 1;
         pose.position = grasp.position;
         poses.push_back(pose);
     }

@@ -1,332 +1,165 @@
-/*********************************************************************
- * Software License Agreement (BSD License)
+/*
+ * robot_tester_node.cpp
  *
- *  Copyright (c) 2012, Willow Garage, Inc.
- *  All rights reserved.
- *
- *  Redistribution and use in source and binary forms, with or without
- *  modification, are permitted provided that the following conditions
- *  are met:
- *
- *   * Redistributions of source code must retain the above copyright
- *     notice, this list of conditions and the following disclaimer.
- *   * Redistributions in binary form must reproduce the above
- *     copyright notice, this list of conditions and the following
- *     disclaimer in the documentation and/or other materials provided
- *     with the distribution.
- *   * Neither the name of Willow Garage nor the names of its
- *     contributors may be used to endorse or promote products derived
- *     from this software without specific prior written permission.
- *
- *  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
- *  "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
- *  LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
- *  FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
- *  COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
- *  INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
- *  BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
- *  LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
- *  CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
- *  LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
- *  ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
- *  POSSIBILITY OF SUCH DAMAGE.
- *********************************************************************/
+ *  Created on: Jan 31, 2018
+ *      Author: steve
+ */
 
-/* Author: Ioan Sucan, Ridhwan Luthra*/
+#include <actionlib/client/action_client.h>
+#include <actionlib/client/simple_action_client.h>
+#include <actionlib/client/simple_client_goal_state.h>
+#include <actionlib/client/terminal_state.h>
+#include <actionlib/server/action_server.h>
+#include <actionlib/server/simple_action_server.h>
+#include <niryo_one_msgs/RobotMoveAction.h>
+#include <niryo_one_msgs/SetInt.h>
+#include <sensor_msgs/JointState.h>
+#include <std_msgs/String.h>
 
-// ROS
-#include <ros/ros.h>
+#include <sstream>
 
-// MoveIt
-#include <moveit/move_group_interface/move_group_interface.h>
-#include <moveit/planning_scene_interface/planning_scene_interface.h>
+#include "ros/ros.h"
 
-// TF2
-#include <tf2_geometry_msgs/tf2_geometry_msgs.h>
+using namespace std;
 
-void openGripper(trajectory_msgs::JointTrajectory& posture) {
-    // BEGIN_SUB_TUTORIAL open_gripper
-    /* Add both finger joints of panda robot. */
-    posture.joint_names.resize(2);
-    posture.joint_names[0] = "joint_base_to_mors_1";
-    posture.joint_names[1] = "joint_base_to_mors_2";
+double x_goal = 0.2;
+double y_goal = 0.1;
+double z_goal = 0.25;
 
-    /* Set them as open, wide enough for the object to fit. */
-    posture.points.resize(1);
-    posture.points[0].positions.resize(2);
-    posture.points[0].positions[0] = 0.02;
-    posture.points[0].positions[1] = 0.02;
-    posture.points[0].time_from_start = ros::Duration(0.5);
-    // END_SUB_TUTORIAL
-}
+double yaw_goal = 0.5;
+double pitch_goal = 0.6;
+double roll_goal = 0.8;
 
-void closedGripper(trajectory_msgs::JointTrajectory& posture) {
-    // BEGIN_SUB_TUTORIAL closed_gripper
-    /* Add both finger joints of panda robot. */
-    posture.joint_names.resize(2);
-    posture.joint_names[0] = "joint_base_to_mors_1";
-    posture.joint_names[1] = "joint_base_to_mors_2";
+double quat_x = 0;
+double quat_y = 0;
+double quat_z = -0.644;
+double quat_w = 0.765;
 
-    /* Set them as closed. */
-    posture.points.resize(1);
-    posture.points[0].positions.resize(2);
-    posture.points[0].positions[0] = 0.00;
-    posture.points[0].positions[1] = 0.00;
-    posture.points[0].time_from_start = ros::Duration(0.5);
-    // END_SUB_TUTORIAL
-}
+int toolID = 12;  // change this depenidning on the tool mounted
 
-void pick(moveit::planning_interface::MoveGroupInterface& move_group) {
-    // BEGIN_SUB_TUTORIAL pick1
-    // Create a vector of grasps to be attempted, currently only creating single
-    // grasp.
-    // This is essentially useful when using a grasp generator to generate and
-    // test multiple grasps.
-    std::vector<moveit_msgs::Grasp> grasps;
-    grasps.resize(1);
+typedef actionlib::SimpleActionServer<niryo_one_msgs::RobotMoveAction>
+    NiryoServer;
+typedef actionlib::SimpleActionClient<niryo_one_msgs::RobotMoveAction>
+    NiryoClient;
+typedef pair<geometry_msgs::Point, niryo_one_msgs::RPY> NiryoPose;
 
-    // Setting grasp pose
-    // ++++++++++++++++++++++
-    // This is the pose of panda_link8. |br|
-    // Make sure that when you set the grasp_pose, you are setting it to be the
-    // pose of the last link in
-    // your manipulator which in this case would be `"panda_link8"` You will
-    // have to compensate for the
-    // transform from `"panda_link8"` to the palm of the end effector.
-    grasps[0].grasp_pose.header.frame_id = "world";
-    tf2::Quaternion orientation;
-    orientation.setRPY(-M_PI / 2, -M_PI / 4, -M_PI / 2);
-    grasps[0].grasp_pose.pose.orientation = tf2::toMsg(orientation);
-    grasps[0].grasp_pose.pose.position.x = 0.215;
-    grasps[0].grasp_pose.pose.position.y = 0;
-    grasps[0].grasp_pose.pose.position.z = 0.25;
-
-    // Setting pre-grasp approach
-    // ++++++++++++++++++++++++++
-    /* Defined with respect to frame_id */
-    grasps[0].pre_grasp_approach.direction.header.frame_id = "world";
-    /* Direction is set as positive x axis */
-    grasps[0].pre_grasp_approach.direction.vector.x = 0.2;
-    grasps[0].pre_grasp_approach.min_distance = 0.095;
-    grasps[0].pre_grasp_approach.desired_distance = 0.115;
-
-    // Setting post-grasp retreat
-    // ++++++++++++++++++++++++++
-    /* Defined with respect to frame_id */
-    grasps[0].post_grasp_retreat.direction.header.frame_id = "world";
-    /* Direction is set as positive z axis */
-    grasps[0].post_grasp_retreat.direction.vector.z = 0.2;
-    grasps[0].post_grasp_retreat.min_distance = 0.1;
-    grasps[0].post_grasp_retreat.desired_distance = 0.25;
-
-    // Setting posture of eef before grasp
-    // +++++++++++++++++++++++++++++++++++
-    openGripper(grasps[0].pre_grasp_posture);
-    // END_SUB_TUTORIAL
-
-    // BEGIN_SUB_TUTORIAL pick2
-    // Setting posture of eef during grasp
-    // +++++++++++++++++++++++++++++++++++
-    closedGripper(grasps[0].grasp_posture);
-    // END_SUB_TUTORIAL
-
-    // BEGIN_SUB_TUTORIAL pick3
-    // Set support surface as table1.
-    // move_group.setSupportSurfaceName("table1");
-    // Call pick to pick up the object using the grasps given
-    move_group.pick("object", grasps);
-    // END_SUB_TUTORIAL
-}
-
-void place(moveit::planning_interface::MoveGroupInterface& group) {
-    // BEGIN_SUB_TUTORIAL place
-    // TODO(@ridhwanluthra) - Calling place function may lead to "All supplied
-    // place locations failed. Retrying last
-    // location in verbose mode." This is a known issue. |br|
-    // |br|
-    // Ideally, you would create a vector of place locations to be attempted
-    // although in this example, we only create
-    // a single place location.
-    std::vector<moveit_msgs::PlaceLocation> place_location;
-    place_location.resize(1);
-
-    // Setting place location pose
-    // +++++++++++++++++++++++++++
-    place_location[0].place_pose.header.frame_id = "panda_link0";
-    tf2::Quaternion orientation;
-    orientation.setRPY(0, 0, M_PI / 2);
-    place_location[0].place_pose.pose.orientation = tf2::toMsg(orientation);
-
-    /* For place location, we set the value to the exact location of the center
-     * of the object. */
-    place_location[0].place_pose.pose.position.x = 0;
-    place_location[0].place_pose.pose.position.y = 0.5;
-    place_location[0].place_pose.pose.position.z = 0.5;
-
-    // Setting pre-place approach
-    // ++++++++++++++++++++++++++
-    /* Defined with respect to frame_id */
-    place_location[0].pre_place_approach.direction.header.frame_id =
-        "panda_link0";
-    /* Direction is set as negative z axis */
-    place_location[0].pre_place_approach.direction.vector.z = -1.0;
-    place_location[0].pre_place_approach.min_distance = 0.095;
-    place_location[0].pre_place_approach.desired_distance = 0.115;
-
-    // Setting post-grasp retreat
-    // ++++++++++++++++++++++++++
-    /* Defined with respect to frame_id */
-    place_location[0].post_place_retreat.direction.header.frame_id =
-        "panda_link0";
-    /* Direction is set as negative y axis */
-    place_location[0].post_place_retreat.direction.vector.y = -1.0;
-    place_location[0].post_place_retreat.min_distance = 0.1;
-    place_location[0].post_place_retreat.desired_distance = 0.25;
-
-    // Setting posture of eef after placing object
-    // +++++++++++++++++++++++++++++++++++++++++++
-    /* Similar to the pick case */
-    openGripper(place_location[0].post_place_posture);
-
-    // Set support surface as table2.
-    group.setSupportSurfaceName("table2");
-    // Call place to place the object using the place locations given.
-    group.place("object", place_location);
-    // END_SUB_TUTORIAL
-}
-
-void addCollisionObjects(moveit::planning_interface::PlanningSceneInterface&
-                             planning_scene_interface) {
-    // BEGIN_SUB_TUTORIAL table1
-    //
-    // Creating Environment
-    // ^^^^^^^^^^^^^^^^^^^^
-    // Create vector to hold 3 collision objects.
-    std::vector<moveit_msgs::CollisionObject> collision_objects;
-    collision_objects.resize(3);
-
-    // Add the first table where the cube will originally be kept.
-    collision_objects[0].id = "table1";
-    collision_objects[0].header.frame_id = "panda_link0";
-
-    /* Define the primitive and its dimensions. */
-    collision_objects[0].primitives.resize(1);
-    collision_objects[0].primitives[0].type =
-        collision_objects[0].primitives[0].BOX;
-    collision_objects[0].primitives[0].dimensions.resize(3);
-    collision_objects[0].primitives[0].dimensions[0] = 0.2;
-    collision_objects[0].primitives[0].dimensions[1] = 0.4;
-    collision_objects[0].primitives[0].dimensions[2] = 0.4;
-
-    /* Define the pose of the table. */
-    collision_objects[0].primitive_poses.resize(1);
-    collision_objects[0].primitive_poses[0].position.x = 0.5;
-    collision_objects[0].primitive_poses[0].position.y = 0;
-    collision_objects[0].primitive_poses[0].position.z = 0.2;
-    collision_objects[0].primitive_poses[0].orientation.w = 1.0;
-    // END_SUB_TUTORIAL
-
-    collision_objects[0].operation = collision_objects[0].ADD;
-
-    // BEGIN_SUB_TUTORIAL table2
-    // Add the second table where we will be placing the cube.
-    collision_objects[1].id = "table2";
-    collision_objects[1].header.frame_id = "panda_link0";
-
-    /* Define the primitive and its dimensions. */
-    collision_objects[1].primitives.resize(1);
-    collision_objects[1].primitives[0].type =
-        collision_objects[1].primitives[0].BOX;
-    collision_objects[1].primitives[0].dimensions.resize(3);
-    collision_objects[1].primitives[0].dimensions[0] = 0.4;
-    collision_objects[1].primitives[0].dimensions[1] = 0.2;
-    collision_objects[1].primitives[0].dimensions[2] = 0.4;
-
-    /* Define the pose of the table. */
-    collision_objects[1].primitive_poses.resize(1);
-    collision_objects[1].primitive_poses[0].position.x = 0;
-    collision_objects[1].primitive_poses[0].position.y = 0.5;
-    collision_objects[1].primitive_poses[0].position.z = 0.2;
-    collision_objects[1].primitive_poses[0].orientation.w = 1.0;
-    // END_SUB_TUTORIAL
-
-    collision_objects[1].operation = collision_objects[1].ADD;
-
-    // BEGIN_SUB_TUTORIAL object
-    // Define the object that we will be manipulating
-    collision_objects[2].header.frame_id = "panda_link0";
-    collision_objects[2].id = "object";
-
-    /* Define the primitive and its dimensions. */
-    collision_objects[2].primitives.resize(1);
-    collision_objects[2].primitives[0].type =
-        collision_objects[1].primitives[0].BOX;
-    collision_objects[2].primitives[0].dimensions.resize(3);
-    collision_objects[2].primitives[0].dimensions[0] = 0.02;
-    collision_objects[2].primitives[0].dimensions[1] = 0.02;
-    collision_objects[2].primitives[0].dimensions[2] = 0.2;
-
-    /* Define the pose of the object. */
-    collision_objects[2].primitive_poses.resize(1);
-    collision_objects[2].primitive_poses[0].position.x = 0.5;
-    collision_objects[2].primitive_poses[0].position.y = 0;
-    collision_objects[2].primitive_poses[0].position.z = 0.5;
-    collision_objects[2].primitive_poses[0].orientation.w = 1.0;
-    // END_SUB_TUTORIAL
-
-    collision_objects[2].operation = collision_objects[2].ADD;
-
-    planning_scene_interface.applyCollisionObjects(collision_objects);
-}
-
-int main(int argc, char** argv) {
-    std::cout << "starting" << std::endl;
-    ros::init(argc, argv, "arm_pick_place");
-    ros::NodeHandle nh;
-    ros::AsyncSpinner spinner(1);
+int main(int argc, char **argv) {
+    ros::init(argc, argv, "niryo_one_tester");
+    ros::NodeHandle n("~");
+    ros::Rate loop_rate(10);
+    ros::AsyncSpinner spinner(3);
     spinner.start();
-    std::cout << "started spinner" << std::endl;
 
-    ros::WallDuration(1.0).sleep();
-    moveit::planning_interface::PlanningSceneInterface planning_scene_interface;
-    moveit::planning_interface::MoveGroupInterface group("arm");
-    group.setPlanningTime(45.0);
-    std::cout << "grouping" << std::endl;
+    // Connecting to the robot ===========================================
+    ROS_INFO("Connecting to robot  ========================");
+    NiryoClient ac("/niryo_one/commander/robot_action/", true);
+    // wait for the action server to start
+    bool connection_success = false;
+    while (!connection_success) {
+        connection_success = ac.waitForServer(ros::Duration(3.0));
+        if (connection_success) {
+            ROS_INFO("  Robot Connection established");
+        } else {
+            ROS_WARN("  Error connecting to Robot. Trying again");
+        }
+    }
 
-    // addCollisionObjects(planning_scene_interface);
+    // Setting Gripper
+    // Setting gripper
+    ROS_INFO("Setting gripper");
+    ros::ServiceClient changeToolClient_;
+    changeToolClient_ =
+        n.serviceClient<niryo_one_msgs::SetInt>("/niryo_one/change_tool/");
+    niryo_one_msgs::SetInt srv;
+    srv.request.value = toolID;
+    while (!changeToolClient_.call(srv)) {
+        ROS_WARN("  Could not set the tool type. Trying again in one second");
+        ros::Duration(1.0).sleep();
+    }
+    ROS_INFO("  Success");
 
-    // Wait a bit for ROS things to initialize
-    ros::WallDuration(1.0).sleep();
+    string is;
+    ROS_INFO("Send position command (rpy) ========================");
+    ROS_INFO("  Press enter to send ...");
+    getline(std::cin, is);
 
-    pick(group);
-    std::cout << "picking" << std::endl;
+    niryo_one_msgs::ToolCommand tcmd;
+    niryo_one_msgs::RobotMoveActionGoal action;
+    niryo_one_msgs::RobotMoveCommand cmd;
+    geometry_msgs::Point p;
+    niryo_one_msgs::RPY rot;
 
-    ros::WallDuration(1.0).sleep();
+    // ========================================================
+    // Sending a position command =============================
+    // ========================================================
 
-    // place(group);
+    rot.roll = roll_goal;
+    rot.pitch = pitch_goal;
+    rot.yaw = yaw_goal;
+    p.x = x_goal;
+    p.y = y_goal;
+    p.z = z_goal;
+    NiryoPose pose1(p, rot);
 
-    ros::waitForShutdown();
+    cmd.cmd_type = 2;
+    cmd.position = pose1.first;
+    cmd.rpy = pose1.second;
+    ROS_INFO("  Sending command :");
+    ROS_INFO("    position: %f, %f, %f", cmd.position.x, cmd.position.y,
+             cmd.position.z);
+    ROS_INFO("    roll, pitch, yaw:  %f, %f, %f", cmd.rpy.roll, cmd.rpy.pitch,
+             cmd.rpy.yaw);
+    action.goal.cmd = cmd;
+    ac.sendGoal(action.goal);
+    bool success = ac.waitForResult(ros::Duration(5.0));
+
+    ROS_INFO("Send position command (quaternion) ========================");
+    ROS_INFO("  Press enter to send ...");
+    getline(std::cin, is);
+    geometry_msgs::Pose pose_quat;
+
+    pose_quat.position.x = x_goal;
+    pose_quat.position.y = -y_goal;  // for better demonstration purposes
+    pose_quat.position.z = z_goal;
+    pose_quat.orientation.x = quat_x;
+    pose_quat.orientation.y = quat_y;
+    pose_quat.orientation.z = quat_z;
+    pose_quat.orientation.w = quat_w;
+
+    cmd.cmd_type = 8;
+    cmd.pose_quat = pose_quat;
+    ROS_INFO("  Sending command :");
+    ROS_INFO("    position: %f, %f, %f", cmd.pose_quat.position.x,
+             cmd.pose_quat.position.y, cmd.pose_quat.position.z);
+    ROS_INFO("    orientation (x,y,z,w):  %f, %f, %f, %f",
+             cmd.pose_quat.orientation.x, cmd.pose_quat.orientation.y,
+             cmd.pose_quat.orientation.z, cmd.pose_quat.orientation.w);
+    action.goal.cmd = cmd;
+    ac.sendGoal(action.goal);
+    success = ac.waitForResult(ros::Duration(5.0));
+
+    ROS_INFO("Send gripper command (open) ========================");
+    ROS_INFO("  Press enter to send ...");
+    getline(std::cin, is);
+    tcmd.cmd_type = 1;
+    tcmd.gripper_open_speed = 100;
+    tcmd.tool_id = 12;
+    action.goal.cmd.cmd_type = 6;
+    action.goal.cmd.tool_cmd = tcmd;
+    ac.sendGoal(action.goal);
+    ac.waitForResult(ros::Duration(10.0));
+
+    ROS_INFO("Send gripper command (close) ========================");
+    ROS_INFO("  Press enter to send ...");
+    getline(std::cin, is);
+    tcmd.cmd_type = 2;
+    tcmd.gripper_open_speed = 100;
+    tcmd.tool_id = 12;
+    action.goal.cmd.cmd_type = 6;
+    action.goal.cmd.tool_cmd = tcmd;
+    ac.sendGoal(action.goal);
+    ac.waitForResult(ros::Duration(10.0));
+
     return 0;
 }
 
-// BEGIN_TUTORIAL
-// CALL_SUB_TUTORIAL table1
-// CALL_SUB_TUTORIAL table2
-// CALL_SUB_TUTORIAL object
-//
-// Pick Pipeline
-// ^^^^^^^^^^^^^
-// CALL_SUB_TUTORIAL pick1
-// openGripper function
-// """"""""""""""""""""
-// CALL_SUB_TUTORIAL open_gripper
-// CALL_SUB_TUTORIAL pick2
-// closedGripper function
-// """"""""""""""""""""""
-// CALL_SUB_TUTORIAL closed_gripper
-// CALL_SUB_TUTORIAL pick3
-//
-// Place Pipeline
-// ^^^^^^^^^^^^^^
-// CALL_SUB_TUTORIAL place
-// END_TUTORIAL
