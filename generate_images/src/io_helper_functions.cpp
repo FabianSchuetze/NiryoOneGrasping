@@ -23,16 +23,16 @@ std::string string_format(const std::string& format, Args... args) {
 }
 
 std::string get_param(const ros::NodeHandle& node_handle,
-                      const std::string name, const std::string identifier) {
+                      const std::string& name, const std::string& identifier) {
     std::string result;
     if ((node_handle.getParam(name, result))) {
         std::string msg = "the " + identifier + " is at " + result;
         std::cout << msg << std::endl;
-        ROS_DEBUG(msg.c_str());
+        ROS_DEBUG("%s", msg.c_str());
     } else {
         std::string failure =
             "Could not load " + identifier + " with name:\n" + name;
-        ROS_DEBUG(failure.c_str());
+        ROS_DEBUG("%s", failure.c_str());
         ros::shutdown();
         throw std::ios_base::failure(failure);
     }
