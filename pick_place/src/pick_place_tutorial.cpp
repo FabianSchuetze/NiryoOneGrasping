@@ -51,13 +51,15 @@ std::vector<double> parseInput(const std::string& input) {
     std::getline(std::cin, parse);
     std::vector<double> variables;
     size_t n_elements = std::stoi(input);
-    const char split_char = ' ';
+    const char split_char = ',';
     std::istringstream split(parse);
     for (std::string each; std::getline(split, each, split_char);
          variables.push_back(std::stod(each)))
         ;
     if (variables.size() != n_elements) {
-        throw std::runtime_error("Not the right number of elements");
+        std::string msg("Expected to get: " + input + " elements, but got "
+                + std::to_string(variables.size()));
+        throw std::runtime_error(msg);
     }
     return variables;
 }
@@ -66,7 +68,10 @@ bool positionGoal(NiryoClient& ac) {
     std::vector<double> positions = parseInput("6");
     geometry_msgs::Point p;
     p.x = positions[0];
-    p.y = positions[1];  // for better demonstration purposes
+    p.y = positions[1];
+    if (positions[2] < 0.14) {
+        throw std::runtime_error("Z values cannot be lower than 0.15");
+    }
     p.z = positions[2];
     niryo_one_msgs::RPY rot;
     rot.roll = positions[3];
@@ -97,7 +102,7 @@ bool moveGripper(NiryoClient& ac, bool open) {
     } else {
         tcmd.cmd_type = 2;
     }
-    tcmd.gripper_open_speed = 100;
+    tcmd.gripper_open_speed = 200;
     tcmd.tool_id = 13;
     niryo_one_msgs::RobotMoveActionGoal action;
     action.goal.cmd.cmd_type = 6;
@@ -124,14 +129,14 @@ int main(int argc, char** argv) {
 
     ros::Rate rate(1);
     while (n.ok()) {
-        bool success = positionGoal(ac);
-        if (!success) {
-            ROS_WARN("Could not satisfy the pose");
-        }
         ROS_INFO("Send gripper command (open) ========================");
-        success = moveGripper(ac, true);
+        bool success = moveGripper(ac, true);
         if (!success) {
             ROS_WARN("Could not open the gripper");
+        }
+        success = positionGoal(ac);
+        if (!success) {
+            ROS_WARN("Could not satisfy the pose");
         }
         ROS_INFO("Send gripper command (close) ========================");
         success = moveGripper(ac, false);
