@@ -34,6 +34,7 @@ set(${PROJECT_NAME}_SRC
     src/Utils.cpp
     src/CsvReader.cpp
     src/CsvReader.cpp
+    src/detection_parse_parameters.cpp
 )
 include_directories(SYSTEM ${catkin_INCLUDE_DIRS} ${EIGEN3_INCLUDE_DIRS} ${OpenCV_INCLUDE_DIRS} )
 include_directories(include)

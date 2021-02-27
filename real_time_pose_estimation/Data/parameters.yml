@@ -1,0 +1,16 @@
+%YAML:1.0
+video_read_path: /home/fabian/Documents/work/realsense/data/2021-02-26-17-53/output.mkv
+yml_read_path: /home/fabian/Documents/work/realsense/data/model.yml
+ply_read_path: /home/fabian/Documents/work/realsense/data/small_box.py
+numKeyPoints: 2000
+ratioTest: 0.7
+fast_match: 1
+iterationsCount: 500
+reprojectionError: 6.0
+confidence: 0.99
+minInliersKalman: 30
+pnpMethod: 2
+featureName: "ORB"
+useFLANN: 0
+saveDirectory: ""
+displayFilteredPose: 0

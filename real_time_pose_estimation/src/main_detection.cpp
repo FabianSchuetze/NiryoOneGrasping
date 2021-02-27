@@ -14,250 +14,268 @@
 #include "PnPProblem.h"
 #include "RobustMatcher.h"
 #include "Utils.h"
+#include "detection_parse_parameters.hpp"
 
 /**  GLOBAL VARIABLES  **/
 
-using namespace cv;
-using namespace std;
-
+// using namespace cv;
+// using namespace std;
+namespace fs = std::filesystem;
 /**  Functions headers  **/
 void help();
-void initKalmanFilter(KalmanFilter &KF, int nStates, int nMeasurements,
+void initKalmanFilter(cv::KalmanFilter &KF, int nStates, int nMeasurements,
                       int nInputs, double dt);
-void predictKalmanFilter(KalmanFilter &KF, Mat &translation_predicted,
-                         Mat &rotation_predicted);
-void updateKalmanFilter(KalmanFilter &KF, Mat &measurements,
-                        Mat &translation_estimated, Mat &rotation_estimated);
-void fillMeasurements(Mat &measurements, const Mat &translation_measured,
-                      const Mat &rotation_measured);
+void predictKalmanFilter(cv::KalmanFilter &KF, cv::Mat &translation_predicted,
+                         cv::Mat &rotation_predicted);
+void updateKalmanFilter(cv::KalmanFilter &KF, cv::Mat &measurements,
+                        cv::Mat &translation_estimated,
+                        cv::Mat &rotation_estimated);
+void fillMeasurements(cv::Mat &measurements,
+                      const cv::Mat &translation_measured,
+                      const cv::Mat &rotation_measured);
 
 /**  Main program  **/
 int main(int argc, char *argv[]) {
-    help();
+    std::string root(
+        "/home/fabian/Documents/work/transforms/src/real_time_pose_estimation/"
+        "Data/");
+    fs::path parameter_location(root + "parameters.yml");
+    fs::path camera_location(root + "camera_parameters.yml");
+    const DetectionParameters paras =
+        readDetectionParameters(parameter_location);
+    displayParameters(paras);
+    const CameraParameters camera = readCameraParameters(camera_location);
+    displayCamera(camera);
+    // help();
 
-    const String keys =
-        "{help h            |      | print this message                        "
-        "                         }"
-        "{video v           |      | path to recorded video                    "
-        "                         }"
-        "{model             |      | path to yml model                         "
-        "                         }"
-        "{mesh              |      | path to ply mesh                          "
-        "                         }"
-        "{keypoints k       |2000  | number of keypoints to detect             "
-        "                         }"
-        "{ratio r           |0.7   | threshold for ratio test                  "
-        "                         }"
-        "{iterations it     |500   | RANSAC maximum iterations count           "
-        "                         }"
-        "{error e           |6.0   | RANSAC reprojection error                 "
-        "                         }"
-        "{confidence c      |0.99  | RANSAC confidence                         "
-        "                         }"
-        "{inliers in        |30    | minimum inliers for Kalman update         "
-        "                         }"
-        "{method  pnp       |0     | PnP method: (0) ITERATIVE - (1) EPNP - "
-        "(2) P3P - (3) DLS - (5) AP3P}"
-        "{fast f            |true  | use of robust fast match                  "
-        "                         }"
-        "{feature           |ORB   | feature name (ORB, KAZE, AKAZE, BRISK, "
-        "SIFT, SURF, BINBOOST, VGG)  }"
-        "{FLANN             |false | use FLANN library for descriptors "
-        "matching                         }"
-        "{save              |      | path to the directory where to save the "
-        "image results              }"
-        "{displayFiltered   |false | display filtered pose (from Kalman "
-        "filter)                         }";
-    CommandLineParser parser(argc, argv, keys);
+    // const String keys =
+    //"{help h            |      | print this message                        "
+    //"                         }"
+    //"{video v           |      | path to recorded video                    "
+    //"                         }"
+    //"{model             |      | path to yml model                         "
+    //"                         }"
+    //"{mesh              |      | path to ply mesh                          "
+    //"                         }"
+    //"{keypoints k       |2000  | number of keypoints to detect             "
+    //"                         }"
+    //"{ratio r           |0.7   | threshold for ratio test                  "
+    //"                         }"
+    //"{iterations it     |500   | RANSAC maximum iterations count           "
+    //"                         }"
+    //"{error e           |6.0   | RANSAC reprojection error                 "
+    //"                         }"
+    //"{confidence c      |0.99  | RANSAC confidence                         "
+    //"                         }"
+    //"{inliers in        |30    | minimum inliers for Kalman update         "
+    //"                         }"
+    //"{method  pnp       |0     | PnP method: (0) ITERATIVE - (1) EPNP - "
+    //"(2) P3P - (3) DLS - (5) AP3P}"
+    //"{fast f            |true  | use of robust fast match                  "
+    //"                         }"
+    //"{feature           |ORB   | feature name (ORB, KAZE, AKAZE, BRISK, "
+    //"SIFT, SURF, BINBOOST, VGG)  }"
+    //"{FLANN             |false | use FLANN library for descriptors "
+    //"matching                         }"
+    //"{save              |      | path to the directory where to save the "
+    //"image results              }"
+    //"{displayFiltered   |false | display filtered pose (from Kalman "
+    //"filter)                         }";
+    // CommandLineParser parser(argc, argv, keys);
 
-    string video_read_path = samples::findFile(
-        "samples/cpp/tutorial_code/calib3d/real_time_pose_estimation/Data/"
-        "box.mp4");  // recorded video
-    string yml_read_path = samples::findFile(
-        "samples/cpp/tutorial_code/calib3d/real_time_pose_estimation/Data/"
-        "cookies_ORB.yml");  // 3dpts + descriptors
-    string ply_read_path = samples::findFile(
-        "samples/cpp/tutorial_code/calib3d/real_time_pose_estimation/Data/"
-        "box.ply");  // mesh
+    //// string video_read_path = samples::findFile(
+    ////"samples/cpp/tutorial_code/calib3d/real_time_pose_estimation/Data/"
+    ////"box.mp4");  // recorded video
+    //// string yml_read_path = samples::findFile(
+    ////"samples/cpp/tutorial_code/calib3d/real_time_pose_estimation/Data/"
+    ////"cookies_ORB.yml");  // 3dpts + descriptors
+    //// string ply_read_path = samples::findFile(
+    ////"samples/cpp/tutorial_code/calib3d/real_time_pose_estimation/Data/"
+    ////"box.ply");  // mesh
+    //// Intrinsic camera parameters: UVC WEBCAM
+    //// double f = 55;                     // focal length in mm
+    //// double sx = 22.3, sy = 14.9;       // sensor size
+    //// double width = 640, height = 480;  // image size
 
-    // Intrinsic camera parameters: UVC WEBCAM
-    // double f = 55;                     // focal length in mm
-    // double sx = 22.3, sy = 14.9;       // sensor size
-    // double width = 640, height = 480;  // image size
+    //// double params_WEBCAM[] = {width * f / sx,   // fx
+    //// height * f / sy,  // fy
+    //// width / 2,        // cx
+    //// height / 2};      // cy
+    //// const double width = 640, height = 480;
+    // const double params_WEBCAM[] = {615.4,    // fx
+    // 614.18,   // fy
+    // 326.27,   // cx
+    // 237.21};  // cy
 
-    // double params_WEBCAM[] = {width * f / sx,   // fx
-    // height * f / sy,  // fy
-    // width / 2,        // cx
-    // height / 2};      // cy
-    // const double width = 640, height = 480;
-    const double params_WEBCAM[] = {615.4,    // fx
-                                    614.18,   // fy
-                                    326.27,   // cx
-                                    237.21};  // cy
+    //// Some basic colors
+    cv::Scalar red(0, 0, 255);
+    cv::Scalar green(0, 255, 0);
+    cv::Scalar blue(255, 0, 0);
+    cv::Scalar yellow(0, 255, 255);
 
-    // Some basic colors
-    Scalar red(0, 0, 255);
-    Scalar green(0, 255, 0);
-    Scalar blue(255, 0, 0);
-    Scalar yellow(0, 255, 255);
+    //// Robust Matcher parameters
+    // int numKeyPoints = 2000;  // number of detected keypoints
+    // float ratioTest = 0.70f;  // ratio test
+    // bool fast_match = true;   // fastRobustMatch() or robustMatch()
 
-    // Robust Matcher parameters
-    int numKeyPoints = 2000;  // number of detected keypoints
-    float ratioTest = 0.70f;  // ratio test
-    bool fast_match = true;   // fastRobustMatch() or robustMatch()
+    //// RANSAC parameters
+    // int iterationsCount = 500;  // number of Ransac iterations.
+    // float reprojectionError =
+    // 6.0;  // maximum allowed distance to consider it an inlier.
+    // double confidence = 0.99;  // ransac successful confidence.
 
-    // RANSAC parameters
-    int iterationsCount = 500;  // number of Ransac iterations.
-    float reprojectionError =
-        6.0;  // maximum allowed distance to consider it an inlier.
-    double confidence = 0.99;  // ransac successful confidence.
+    //// Kalman Filter parameters
+    // int minInliersKalman = 30;  // Kalman threshold updating
 
-    // Kalman Filter parameters
-    int minInliersKalman = 30;  // Kalman threshold updating
+    //// PnP parameters
+    // int pnpMethod = SOLVEPNP_ITERATIVE;
+    // string featureName = "ORB";
+    // bool useFLANN = false;
 
-    // PnP parameters
-    int pnpMethod = SOLVEPNP_ITERATIVE;
-    string featureName = "ORB";
-    bool useFLANN = false;
-
-    // Save results
-    string saveDirectory = "";
-    Mat frameSave;
+    //// Save results
+    // string saveDirectory = "";
+    cv::Mat frameSave;
     int frameCount = 0;
 
-    bool displayFilteredPose = false;
+    // bool displayFilteredPose = false;
 
-    if (parser.has("help")) {
-        parser.printMessage();
-        return 0;
-    } else {
-        video_read_path = parser.get<string>("video").size() > 0
-                              ? parser.get<string>("video")
-                              : video_read_path;
-        yml_read_path = parser.get<string>("model").size() > 0
-                            ? parser.get<string>("model")
-                            : yml_read_path;
-        ply_read_path = parser.get<string>("mesh").size() > 0
-                            ? parser.get<string>("mesh")
-                            : ply_read_path;
-        numKeyPoints = parser.has("keypoints") ? parser.get<int>("keypoints")
-                                               : numKeyPoints;
-        ratioTest =
-            parser.has("ratio") ? parser.get<float>("ratio") : ratioTest;
-        fast_match = parser.has("fast") ? parser.get<bool>("fast") : fast_match;
-        iterationsCount = parser.has("iterations")
-                              ? parser.get<int>("iterations")
-                              : iterationsCount;
-        reprojectionError = parser.has("error") ? parser.get<float>("error")
-                                                : reprojectionError;
-        confidence = parser.has("confidence") ? parser.get<float>("confidence")
-                                              : confidence;
-        minInliersKalman = parser.has("inliers") ? parser.get<int>("inliers")
-                                                 : minInliersKalman;
-        pnpMethod =
-            parser.has("method") ? parser.get<int>("method") : pnpMethod;
-        featureName =
-            parser.has("feature") ? parser.get<string>("feature") : featureName;
-        useFLANN = parser.has("FLANN") ? parser.get<bool>("FLANN") : useFLANN;
-        saveDirectory =
-            parser.has("save") ? parser.get<string>("save") : saveDirectory;
-        displayFilteredPose = parser.has("displayFiltered")
-                                  ? parser.get<bool>("displayFiltered")
-                                  : displayFilteredPose;
-    }
-    video_read_path =
-        "/home/fabian/Documents/work/realsense/data/2021-02-26-17-53/"
-        "output.mkv";
-    yml_read_path = "/home/fabian/Documents/work/realsense/data/model.yml";
-    ply_read_path = "/home/fabian/Documents/work/realsense/data/small_box.py";
-    // yml_read_path =
-    // ply_read_path = argv[3];
+    // if (parser.has("help")) {
+    // parser.printMessage();
+    // return 0;
+    //} else {
+    //// video_read_path = parser.get<string>("video").size() > 0
+    ////? parser.get<string>("video")
+    ////: video_read_path;
+    //// yml_read_path = parser.get<string>("model").size() > 0
+    ////? parser.get<string>("model")
+    ////: yml_read_path;
+    //// ply_read_path = parser.get<string>("mesh").size() > 0
+    ////? parser.get<string>("mesh")
+    ////: ply_read_path;
+    // numKeyPoints = parser.has("keypoints") ? parser.get<int>("keypoints")
+    //: numKeyPoints;
+    // ratioTest =
+    // parser.has("ratio") ? parser.get<float>("ratio") : ratioTest;
+    // fast_match = parser.has("fast") ? parser.get<bool>("fast") : fast_match;
+    // iterationsCount = parser.has("iterations")
+    //? parser.get<int>("iterations")
+    //: iterationsCount;
+    // reprojectionError = parser.has("error") ? parser.get<float>("error")
+    //: reprojectionError;
+    // confidence = parser.has("confidence") ? parser.get<float>("confidence")
+    //: confidence;
+    // minInliersKalman = parser.has("inliers") ? parser.get<int>("inliers")
+    //: minInliersKalman;
+    // pnpMethod =
+    // parser.has("method") ? parser.get<int>("method") : pnpMethod;
+    // featureName =
+    // parser.has("feature") ? parser.get<string>("feature") : featureName;
+    // useFLANN = parser.has("FLANN") ? parser.get<bool>("FLANN") : useFLANN;
+    // saveDirectory =
+    // parser.has("save") ? parser.get<string>("save") : saveDirectory;
+    // displayFilteredPose = parser.has("displayFiltered")
+    //? parser.get<bool>("displayFiltered")
+    //: displayFilteredPose;
+    //}
+    // std::string video_read_path =
+    //"/home/fabian/Documents/work/realsense/data/2021-02-26-17-53/"
+    //"output.mkv";
+    // std::string yml_read_path =
+    //"/home/fabian/Documents/work/realsense/data/model.yml";
+    // std::string ply_read_path =
+    //"/home/fabian/Documents/work/realsense/data/small_box.py";
+    //// yml_read_path =
+    //// ply_read_path = argv[3];
 
-    std::cout << "Video: " << video_read_path << std::endl;
-    std::cout << "Training data: " << yml_read_path << std::endl;
-    std::cout << "CAD model: " << ply_read_path << std::endl;
-    std::cout << "Ratio test threshold: " << ratioTest << std::endl;
-    std::cout << "Fast match(no symmetry test)?: " << fast_match << std::endl;
-    std::cout << "RANSAC number of iterations: " << iterationsCount
-              << std::endl;
-    std::cout << "RANSAC reprojection error: " << reprojectionError
-              << std::endl;
-    std::cout << "RANSAC confidence threshold: " << confidence << std::endl;
-    std::cout << "Kalman number of inliers: " << minInliersKalman << std::endl;
-    std::cout << "PnP method: " << pnpMethod << std::endl;
-    std::cout << "Feature: " << featureName << std::endl;
-    std::cout << "Number of keypoints for ORB: " << numKeyPoints << std::endl;
-    std::cout << "Use FLANN-based matching? " << useFLANN << std::endl;
-    std::cout << "Save directory: " << saveDirectory << std::endl;
-    std::cout << "Display filtered pose from Kalman filter? "
-              << displayFilteredPose << std::endl;
+    // std::cout << "Video: " << video_read_path << std::endl;
+    // std::cout << "Training data: " << yml_read_path << std::endl;
+    // std::cout << "CAD model: " << ply_read_path << std::endl;
+    // std::cout << "Ratio test threshold: " << ratioTest << std::endl;
+    // std::cout << "Fast match(no symmetry test)?: " << fast_match <<
+    // std::endl; std::cout << "RANSAC number of iterations: " << iterationsCount
+    //<< std::endl;
+    // std::cout << "RANSAC reprojection error: " << reprojectionError
+    //<< std::endl;
+    // std::cout << "RANSAC confidence threshold: " << confidence << std::endl;
+    // std::cout << "Kalman number of inliers: " << minInliersKalman <<
+    // std::endl; std::cout << "PnP method: " << pnpMethod << std::endl;
+    // std::cout << "Feature: " << featureName << std::endl;
+    // std::cout << "Number of keypoints for ORB: " << numKeyPoints <<
+    // std::endl; std::cout << "Use FLANN-based matching? " << useFLANN <<
+    // std::endl; std::cout << "Save directory: " << saveDirectory << std::endl;
+    // std::cout << "Display filtered pose from Kalman filter? "
+    //<< displayFilteredPose << std::endl;
 
-    PnPProblem pnp_detection(params_WEBCAM);
-    PnPProblem pnp_detection_est(params_WEBCAM);
+    PnPProblem pnp_detection(camera);
+    PnPProblem pnp_detection_est(camera);
 
-    Model model;                // instantiate Model object
-    model.load(yml_read_path);  // load a 3D textured object model
+    Model model;                      // instantiate Model object
+    model.load(paras.yml_read_path);  // load a 3D textured object model
 
-    Mesh mesh;                 // instantiate Mesh object
-    mesh.load(ply_read_path);  // load an object mesh
+    Mesh mesh;                       // instantiate Mesh object
+    mesh.load(paras.ply_read_path);  // load an object mesh
 
     RobustMatcher rmatcher;  // instantiate RobustMatcher
 
-    Ptr<FeatureDetector> detector, descriptor;
-    createFeatures(featureName, numKeyPoints, detector, descriptor);
+    cv::Ptr<cv::FeatureDetector> detector, descriptor;
+    createFeatures(paras.featureName, paras.numKeyPoints, detector, descriptor);
     rmatcher.setFeatureDetector(detector);        // set feature detector
     rmatcher.setDescriptorExtractor(descriptor);  // set descriptor extractor
     rmatcher.setDescriptorMatcher(
-        createMatcher(featureName, useFLANN));  // set matcher
-    rmatcher.setRatio(ratioTest);               // set ratio test parameter
+        createMatcher(paras.featureName, paras.useFLANN));  // set matcher
+    rmatcher.setRatio(paras.ratioTest);  // set ratio test parameter
     if (!model.get_trainingImagePath().empty()) {
-        Mat trainingImg = imread(model.get_trainingImagePath());
+        cv::Mat trainingImg = cv::imread(model.get_trainingImagePath());
         rmatcher.setTrainingImage(trainingImg);
     }
 
-    KalmanFilter KF;        // instantiate Kalman Filter
+    cv::KalmanFilter KF;    // instantiate Kalman Filter
     int nStates = 18;       // the number of states
     int nMeasurements = 6;  // the number of measured states
     int nInputs = 0;        // the number of control actions
     double dt = 0.125;      // time between measurements (1/FPS)
 
     initKalmanFilter(KF, nStates, nMeasurements, nInputs, dt);  // init function
-    Mat measurements(nMeasurements, 1, CV_64FC1);
-    measurements.setTo(Scalar(0));
+    cv::Mat measurements(nMeasurements, 1, CV_64FC1);
+    measurements.setTo(cv::Scalar(0));
     // bool good_measurement = false;
 
     // Get the MODEL INFO
-    vector<Point3f> list_points3d_model =
+    std::vector<cv::Point3f> list_points3d_model =
         model.get_points3d();  // list with model 3D coordinates
-    Mat descriptors_model =
+    cv::Mat descriptors_model =
         model.get_descriptors();  // list with descriptors of each 3D coordinate
-    vector<KeyPoint> keypoints_model = model.get_keypoints();
+    std::vector<cv::KeyPoint> keypoints_model = model.get_keypoints();
 
     // Create & Open Window
-    namedWindow("REAL TIME DEMO", WINDOW_KEEPRATIO);
+    cv::namedWindow("REAL TIME DEMO", cv::WINDOW_KEEPRATIO);
 
-    VideoCapture cap;           // instantiate VideoCapture
-    cap.open(video_read_path);  // open a recorded video
+    cv::VideoCapture cap;             // instantiate VideoCapture
+    cap.open(paras.video_read_path);  // open a recorded video
 
     if (!cap.isOpened())  // check if we succeeded
     {
-        cout << "Could not open the camera device" << endl;
+        std::cout << "Could not open the camera device" << std::endl;
         return -1;
+    } else {
+        std::cout << "Opened video device" << std::endl;
     }
 
-    if (!saveDirectory.empty()) {
-        if (!cv::utils::fs::exists(saveDirectory)) {
-            std::cout << "Create directory: " << saveDirectory << std::endl;
-            cv::utils::fs::createDirectories(saveDirectory);
+
+    if (!paras.saveDirectory.empty()) {
+        if (!cv::utils::fs::exists(paras.saveDirectory)) {
+            std::cout << "Create directory: " << paras.saveDirectory
+                      << std::endl;
+            cv::utils::fs::createDirectories(paras.saveDirectory);
         }
     }
 
     // Measure elapsed time
-    TickMeter tm;
+    cv::TickMeter tm;
 
-    Mat frame, frame_vis, frame_matching;
+    cv::Mat frame, frame_vis, frame_matching;
     while (cap.read(frame) &&
-           (char)waitKey(30) != 27)  // capture frame until ESC is pressed
+           (char)cv::waitKey(30) != 27)  // capture frame until ESC is pressed
     {
         tm.reset();
         tm.start();
@@ -265,11 +283,12 @@ int main(int argc, char *argv[]) {
 
         // -- Step 1: Robust matching between model descriptors and scene
         // descriptors
-        vector<DMatch> good_matches;  // to obtain the 3D points of the model
-        vector<KeyPoint>
+        std::vector<cv::DMatch>
+            good_matches;  // to obtain the 3D points of the model
+        std::vector<cv::KeyPoint>
             keypoints_scene;  // to obtain the 2D points of the scene
 
-        if (fast_match) {
+        if (paras.fast_match) {
             rmatcher.fastRobustMatch(frame, good_matches, keypoints_scene,
                                      descriptors_model, keypoints_model);
         } else {
@@ -283,19 +302,19 @@ int main(int argc, char *argv[]) {
         }
 
         // -- Step 2: Find out the 2D/3D correspondences
-        vector<Point3f>
+        std::vector<cv::Point3f>
             list_points3d_model_match;  // container for the model 3D
                                         // coordinates found in the scene
-        vector<Point2f>
+        std::vector<cv::Point2f>
             list_points2d_scene_match;  // container for the model 2D
                                         // coordinates found in the scene
 
         for (unsigned int match_index = 0; match_index < good_matches.size();
              ++match_index) {
-            Point3f point3d_model =
+            cv::Point3f point3d_model =
                 list_points3d_model[good_matches[match_index]
                                         .trainIdx];  // 3D point from model
-            Point2f point2d_scene =
+            cv::Point2f point2d_scene =
                 keypoints_scene[good_matches[match_index].queryIdx]
                     .pt;  // 2D point from the scene
             list_points3d_model_match.push_back(point3d_model);  // add 3D point
@@ -305,8 +324,8 @@ int main(int argc, char *argv[]) {
         // Draw outliers
         draw2DPoints(frame_vis, list_points2d_scene_match, red);
 
-        Mat inliers_idx;
-        vector<Point2f> list_points2d_inliers;
+        cv::Mat inliers_idx;
+        std::vector<cv::Point2f> list_points2d_inliers;
 
         // Instantiate estimated translation and rotation
         bool good_measurement = false;
@@ -316,14 +335,15 @@ int main(int argc, char *argv[]) {
         {
             // -- Step 3: Estimate the pose using RANSAC approach
             pnp_detection.estimatePoseRANSAC(
-                list_points3d_model_match, list_points2d_scene_match, pnpMethod,
-                inliers_idx, iterationsCount, reprojectionError, confidence);
+                list_points3d_model_match, list_points2d_scene_match,
+                paras.pnpMethod, inliers_idx, paras.iterationsCount,
+                paras.reprojectionError, paras.confidence);
 
             // -- Step 4: Catch the inliers keypoints to draw
             for (int inliers_index = 0; inliers_index < inliers_idx.rows;
                  ++inliers_index) {
                 int n = inliers_idx.at<int>(inliers_index);  // i-inlier
-                Point2f point2d =
+                cv::Point2f point2d =
                     list_points2d_scene_match[n];  // i-inlier point 2D
                 list_points2d_inliers.push_back(
                     point2d);  // add i-inlier to list
@@ -335,12 +355,12 @@ int main(int argc, char *argv[]) {
             // -- Step 5: Kalman Filter
 
             // GOOD MEASUREMENT
-            if (inliers_idx.rows >= minInliersKalman) {
+            if (inliers_idx.rows >= paras.minInliersKalman) {
                 // Get the measured translation
-                Mat translation_measured = pnp_detection.get_t_matrix();
+                cv::Mat translation_measured = pnp_detection.get_t_matrix();
 
                 // Get the measured rotation
-                Mat rotation_measured = pnp_detection.get_R_matrix();
+                cv::Mat rotation_measured = pnp_detection.get_R_matrix();
 
                 // fill the measurements vector
                 fillMeasurements(measurements, translation_measured,
@@ -350,8 +370,8 @@ int main(int argc, char *argv[]) {
 
             // update the Kalman filter with good measurements, otherwise with
             // previous valid measurements
-            Mat translation_estimated(3, 1, CV_64FC1);
-            Mat rotation_estimated(3, 3, CV_64FC1);
+            cv::Mat translation_estimated(3, 1, CV_64FC1);
+            cv::Mat rotation_estimated(3, 3, CV_64FC1);
             updateKalmanFilter(KF, measurements, translation_estimated,
                                rotation_estimated);
 
@@ -362,32 +382,32 @@ int main(int argc, char *argv[]) {
 
         // -- Step X: Draw pose and coordinate frame
         float l = 5;
-        vector<Point2f> pose_points2d;
-        if (!good_measurement || displayFilteredPose) {
+        std::vector<cv::Point2f> pose_points2d;
+        if (!good_measurement || paras.displayFilteredPose) {
             drawObjectMesh(frame_vis, &mesh, &pnp_detection_est,
                            yellow);  // draw estimated pose
 
             pose_points2d.push_back(pnp_detection_est.backproject3DPoint(
-                Point3f(0, 0, 0)));  // axis center
+                cv::Point3f(0, 0, 0)));  // axis center
             pose_points2d.push_back(pnp_detection_est.backproject3DPoint(
-                Point3f(l, 0, 0)));  // axis x
+                cv::Point3f(l, 0, 0)));  // axis x
             pose_points2d.push_back(pnp_detection_est.backproject3DPoint(
-                Point3f(0, l, 0)));  // axis y
+                cv::Point3f(0, l, 0)));  // axis y
             pose_points2d.push_back(pnp_detection_est.backproject3DPoint(
-                Point3f(0, 0, l)));                          // axis z
+                cv::Point3f(0, 0, l)));                      // axis z
             draw3DCoordinateAxes(frame_vis, pose_points2d);  // draw axes
         } else {
             drawObjectMesh(frame_vis, &mesh, &pnp_detection,
                            green);  // draw current pose
 
             pose_points2d.push_back(pnp_detection.backproject3DPoint(
-                Point3f(0, 0, 0)));  // axis center
-            pose_points2d.push_back(
-                pnp_detection.backproject3DPoint(Point3f(l, 0, 0)));  // axis x
-            pose_points2d.push_back(
-                pnp_detection.backproject3DPoint(Point3f(0, l, 0)));  // axis y
-            pose_points2d.push_back(
-                pnp_detection.backproject3DPoint(Point3f(0, 0, l)));  // axis z
+                cv::Point3f(0, 0, 0)));  // axis center
+            pose_points2d.push_back(pnp_detection.backproject3DPoint(
+                cv::Point3f(l, 0, 0)));  // axis x
+            pose_points2d.push_back(pnp_detection.backproject3DPoint(
+                cv::Point3f(0, l, 0)));  // axis y
+            pose_points2d.push_back(pnp_detection.backproject3DPoint(
+                cv::Point3f(0, 0, l)));                      // axis z
             draw3DCoordinateAxes(frame_vis, pose_points2d);  // draw axes
         }
 
@@ -407,11 +427,11 @@ int main(int argc, char *argv[]) {
         // Draw some debug text
         int inliers_int = inliers_idx.rows;
         int outliers_int = (int)good_matches.size() - inliers_int;
-        string inliers_str = IntToString(inliers_int);
-        string outliers_str = IntToString(outliers_int);
-        string n = IntToString((int)good_matches.size());
-        string text = "Found " + inliers_str + " of " + n + " matches";
-        string text2 =
+        std::string inliers_str = IntToString(inliers_int);
+        std::string outliers_str = IntToString(outliers_int);
+        std::string n = IntToString((int)good_matches.size());
+        std::string text = "Found " + inliers_str + " of " + n + " matches";
+        std::string text2 =
             "Inliers: " + inliers_str + " - Outliers: " + outliers_str;
 
         drawText(frame_vis, text, green);
@@ -419,66 +439,69 @@ int main(int argc, char *argv[]) {
 
         imshow("REAL TIME DEMO", frame_vis);
 
-        if (!saveDirectory.empty()) {
+        if (!paras.saveDirectory.empty()) {
             const int widthSave =
                 !frame_matching.empty() ? frame_matching.cols : frame_vis.cols;
             const int heightSave = !frame_matching.empty()
                                        ? frame_matching.rows + frame_vis.rows
                                        : frame_vis.rows;
-            frameSave = Mat::zeros(heightSave, widthSave, CV_8UC3);
+            frameSave = cv::Mat::zeros(heightSave, widthSave, CV_8UC3);
             if (!frame_matching.empty()) {
                 int startX = (int)((widthSave - frame_vis.cols) / 2.0);
-                Mat roi =
-                    frameSave(Rect(startX, 0, frame_vis.cols, frame_vis.rows));
+                cv::Mat roi = frameSave(
+                    cv::Rect(startX, 0, frame_vis.cols, frame_vis.rows));
                 frame_vis.copyTo(roi);
 
-                roi = frameSave(Rect(0, frame_vis.rows, frame_matching.cols,
-                                     frame_matching.rows));
+                roi = frameSave(cv::Rect(0, frame_vis.rows, frame_matching.cols,
+                                         frame_matching.rows));
                 frame_matching.copyTo(roi);
             } else {
                 frame_vis.copyTo(frameSave);
             }
 
-            string saveFilename = format(
-                string(saveDirectory + "/image_%04d.png").c_str(), frameCount);
-            imwrite(saveFilename, frameSave);
+            std::string saveFilename = cv::format(
+                std::string(paras.saveDirectory + "/image_%04d.png").c_str(),
+                frameCount);
+            cv::imwrite(saveFilename, frameSave);
             frameCount++;
         }
     }
 
     // Close and Destroy Window
-    destroyWindow("REAL TIME DEMO");
+    cv::destroyWindow("REAL TIME DEMO");
 
-    cout << "GOODBYE ..." << endl;
+    std::cout << "GOODBYE ..." << std::endl;
 }
 
 /**********************************************************************************************************/
 void help() {
-    cout << "------------------------------------------------------------------"
-            "--------"
-         << endl
-         << "This program shows how to detect an object given its 3D textured "
-            "model. You can choose to "
-         << "use a recorded video or the webcam." << endl
-         << "Usage:" << endl
-         << "./cpp-tutorial-pnp_detection -help" << endl
-         << "Keys:" << endl
-         << "'esc' - to quit." << endl
-         << "------------------------------------------------------------------"
-            "--------"
-         << endl
-         << endl;
+    std::cout
+        << "------------------------------------------------------------------"
+           "--------"
+        << std::endl
+        << "This program shows how to detect an object given its 3D textured "
+           "model. You can choose to "
+        << "use a recorded video or the webcam." << std::endl
+        << "Usage:" << std::endl
+        << "./cpp-tutorial-pnp_detection -help" << std::endl
+        << "Keys:" << std::endl
+        << "'esc' - to quit." << std::endl
+        << "------------------------------------------------------------------"
+           "--------"
+        << std::endl
+        << std::endl;
 }
 
 /**********************************************************************************************************/
-void initKalmanFilter(KalmanFilter &KF, int nStates, int nMeasurements,
+void initKalmanFilter(cv::KalmanFilter &KF, int nStates, int nMeasurements,
                       int nInputs, double dt) {
     KF.init(nStates, nMeasurements, nInputs, CV_64F);  // init Kalman Filter
 
-    setIdentity(KF.processNoiseCov, Scalar::all(1e-5));  // set process noise
+    setIdentity(KF.processNoiseCov,
+                cv::Scalar::all(1e-5));  // set process noise
     setIdentity(KF.measurementNoiseCov,
-                Scalar::all(1e-2));                // set measurement noise
-    setIdentity(KF.errorCovPost, Scalar::all(1));  // error covariance
+                cv::Scalar::all(1e-2));                // set measurement noise
+    setIdentity(KF.errorCovPost, cv::Scalar::all(1));  // error covariance
 
     /** DYNAMIC MODEL **/
 
@@ -541,14 +564,15 @@ void initKalmanFilter(KalmanFilter &KF, int nStates, int nMeasurements,
 }
 
 /**********************************************************************************************************/
-void updateKalmanFilter(KalmanFilter &KF, Mat &measurement,
-                        Mat &translation_estimated, Mat &rotation_estimated) {
+void updateKalmanFilter(cv::KalmanFilter &KF, cv::Mat &measurement,
+                        cv::Mat &translation_estimated,
+                        cv::Mat &rotation_estimated) {
     // First predict, to update the internal statePre variable
     // Mat prediction = KF.predict();
 
     // The "correct" phase that is going to use the predicted value and our
     // measurement
-    Mat estimated = KF.correct(measurement);
+    cv::Mat estimated = KF.correct(measurement);
 
     // Estimated translation
     translation_estimated.at<double>(0) = estimated.at<double>(0);
@@ -556,7 +580,7 @@ void updateKalmanFilter(KalmanFilter &KF, Mat &measurement,
     translation_estimated.at<double>(2) = estimated.at<double>(2);
 
     // Estimated euler angles
-    Mat eulers_estimated(3, 1, CV_64F);
+    cv::Mat eulers_estimated(3, 1, CV_64F);
     eulers_estimated.at<double>(0) = estimated.at<double>(9);
     eulers_estimated.at<double>(1) = estimated.at<double>(10);
     eulers_estimated.at<double>(2) = estimated.at<double>(11);
@@ -566,10 +590,11 @@ void updateKalmanFilter(KalmanFilter &KF, Mat &measurement,
 }
 
 /**********************************************************************************************************/
-void fillMeasurements(Mat &measurements, const Mat &translation_measured,
-                      const Mat &rotation_measured) {
+void fillMeasurements(cv::Mat &measurements,
+                      const cv::Mat &translation_measured,
+                      const cv::Mat &rotation_measured) {
     // Convert rotation matrix to euler angles
-    Mat measured_eulers(3, 1, CV_64F);
+    cv::Mat measured_eulers(3, 1, CV_64F);
     measured_eulers = rot2euler(rotation_measured);
 
     // Set measurement to predict
