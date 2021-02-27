@@ -18,8 +18,6 @@
 
 /**  GLOBAL VARIABLES  **/
 
-// using namespace cv;
-// using namespace std;
 namespace fs = std::filesystem;
 /**  Functions headers  **/
 void help();
@@ -35,7 +33,8 @@ void fillMeasurements(cv::Mat &measurements,
                       const cv::Mat &rotation_measured);
 
 /**  Main program  **/
-int main(int argc, char *argv[]) {
+const std::pair<CameraParameters, DetectionParameters> parse_input(
+    int argc, char **argv) {
     std::string root(
         "/home/fabian/Documents/work/transforms/src/real_time_pose_estimation/"
         "Data/");
@@ -46,168 +45,66 @@ int main(int argc, char *argv[]) {
     displayParameters(paras);
     const CameraParameters camera = readCameraParameters(camera_location);
     displayCamera(camera);
-    // help();
+    return {camera, paras};
+}
 
-    // const String keys =
-    //"{help h            |      | print this message                        "
-    //"                         }"
-    //"{video v           |      | path to recorded video                    "
-    //"                         }"
-    //"{model             |      | path to yml model                         "
-    //"                         }"
-    //"{mesh              |      | path to ply mesh                          "
-    //"                         }"
-    //"{keypoints k       |2000  | number of keypoints to detect             "
-    //"                         }"
-    //"{ratio r           |0.7   | threshold for ratio test                  "
-    //"                         }"
-    //"{iterations it     |500   | RANSAC maximum iterations count           "
-    //"                         }"
-    //"{error e           |6.0   | RANSAC reprojection error                 "
-    //"                         }"
-    //"{confidence c      |0.99  | RANSAC confidence                         "
-    //"                         }"
-    //"{inliers in        |30    | minimum inliers for Kalman update         "
-    //"                         }"
-    //"{method  pnp       |0     | PnP method: (0) ITERATIVE - (1) EPNP - "
-    //"(2) P3P - (3) DLS - (5) AP3P}"
-    //"{fast f            |true  | use of robust fast match                  "
-    //"                         }"
-    //"{feature           |ORB   | feature name (ORB, KAZE, AKAZE, BRISK, "
-    //"SIFT, SURF, BINBOOST, VGG)  }"
-    //"{FLANN             |false | use FLANN library for descriptors "
-    //"matching                         }"
-    //"{save              |      | path to the directory where to save the "
-    //"image results              }"
-    //"{displayFiltered   |false | display filtered pose (from Kalman "
-    //"filter)                         }";
-    // CommandLineParser parser(argc, argv, keys);
+cv::VideoCapture openVideo(const DetectionParameters &paras) {
+    cv::VideoCapture cap;             // instantiate VideoCapture
+    cap.open(paras.video_read_path);  // open a recorded video
+    if (!cap.isOpened())              // check if we succeeded
+    {
+        std::cout << "Could not open the camera device" << std::endl;
+        throw std::runtime_error("");
+    }
+    return cap;
+}
 
-    //// string video_read_path = samples::findFile(
-    ////"samples/cpp/tutorial_code/calib3d/real_time_pose_estimation/Data/"
-    ////"box.mp4");  // recorded video
-    //// string yml_read_path = samples::findFile(
-    ////"samples/cpp/tutorial_code/calib3d/real_time_pose_estimation/Data/"
-    ////"cookies_ORB.yml");  // 3dpts + descriptors
-    //// string ply_read_path = samples::findFile(
-    ////"samples/cpp/tutorial_code/calib3d/real_time_pose_estimation/Data/"
-    ////"box.ply");  // mesh
-    //// Intrinsic camera parameters: UVC WEBCAM
-    //// double f = 55;                     // focal length in mm
-    //// double sx = 22.3, sy = 14.9;       // sensor size
-    //// double width = 640, height = 480;  // image size
+void match_model_and_frame(const DetectionParameters &paras,
+                           RobustMatcher &rmatcher,
+                           const cv::Mat &descriptors_model,
+                           const std::vector<cv::KeyPoint> &keypoints_model,
+                           const cv::Mat &frame,
+                           std::vector<cv::KeyPoint> &keypoints_scene,
+                           std::vector<cv::DMatch> &good_matches) {
+    if (paras.fast_match) {
+        rmatcher.fastRobustMatch(frame, good_matches, keypoints_scene,
+                                 descriptors_model, keypoints_model);
+    } else {
+        rmatcher.robustMatch(frame, good_matches, keypoints_scene,
+                             descriptors_model, keypoints_model);
+    }
 
-    //// double params_WEBCAM[] = {width * f / sx,   // fx
-    //// height * f / sy,  // fy
-    //// width / 2,        // cx
-    //// height / 2};      // cy
-    //// const double width = 640, height = 480;
-    // const double params_WEBCAM[] = {615.4,    // fx
-    // 614.18,   // fy
-    // 326.27,   // cx
-    // 237.21};  // cy
+    cv::Mat frame_matching = rmatcher.getImageMatching();
+    if (!frame_matching.empty()) {
+        cv::imshow("Keypoints matching", frame_matching);
+    }
+}
 
+void matchedPoints(const std::vector<cv::DMatch> &matches, const Model &model,
+                   const std::vector<cv::KeyPoint> &keypoints_scene,
+                   std::vector<cv::Point2f> &matched_points2d,
+                   std::vector<cv::Point3f> &matched_points3d) {
+    const static std::vector<cv::Point3f> points3d = model.get_points3d();
+    for (const cv::DMatch &match : matches) {
+        cv::Point3f point3d_model = points3d[match.trainIdx];  // 3D point
+        cv::Point2f point2d_scene = keypoints_scene[match.queryIdx].pt; 
+        matched_points3d.push_back(point3d_model);  // add 3D point
+        matched_points2d.push_back(point2d_scene);  // add 2D point
+    }
+}
+
+int main(int argc, char *argv[]) {
+    const auto [camera, paras] = parse_input(argc, argv);
     //// Some basic colors
     cv::Scalar red(0, 0, 255);
     cv::Scalar green(0, 255, 0);
     cv::Scalar blue(255, 0, 0);
     cv::Scalar yellow(0, 255, 255);
 
-    //// Robust Matcher parameters
-    // int numKeyPoints = 2000;  // number of detected keypoints
-    // float ratioTest = 0.70f;  // ratio test
-    // bool fast_match = true;   // fastRobustMatch() or robustMatch()
-
-    //// RANSAC parameters
-    // int iterationsCount = 500;  // number of Ransac iterations.
-    // float reprojectionError =
-    // 6.0;  // maximum allowed distance to consider it an inlier.
-    // double confidence = 0.99;  // ransac successful confidence.
-
-    //// Kalman Filter parameters
-    // int minInliersKalman = 30;  // Kalman threshold updating
-
-    //// PnP parameters
-    // int pnpMethod = SOLVEPNP_ITERATIVE;
-    // string featureName = "ORB";
-    // bool useFLANN = false;
-
-    //// Save results
-    // string saveDirectory = "";
     cv::Mat frameSave;
     int frameCount = 0;
 
-    // bool displayFilteredPose = false;
-
-    // if (parser.has("help")) {
-    // parser.printMessage();
-    // return 0;
-    //} else {
-    //// video_read_path = parser.get<string>("video").size() > 0
-    ////? parser.get<string>("video")
-    ////: video_read_path;
-    //// yml_read_path = parser.get<string>("model").size() > 0
-    ////? parser.get<string>("model")
-    ////: yml_read_path;
-    //// ply_read_path = parser.get<string>("mesh").size() > 0
-    ////? parser.get<string>("mesh")
-    ////: ply_read_path;
-    // numKeyPoints = parser.has("keypoints") ? parser.get<int>("keypoints")
-    //: numKeyPoints;
-    // ratioTest =
-    // parser.has("ratio") ? parser.get<float>("ratio") : ratioTest;
-    // fast_match = parser.has("fast") ? parser.get<bool>("fast") : fast_match;
-    // iterationsCount = parser.has("iterations")
-    //? parser.get<int>("iterations")
-    //: iterationsCount;
-    // reprojectionError = parser.has("error") ? parser.get<float>("error")
-    //: reprojectionError;
-    // confidence = parser.has("confidence") ? parser.get<float>("confidence")
-    //: confidence;
-    // minInliersKalman = parser.has("inliers") ? parser.get<int>("inliers")
-    //: minInliersKalman;
-    // pnpMethod =
-    // parser.has("method") ? parser.get<int>("method") : pnpMethod;
-    // featureName =
-    // parser.has("feature") ? parser.get<string>("feature") : featureName;
-    // useFLANN = parser.has("FLANN") ? parser.get<bool>("FLANN") : useFLANN;
-    // saveDirectory =
-    // parser.has("save") ? parser.get<string>("save") : saveDirectory;
-    // displayFilteredPose = parser.has("displayFiltered")
-    //? parser.get<bool>("displayFiltered")
-    //: displayFilteredPose;
-    //}
-    // std::string video_read_path =
-    //"/home/fabian/Documents/work/realsense/data/2021-02-26-17-53/"
-    //"output.mkv";
-    // std::string yml_read_path =
-    //"/home/fabian/Documents/work/realsense/data/model.yml";
-    // std::string ply_read_path =
-    //"/home/fabian/Documents/work/realsense/data/small_box.py";
-    //// yml_read_path =
-    //// ply_read_path = argv[3];
-
-    // std::cout << "Video: " << video_read_path << std::endl;
-    // std::cout << "Training data: " << yml_read_path << std::endl;
-    // std::cout << "CAD model: " << ply_read_path << std::endl;
-    // std::cout << "Ratio test threshold: " << ratioTest << std::endl;
-    // std::cout << "Fast match(no symmetry test)?: " << fast_match <<
-    // std::endl; std::cout << "RANSAC number of iterations: " << iterationsCount
-    //<< std::endl;
-    // std::cout << "RANSAC reprojection error: " << reprojectionError
-    //<< std::endl;
-    // std::cout << "RANSAC confidence threshold: " << confidence << std::endl;
-    // std::cout << "Kalman number of inliers: " << minInliersKalman <<
-    // std::endl; std::cout << "PnP method: " << pnpMethod << std::endl;
-    // std::cout << "Feature: " << featureName << std::endl;
-    // std::cout << "Number of keypoints for ORB: " << numKeyPoints <<
-    // std::endl; std::cout << "Use FLANN-based matching? " << useFLANN <<
-    // std::endl; std::cout << "Save directory: " << saveDirectory << std::endl;
-    // std::cout << "Display filtered pose from Kalman filter? "
-    //<< displayFilteredPose << std::endl;
-
-    PnPProblem pnp_detection(camera);
-    PnPProblem pnp_detection_est(camera);
+    PnPProblem pnp_detection(camera), pnp_detection_est(camera);
 
     Model model;                      // instantiate Model object
     model.load(paras.yml_read_path);  // load a 3D textured object model
@@ -238,29 +135,13 @@ int main(int argc, char *argv[]) {
     initKalmanFilter(KF, nStates, nMeasurements, nInputs, dt);  // init function
     cv::Mat measurements(nMeasurements, 1, CV_64FC1);
     measurements.setTo(cv::Scalar(0));
-    // bool good_measurement = false;
 
     // Get the MODEL INFO
-    std::vector<cv::Point3f> list_points3d_model =
-        model.get_points3d();  // list with model 3D coordinates
-    cv::Mat descriptors_model =
-        model.get_descriptors();  // list with descriptors of each 3D coordinate
-    std::vector<cv::KeyPoint> keypoints_model = model.get_keypoints();
+    const cv::Mat descriptors_model = model.get_descriptors();
+    const std::vector<cv::KeyPoint> keypoints_model = model.get_keypoints();
 
     // Create & Open Window
     cv::namedWindow("REAL TIME DEMO", cv::WINDOW_KEEPRATIO);
-
-    cv::VideoCapture cap;             // instantiate VideoCapture
-    cap.open(paras.video_read_path);  // open a recorded video
-
-    if (!cap.isOpened())  // check if we succeeded
-    {
-        std::cout << "Could not open the camera device" << std::endl;
-        return -1;
-    } else {
-        std::cout << "Opened video device" << std::endl;
-    }
-
 
     if (!paras.saveDirectory.empty()) {
         if (!cv::utils::fs::exists(paras.saveDirectory)) {
@@ -269,60 +150,37 @@ int main(int argc, char *argv[]) {
             cv::utils::fs::createDirectories(paras.saveDirectory);
         }
     }
+    cv::VideoCapture cap = openVideo(paras);
 
     // Measure elapsed time
     cv::TickMeter tm;
 
     cv::Mat frame, frame_vis, frame_matching;
-    while (cap.read(frame) &&
-           (char)cv::waitKey(30) != 27)  // capture frame until ESC is pressed
+    while (cap.read(frame) && (char)cv::waitKey(30) != 27)  // run til ESC
     {
         tm.reset();
         tm.start();
         frame_vis = frame.clone();  // refresh visualisation frame
 
         // -- Step 1: Robust matching between model descriptors and scene
-        // descriptors
-        std::vector<cv::DMatch>
-            good_matches;  // to obtain the 3D points of the model
-        std::vector<cv::KeyPoint>
-            keypoints_scene;  // to obtain the 2D points of the scene
-
-        if (paras.fast_match) {
-            rmatcher.fastRobustMatch(frame, good_matches, keypoints_scene,
-                                     descriptors_model, keypoints_model);
-        } else {
-            rmatcher.robustMatch(frame, good_matches, keypoints_scene,
-                                 descriptors_model, keypoints_model);
-        }
-
-        frame_matching = rmatcher.getImageMatching();
-        if (!frame_matching.empty()) {
-            imshow("Keypoints matching", frame_matching);
-        }
-
+        std::vector<cv::DMatch> good_matches;  // obtain 3D points of model
+        // DMatch: Class for matching keypoint descriptors
+        std::vector<cv::KeyPoint> keypoints_scene;  // 2D points of the scene
+        match_model_and_frame(paras, rmatcher, descriptors_model,
+                              keypoints_model, frame, keypoints_scene,
+                              good_matches);
         // -- Step 2: Find out the 2D/3D correspondences
         std::vector<cv::Point3f>
-            list_points3d_model_match;  // container for the model 3D
-                                        // coordinates found in the scene
+            points3d_model;  // container for the model 3D
+                             // coordinates found in the scene
         std::vector<cv::Point2f>
-            list_points2d_scene_match;  // container for the model 2D
-                                        // coordinates found in the scene
-
-        for (unsigned int match_index = 0; match_index < good_matches.size();
-             ++match_index) {
-            cv::Point3f point3d_model =
-                list_points3d_model[good_matches[match_index]
-                                        .trainIdx];  // 3D point from model
-            cv::Point2f point2d_scene =
-                keypoints_scene[good_matches[match_index].queryIdx]
-                    .pt;  // 2D point from the scene
-            list_points3d_model_match.push_back(point3d_model);  // add 3D point
-            list_points2d_scene_match.push_back(point2d_scene);  // add 2D point
-        }
+            points2d_scene;  // container for the model 2D
+                             // coordinates found in the scene
+        matchedPoints(good_matches, model, keypoints_scene, points2d_scene,
+                      points3d_model);
 
         // Draw outliers
-        draw2DPoints(frame_vis, list_points2d_scene_match, red);
+        draw2DPoints(frame_vis, points2d_scene, red);
 
         cv::Mat inliers_idx;
         std::vector<cv::Point2f> list_points2d_inliers;
@@ -335,16 +193,15 @@ int main(int argc, char *argv[]) {
         {
             // -- Step 3: Estimate the pose using RANSAC approach
             pnp_detection.estimatePoseRANSAC(
-                list_points3d_model_match, list_points2d_scene_match,
-                paras.pnpMethod, inliers_idx, paras.iterationsCount,
-                paras.reprojectionError, paras.confidence);
+                points3d_model, points2d_scene, paras.pnpMethod, inliers_idx,
+                paras.iterationsCount, paras.reprojectionError,
+                paras.confidence);
 
             // -- Step 4: Catch the inliers keypoints to draw
             for (int inliers_index = 0; inliers_index < inliers_idx.rows;
                  ++inliers_index) {
                 int n = inliers_idx.at<int>(inliers_index);  // i-inlier
-                cv::Point2f point2d =
-                    list_points2d_scene_match[n];  // i-inlier point 2D
+                cv::Point2f point2d = points2d_scene[n];  // i-inlier point 2D
                 list_points2d_inliers.push_back(
                     point2d);  // add i-inlier to list
             }
@@ -437,7 +294,7 @@ int main(int argc, char *argv[]) {
         drawText(frame_vis, text, green);
         drawText2(frame_vis, text2, red);
 
-        imshow("REAL TIME DEMO", frame_vis);
+        cv::imshow("REAL TIME DEMO", frame_vis);
 
         if (!paras.saveDirectory.empty()) {
             const int widthSave =
