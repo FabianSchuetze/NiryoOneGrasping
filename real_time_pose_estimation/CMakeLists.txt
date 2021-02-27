@@ -6,6 +6,10 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 
 find_package(catkin REQUIRED
   COMPONENTS
+    moveit_core
+    tf2_ros
+    tf2_eigen
+    tf2_geometry_msgs
 )
 
 find_package(OpenCV REQUIRED)
@@ -17,6 +21,10 @@ catkin_package(
   LIBRARIES ${PROJECT_NAME}
   INCLUDE_DIRS include
   CATKIN_DEPENDS
+    moveit_core
+    tf2_ros
+    tf2_eigen
+    tf2_geometry_msgs
   DEPENDS
     EIGEN3
     OpenCV
@@ -36,6 +44,7 @@ set(${PROJECT_NAME}_SRC
     src/CsvReader.cpp
     src/detection_parse_parameters.cpp
     src/kalman.cpp
+    src/ros_interaction.cpp
 )
 include_directories(SYSTEM ${catkin_INCLUDE_DIRS} ${EIGEN3_INCLUDE_DIRS} ${OpenCV_INCLUDE_DIRS} )
 include_directories(include)

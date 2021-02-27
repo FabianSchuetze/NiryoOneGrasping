@@ -15,7 +15,9 @@
 #include "PnPProblem.h"
 #include "RobustMatcher.h"
 #include "Utils.h"
+#include "ros_interaction.hpp"
 #include "detection_parse_parameters.hpp"
+#include <opencv2/core/eigen.hpp>
 
 namespace fs = std::filesystem;
 void help();
@@ -95,13 +97,30 @@ void drawInliers(const cv::Mat &inliers_idx, const cv::Mat &frame,
     draw2DPoints(frame, inliers, blue);
 }
 
-void Pose(cv::Mat &pose, const PnPProblem &pnp_detection) {
+void Pose(cv::Mat &pose, const PnPProblem &pnp_detection, Eigen::Affine3d& T) {
     cv::Mat translation = pnp_detection.get_t_matrix();
     cv::Mat rotation = pnp_detection.get_R_matrix();
+    Eigen::Matrix3d tmp_rotation;
+    Eigen::MatrixXd tmp_translation;
+    cv::cv2eigen(rotation, tmp_rotation);
+    cv::cv2eigen(translation, tmp_translation);
+    T.linear() = tmp_rotation;
+    T.translation() = tmp_translation;
+    std::cout << "The Opencv Rotation" << rotation << std::endl;
+    std::cout << "The Opencv translation" << translation << std::endl;
+    std::cout << "The Eigen Matrix" << T.matrix() << std::endl;
+    //test.rotation().
     convertToPose(pose, translation, rotation);
 }
 
 int main(int argc, char *argv[]) {
+    ros::init(argc, argv, "broadcast_location");
+    ros::NodeHandle node_handle;
+    const std::string from("world"), to("camera_link"), object("object");
+    tf2_ros::Buffer tfBuffer;
+    tf2_ros::TransformListener listener(tfBuffer);
+    Eigen::Affine3d T_base_camera, T_camera_object;
+    ros::Rate rate(50);
     const auto [camera, paras] = parse_input(argc, argv);
     //// Some basic colors
     const cv::Scalar red(0, 0, 255);
@@ -196,7 +215,7 @@ int main(int argc, char *argv[]) {
         // GOOD MEASUREMENT
         bool good_measurement = false;
         if (inliers_idx.rows >= paras.minInliersKalman) {
-            Pose(pose, pnp_detection);
+            Pose(pose, pnp_detection, T_camera_object);
             good_measurement = true;
             // Get the measured translation
         }
@@ -296,6 +315,12 @@ int main(int argc, char *argv[]) {
             cv::imwrite(saveFilename, frameSave);
             frameCount++;
         }
+        if (obtain_transform(from, to, tfBuffer, T_base_camera)) {
+            continue;
+        }
+        T_base_camera = T_base_camera * T_camera_object;
+        broadcast(T_base_camera, from, object);
+        rate.sleep();
     }
     // Close and Destroy Window
     cv::destroyWindow("REAL TIME DEMO");
