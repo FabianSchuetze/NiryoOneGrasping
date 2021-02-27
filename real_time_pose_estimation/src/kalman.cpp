@@ -1,4 +1,5 @@
 #include "kalman.hpp"
+
 #include "Utils.h"
 void initKalmanFilter(cv::KalmanFilter &KF, int nStates, int nMeasurements,
                       int nInputs, double dt) {
@@ -97,9 +98,8 @@ void updateKalmanFilter(cv::KalmanFilter &KF, cv::Mat &measurement,
 }
 
 /**********************************************************************************************************/
-void fillMeasurements(cv::Mat &measurements,
-                      const cv::Mat &translation_measured,
-                      const cv::Mat &rotation_measured) {
+void convertToPose(cv::Mat &measurements, const cv::Mat &translation_measured,
+                   const cv::Mat &rotation_measured) {
     // Convert rotation matrix to euler angles
     cv::Mat measured_eulers(3, 1, CV_64F);
     measured_eulers = rot2euler(rotation_measured);

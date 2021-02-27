@@ -1,13 +1,13 @@
 // C++
 #include <iostream>
 // OpenCV
+#include <kalman.hpp>
 #include <opencv2/calib3d.hpp>
 #include <opencv2/core.hpp>
 #include <opencv2/core/utils/filesystem.hpp>
 #include <opencv2/highgui.hpp>
-#include <opencv2/video/tracking.hpp>
-#include <kalman.hpp>
 #include <opencv2/imgproc.hpp>
+#include <opencv2/video/tracking.hpp>
 // PnP Tutorial
 #include "Mesh.h"
 #include "Model.h"
@@ -95,6 +95,12 @@ void drawInliers(const cv::Mat &inliers_idx, const cv::Mat &frame,
     draw2DPoints(frame, inliers, blue);
 }
 
+void Pose(cv::Mat &pose, const PnPProblem &pnp_detection) {
+    cv::Mat translation = pnp_detection.get_t_matrix();
+    cv::Mat rotation = pnp_detection.get_R_matrix();
+    convertToPose(pose, translation, rotation);
+}
+
 int main(int argc, char *argv[]) {
     const auto [camera, paras] = parse_input(argc, argv);
     //// Some basic colors
@@ -134,8 +140,8 @@ int main(int argc, char *argv[]) {
     double dt = 0.125;      // time between measurements (1/FPS)
 
     initKalmanFilter(KF, nStates, nMeasurements, nInputs, dt);  // init function
-    cv::Mat measurements(nMeasurements, 1, CV_64FC1);
-    measurements.setTo(cv::Scalar(0));
+    cv::Mat pose(6, 1, CV_64FC1);
+    pose.setTo(cv::Scalar(0));
 
     // Get the MODEL INFO
     const cv::Mat descriptors_model = model.get_descriptors();
@@ -176,7 +182,7 @@ int main(int argc, char *argv[]) {
         matchedPoints(good_matches, model, keypoints_scene, points2d, points3d);
         draw2DPoints(frame_vis, points2d, red);
         if (good_matches.size() < 4) {
-            continue; // minimally have 4 set of points
+            continue;  // minimally have 4 set of points
         }
         cv::Mat inliers_idx;
         // -- Step 3: Estimate the pose using RANSAC approach
@@ -190,28 +196,20 @@ int main(int argc, char *argv[]) {
         // GOOD MEASUREMENT
         bool good_measurement = false;
         if (inliers_idx.rows >= paras.minInliersKalman) {
-            // Get the measured translation
-            cv::Mat translation_measured = pnp_detection.get_t_matrix();
-
-            // Get the measured rotation
-            cv::Mat rotation_measured = pnp_detection.get_R_matrix();
-
-            // fill the measurements vector
-            fillMeasurements(measurements, translation_measured,
-                             rotation_measured);
+            Pose(pose, pnp_detection);
             good_measurement = true;
+            // Get the measured translation
         }
+        std::cout << "Current Pose: " << pose << std::endl;
 
         // update the Kalman filter with good measurements, otherwise with
         // previous valid measurements
-        cv::Mat translation_estimated(3, 1, CV_64FC1);
-        cv::Mat rotation_estimated(3, 3, CV_64FC1);
-        updateKalmanFilter(KF, measurements, translation_estimated,
-                           rotation_estimated);
+        cv::Mat translation(3, 1, CV_64FC1);
+        cv::Mat rotation(3, 3, CV_64FC1);
+        updateKalmanFilter(KF, pose, translation, rotation);
 
         // -- Step 6: Set estimated projection matrix
-        pnp_detection_est.set_P_matrix(rotation_estimated,
-                                       translation_estimated);
+        pnp_detection_est.set_P_matrix(rotation, translation);
 
         // -- Step X: Draw pose and coordinate frame
         float l = 5;

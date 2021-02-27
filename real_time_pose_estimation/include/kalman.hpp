@@ -7,6 +7,6 @@ void predictKalmanFilter(cv::KalmanFilter &KF, cv::Mat &translation_predicted,
 void updateKalmanFilter(cv::KalmanFilter &KF, cv::Mat &measurements,
                         cv::Mat &translation_estimated,
                         cv::Mat &rotation_estimated);
-void fillMeasurements(cv::Mat &measurements,
+void convertToPose(cv::Mat &measurements,
                       const cv::Mat &translation_measured,
                       const cv::Mat &rotation_measured);
