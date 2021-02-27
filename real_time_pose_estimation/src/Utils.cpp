@@ -77,7 +77,8 @@ void drawCounter(cv::Mat image, int n, int n_max, cv::Scalar color) {
 
 // Draw the points and the coordinates
 void drawPoints(cv::Mat image, std::vector<cv::Point2f> &list_points_2d,
-                std::vector<cv::Point3f> &list_points_3d, cv::Scalar color) {
+                const std::vector<cv::Point3f> &list_points_3d,
+                cv::Scalar color) {
     for (unsigned int i = 0; i < list_points_2d.size(); ++i) {
         cv::Point2f point_2d = list_points_2d[i];
         cv::Point3f point_3d = list_points_3d[i];

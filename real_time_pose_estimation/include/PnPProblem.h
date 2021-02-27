@@ -23,7 +23,7 @@ class PnPProblem {
 
     bool backproject2DPoint(const Mesh *mesh, const cv::Point2f &point2d,
                             cv::Point3f &point3d);
-    bool intersect_MollerTrumbore(Ray &R, Triangle &T, double *out);
+    bool intersect_MollerTrumbore(Ray &R, const Triangle &T, double *out);
     std::vector<cv::Point2f> verify_points(Mesh *mesh);
     cv::Point2f backproject3DPoint(const cv::Point3f &point3d);
     bool estimatePose(const std::vector<cv::Point3f> &list_points3d,

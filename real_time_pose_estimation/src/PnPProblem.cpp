@@ -37,8 +37,8 @@ static cv::Point3f SUB(cv::Point3f v1, cv::Point3f v2) {
 /* End functions for Möller-Trumbore intersection algorithm */
 
 // Function to get the nearest 3D point to the Ray origin
-static cv::Point3f get_nearest_3D_point(std::vector<cv::Point3f> &points_list,
-                                        cv::Point3f origin) {
+static cv::Point3f get_nearest_3D_point(
+    const std::vector<cv::Point3f> &points_list, cv::Point3f origin) {
     cv::Point3f p1 = points_list[0];
     cv::Point3f p2 = points_list[1];
 
@@ -170,8 +170,8 @@ cv::Point2f PnPProblem::backproject3DPoint(const cv::Point3f &point3d) {
     point3d_vec.at<double>(3) = 1;
 
     // 2D point vector [u v 1]'
-    cv::Mat point2d_vec = cv::Mat(4, 1, CV_64FC1);
-    point2d_vec = A_matrix_ * P_matrix_ * point3d_vec;
+    // cv::Mat point2d_vec = cv::Mat(4, 1, CV_64FC1);
+    cv::Mat_<double> point2d_vec = A_matrix_ * P_matrix_ * point3d_vec;
 
     // Normalization of [u v]'
     cv::Point2f point2d;
@@ -242,7 +242,7 @@ bool PnPProblem::backproject2DPoint(const Mesh *mesh,
 }
 
 // Möller-Trumbore intersection algorithm
-bool PnPProblem::intersect_MollerTrumbore(Ray &Ray, Triangle &Triangle,
+bool PnPProblem::intersect_MollerTrumbore(Ray &Ray, const Triangle &Triangle,
                                           double *out) {
     const double EPSILON = 0.000001;
 

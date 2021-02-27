@@ -5,8 +5,9 @@
 #include <opencv2/core.hpp>
 #include <opencv2/core/utils/filesystem.hpp>
 #include <opencv2/highgui.hpp>
-#include <opencv2/imgproc.hpp>
 #include <opencv2/video/tracking.hpp>
+#include <kalman.hpp>
+#include <opencv2/imgproc.hpp>
 // PnP Tutorial
 #include "Mesh.h"
 #include "Model.h"
@@ -16,21 +17,8 @@
 #include "Utils.h"
 #include "detection_parse_parameters.hpp"
 
-/**  GLOBAL VARIABLES  **/
-
 namespace fs = std::filesystem;
-/**  Functions headers  **/
 void help();
-void initKalmanFilter(cv::KalmanFilter &KF, int nStates, int nMeasurements,
-                      int nInputs, double dt);
-void predictKalmanFilter(cv::KalmanFilter &KF, cv::Mat &translation_predicted,
-                         cv::Mat &rotation_predicted);
-void updateKalmanFilter(cv::KalmanFilter &KF, cv::Mat &measurements,
-                        cv::Mat &translation_estimated,
-                        cv::Mat &rotation_estimated);
-void fillMeasurements(cv::Mat &measurements,
-                      const cv::Mat &translation_measured,
-                      const cv::Mat &rotation_measured);
 
 /**  Main program  **/
 const std::pair<CameraParameters, DetectionParameters> parse_input(
@@ -87,19 +75,32 @@ void matchedPoints(const std::vector<cv::DMatch> &matches, const Model &model,
     const static std::vector<cv::Point3f> points3d = model.get_points3d();
     for (const cv::DMatch &match : matches) {
         cv::Point3f point3d_model = points3d[match.trainIdx];  // 3D point
-        cv::Point2f point2d_scene = keypoints_scene[match.queryIdx].pt; 
+        cv::Point2f point2d_scene = keypoints_scene[match.queryIdx].pt;
         matched_points3d.push_back(point3d_model);  // add 3D point
         matched_points2d.push_back(point2d_scene);  // add 2D point
     }
 }
 
+void drawInliers(const cv::Mat &inliers_idx, const cv::Mat &frame,
+                 const std::vector<cv::Point2f> &points2d) {
+    const static cv::Scalar blue(255, 0, 0);
+    std::vector<cv::Point2f> inliers;
+    // -- Step 4: Catch the inliers keypoints to draw
+    for (int inliers_index = 0; inliers_index < inliers_idx.rows;
+         ++inliers_index) {
+        int n = inliers_idx.at<int>(inliers_index);  // i-inlier
+        cv::Point2f point2d = points2d[n];           // i-inlier point 2D
+        inliers.push_back(point2d);                  // add i-inlier to list
+    }
+    draw2DPoints(frame, inliers, blue);
+}
+
 int main(int argc, char *argv[]) {
     const auto [camera, paras] = parse_input(argc, argv);
     //// Some basic colors
-    cv::Scalar red(0, 0, 255);
-    cv::Scalar green(0, 255, 0);
-    cv::Scalar blue(255, 0, 0);
-    cv::Scalar yellow(0, 255, 255);
+    const cv::Scalar red(0, 0, 255);
+    const cv::Scalar green(0, 255, 0);
+    const cv::Scalar yellow(0, 255, 255);
 
     cv::Mat frameSave;
     int frameCount = 0;
@@ -170,72 +171,47 @@ int main(int argc, char *argv[]) {
                               keypoints_model, frame, keypoints_scene,
                               good_matches);
         // -- Step 2: Find out the 2D/3D correspondences
-        std::vector<cv::Point3f>
-            points3d_model;  // container for the model 3D
-                             // coordinates found in the scene
-        std::vector<cv::Point2f>
-            points2d_scene;  // container for the model 2D
-                             // coordinates found in the scene
-        matchedPoints(good_matches, model, keypoints_scene, points2d_scene,
-                      points3d_model);
-
-        // Draw outliers
-        draw2DPoints(frame_vis, points2d_scene, red);
-
-        cv::Mat inliers_idx;
-        std::vector<cv::Point2f> list_points2d_inliers;
-
-        // Instantiate estimated translation and rotation
-        bool good_measurement = false;
-
-        if (good_matches.size() >= 4)  // OpenCV requires solvePnPRANSAC to
-                                       // minimally have 4 set of points
-        {
-            // -- Step 3: Estimate the pose using RANSAC approach
-            pnp_detection.estimatePoseRANSAC(
-                points3d_model, points2d_scene, paras.pnpMethod, inliers_idx,
-                paras.iterationsCount, paras.reprojectionError,
-                paras.confidence);
-
-            // -- Step 4: Catch the inliers keypoints to draw
-            for (int inliers_index = 0; inliers_index < inliers_idx.rows;
-                 ++inliers_index) {
-                int n = inliers_idx.at<int>(inliers_index);  // i-inlier
-                cv::Point2f point2d = points2d_scene[n];  // i-inlier point 2D
-                list_points2d_inliers.push_back(
-                    point2d);  // add i-inlier to list
-            }
-
-            // Draw inliers points 2D
-            draw2DPoints(frame_vis, list_points2d_inliers, blue);
-
-            // -- Step 5: Kalman Filter
-
-            // GOOD MEASUREMENT
-            if (inliers_idx.rows >= paras.minInliersKalman) {
-                // Get the measured translation
-                cv::Mat translation_measured = pnp_detection.get_t_matrix();
-
-                // Get the measured rotation
-                cv::Mat rotation_measured = pnp_detection.get_R_matrix();
-
-                // fill the measurements vector
-                fillMeasurements(measurements, translation_measured,
-                                 rotation_measured);
-                good_measurement = true;
-            }
-
-            // update the Kalman filter with good measurements, otherwise with
-            // previous valid measurements
-            cv::Mat translation_estimated(3, 1, CV_64FC1);
-            cv::Mat rotation_estimated(3, 3, CV_64FC1);
-            updateKalmanFilter(KF, measurements, translation_estimated,
-                               rotation_estimated);
-
-            // -- Step 6: Set estimated projection matrix
-            pnp_detection_est.set_P_matrix(rotation_estimated,
-                                           translation_estimated);
+        std::vector<cv::Point3f> points3d;  // coordinates found in the scene
+        std::vector<cv::Point2f> points2d;  // coordinates found in the scene
+        matchedPoints(good_matches, model, keypoints_scene, points2d, points3d);
+        draw2DPoints(frame_vis, points2d, red);
+        if (good_matches.size() < 4) {
+            continue; // minimally have 4 set of points
         }
+        cv::Mat inliers_idx;
+        // -- Step 3: Estimate the pose using RANSAC approach
+        pnp_detection.estimatePoseRANSAC(
+            points3d, points2d, paras.pnpMethod, inliers_idx,
+            paras.iterationsCount, paras.reprojectionError, paras.confidence);
+        drawInliers(inliers_idx, frame, points2d);
+
+        // -- Step 5: Kalman Filter
+
+        // GOOD MEASUREMENT
+        bool good_measurement = false;
+        if (inliers_idx.rows >= paras.minInliersKalman) {
+            // Get the measured translation
+            cv::Mat translation_measured = pnp_detection.get_t_matrix();
+
+            // Get the measured rotation
+            cv::Mat rotation_measured = pnp_detection.get_R_matrix();
+
+            // fill the measurements vector
+            fillMeasurements(measurements, translation_measured,
+                             rotation_measured);
+            good_measurement = true;
+        }
+
+        // update the Kalman filter with good measurements, otherwise with
+        // previous valid measurements
+        cv::Mat translation_estimated(3, 1, CV_64FC1);
+        cv::Mat rotation_estimated(3, 3, CV_64FC1);
+        updateKalmanFilter(KF, measurements, translation_estimated,
+                           rotation_estimated);
+
+        // -- Step 6: Set estimated projection matrix
+        pnp_detection_est.set_P_matrix(rotation_estimated,
+                                       translation_estimated);
 
         // -- Step X: Draw pose and coordinate frame
         float l = 5;
@@ -323,10 +299,8 @@ int main(int argc, char *argv[]) {
             frameCount++;
         }
     }
-
     // Close and Destroy Window
     cv::destroyWindow("REAL TIME DEMO");
-
     std::cout << "GOODBYE ..." << std::endl;
 }
 
@@ -350,115 +324,3 @@ void help() {
 }
 
 /**********************************************************************************************************/
-void initKalmanFilter(cv::KalmanFilter &KF, int nStates, int nMeasurements,
-                      int nInputs, double dt) {
-    KF.init(nStates, nMeasurements, nInputs, CV_64F);  // init Kalman Filter
-
-    setIdentity(KF.processNoiseCov,
-                cv::Scalar::all(1e-5));  // set process noise
-    setIdentity(KF.measurementNoiseCov,
-                cv::Scalar::all(1e-2));                // set measurement noise
-    setIdentity(KF.errorCovPost, cv::Scalar::all(1));  // error covariance
-
-    /** DYNAMIC MODEL **/
-
-    //  [1 0 0 dt  0  0 dt2   0   0 0 0 0  0  0  0   0   0   0]
-    //  [0 1 0  0 dt  0   0 dt2   0 0 0 0  0  0  0   0   0   0]
-    //  [0 0 1  0  0 dt   0   0 dt2 0 0 0  0  0  0   0   0   0]
-    //  [0 0 0  1  0  0  dt   0   0 0 0 0  0  0  0   0   0   0]
-    //  [0 0 0  0  1  0   0  dt   0 0 0 0  0  0  0   0   0   0]
-    //  [0 0 0  0  0  1   0   0  dt 0 0 0  0  0  0   0   0   0]
-    //  [0 0 0  0  0  0   1   0   0 0 0 0  0  0  0   0   0   0]
-    //  [0 0 0  0  0  0   0   1   0 0 0 0  0  0  0   0   0   0]
-    //  [0 0 0  0  0  0   0   0   1 0 0 0  0  0  0   0   0   0]
-    //  [0 0 0  0  0  0   0   0   0 1 0 0 dt  0  0 dt2   0   0]
-    //  [0 0 0  0  0  0   0   0   0 0 1 0  0 dt  0   0 dt2   0]
-    //  [0 0 0  0  0  0   0   0   0 0 0 1  0  0 dt   0   0 dt2]
-    //  [0 0 0  0  0  0   0   0   0 0 0 0  1  0  0  dt   0   0]
-    //  [0 0 0  0  0  0   0   0   0 0 0 0  0  1  0   0  dt   0]
-    //  [0 0 0  0  0  0   0   0   0 0 0 0  0  0  1   0   0  dt]
-    //  [0 0 0  0  0  0   0   0   0 0 0 0  0  0  0   1   0   0]
-    //  [0 0 0  0  0  0   0   0   0 0 0 0  0  0  0   0   1   0]
-    //  [0 0 0  0  0  0   0   0   0 0 0 0  0  0  0   0   0   1]
-
-    // position
-    KF.transitionMatrix.at<double>(0, 3) = dt;
-    KF.transitionMatrix.at<double>(1, 4) = dt;
-    KF.transitionMatrix.at<double>(2, 5) = dt;
-    KF.transitionMatrix.at<double>(3, 6) = dt;
-    KF.transitionMatrix.at<double>(4, 7) = dt;
-    KF.transitionMatrix.at<double>(5, 8) = dt;
-    KF.transitionMatrix.at<double>(0, 6) = 0.5 * pow(dt, 2);
-    KF.transitionMatrix.at<double>(1, 7) = 0.5 * pow(dt, 2);
-    KF.transitionMatrix.at<double>(2, 8) = 0.5 * pow(dt, 2);
-
-    // orientation
-    KF.transitionMatrix.at<double>(9, 12) = dt;
-    KF.transitionMatrix.at<double>(10, 13) = dt;
-    KF.transitionMatrix.at<double>(11, 14) = dt;
-    KF.transitionMatrix.at<double>(12, 15) = dt;
-    KF.transitionMatrix.at<double>(13, 16) = dt;
-    KF.transitionMatrix.at<double>(14, 17) = dt;
-    KF.transitionMatrix.at<double>(9, 15) = 0.5 * pow(dt, 2);
-    KF.transitionMatrix.at<double>(10, 16) = 0.5 * pow(dt, 2);
-    KF.transitionMatrix.at<double>(11, 17) = 0.5 * pow(dt, 2);
-
-    /** MEASUREMENT MODEL **/
-
-    //  [1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0]
-    //  [0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0]
-    //  [0 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0]
-    //  [0 0 0 0 0 0 0 0 0 1 0 0 0 0 0 0 0 0]
-    //  [0 0 0 0 0 0 0 0 0 0 1 0 0 0 0 0 0 0]
-    //  [0 0 0 0 0 0 0 0 0 0 0 1 0 0 0 0 0 0]
-
-    KF.measurementMatrix.at<double>(0, 0) = 1;   // x
-    KF.measurementMatrix.at<double>(1, 1) = 1;   // y
-    KF.measurementMatrix.at<double>(2, 2) = 1;   // z
-    KF.measurementMatrix.at<double>(3, 9) = 1;   // roll
-    KF.measurementMatrix.at<double>(4, 10) = 1;  // pitch
-    KF.measurementMatrix.at<double>(5, 11) = 1;  // yaw
-}
-
-/**********************************************************************************************************/
-void updateKalmanFilter(cv::KalmanFilter &KF, cv::Mat &measurement,
-                        cv::Mat &translation_estimated,
-                        cv::Mat &rotation_estimated) {
-    // First predict, to update the internal statePre variable
-    // Mat prediction = KF.predict();
-
-    // The "correct" phase that is going to use the predicted value and our
-    // measurement
-    cv::Mat estimated = KF.correct(measurement);
-
-    // Estimated translation
-    translation_estimated.at<double>(0) = estimated.at<double>(0);
-    translation_estimated.at<double>(1) = estimated.at<double>(1);
-    translation_estimated.at<double>(2) = estimated.at<double>(2);
-
-    // Estimated euler angles
-    cv::Mat eulers_estimated(3, 1, CV_64F);
-    eulers_estimated.at<double>(0) = estimated.at<double>(9);
-    eulers_estimated.at<double>(1) = estimated.at<double>(10);
-    eulers_estimated.at<double>(2) = estimated.at<double>(11);
-
-    // Convert estimated quaternion to rotation matrix
-    rotation_estimated = euler2rot(eulers_estimated);
-}
-
-/**********************************************************************************************************/
-void fillMeasurements(cv::Mat &measurements,
-                      const cv::Mat &translation_measured,
-                      const cv::Mat &rotation_measured) {
-    // Convert rotation matrix to euler angles
-    cv::Mat measured_eulers(3, 1, CV_64F);
-    measured_eulers = rot2euler(rotation_measured);
-
-    // Set measurement to predict
-    measurements.at<double>(0) = translation_measured.at<double>(0);  // x
-    measurements.at<double>(1) = translation_measured.at<double>(1);  // y
-    measurements.at<double>(2) = translation_measured.at<double>(2);  // z
-    measurements.at<double>(3) = measured_eulers.at<double>(0);       // roll
-    measurements.at<double>(4) = measured_eulers.at<double>(1);       // pitch
-    measurements.at<double>(5) = measured_eulers.at<double>(2);       // yaw
-}
