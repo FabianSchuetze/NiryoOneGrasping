@@ -1,8 +1,12 @@
 #include "RSStream.hpp"
 #include <librealsense2/rs.hpp>  // Include RealSense Cross Platform API
+#include <opencv2/imgproc.hpp>
 RSStream::RSStream(const DetectionParameters& paras):
     align_to(RS2_STREAM_COLOR) {
-    rs2::pipeline_profile profile = pipe.start();
+    pipe.start();
+    for (int i = 0; i < 30; ++i) {
+        pipe.wait_for_frames();
+    }
 }
     
 void RSStream::extract_frames(const rs2::frameset& stream, cv::Mat& img) {
@@ -11,6 +15,7 @@ void RSStream::extract_frames(const rs2::frameset& stream, cv::Mat& img) {
     static const int h = color.as<rs2::video_frame>().get_height();
     img = cv::Mat(cv::Size(w, h), CV_8UC3, (void*)color.get_data(),
                         cv::Mat::AUTO_STEP);
+    cv::cvtColor(img, img, cv::COLOR_RGB2BGR);
 }
 bool RSStream::read(cv::Mat& img) {
         rs2::frameset data = pipe.wait_for_frames();  // Wait for next frame

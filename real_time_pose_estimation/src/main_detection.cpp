@@ -42,17 +42,6 @@ const std::pair<CameraParameters, DetectionParameters> parse_input(
     return {camera, paras};
 }
 
-//cv::VideoCapture openVideo(const DetectionParameters &paras) {
-    //cv::VideoCapture cap;             // instantiate VideoCapture
-    //cap.open(paras.video_read_path);  // open a recorded video
-    //if (!cap.isOpened())              // check if we succeeded
-    //{
-        //std::cout << "Could not open the camera device" << std::endl;
-        //throw std::runtime_error("");
-    //}
-    //return cap;
-//}
-
 void match_model_and_frame(const DetectionParameters &paras,
                            RobustMatcher &rmatcher,
                            const cv::Mat &descriptors_model,
@@ -110,10 +99,6 @@ void Pose(cv::Mat &pose, const PnPProblem &pnp_detection, Eigen::Affine3d& T) {
     cv::cv2eigen(translation, tmp_translation);
     T.linear() = tmp_rotation;
     T.translation() = tmp_translation;
-    std::cout << "The Opencv Rotation" << rotation << std::endl;
-    std::cout << "The Opencv translation" << translation << std::endl;
-    std::cout << "The Eigen Matrix" << T.matrix() << std::endl;
-    //test.rotation().
     convertToPose(pose, translation, rotation);
 }
 
@@ -180,15 +165,11 @@ int main(int argc, char *argv[]) {
             cv::utils::fs::createDirectories(paras.saveDirectory);
         }
     }
-    std::shared_ptr<Stream> stream;
-    //Stream* stream;
+    std::unique_ptr<Stream> stream;
     if (paras.stream == "Video") {
-        //VideoStream* p = new VideoStream(paras);
-        stream = std::make_shared<VideoStream>(paras);
-        //stream = new VideoStream(paras);
+        stream = std::make_unique<VideoStream>(paras);
     } else if (paras.stream == "RS") {
-        stream = std::make_shared<RSStream>(paras);
-        //stream = std::make_shared<RSStream>RSStream(paras);
+        stream = std::make_unique<RSStream>(paras);
     }
     //cv::VideoCapture cap = openVideo(paras);
 
@@ -196,7 +177,7 @@ int main(int argc, char *argv[]) {
     cv::TickMeter tm;
 
     cv::Mat frame, frame_vis, frame_matching;
-    while (stream->read(frame) && (char)cv::waitKey(30) != 27)  // run til ESC
+    while (stream->read(frame) && node_handle.ok() && (char)cv::waitKey(30) != 27)  // run til ESC
     {
         tm.reset();
         tm.start();
@@ -233,8 +214,6 @@ int main(int argc, char *argv[]) {
             good_measurement = true;
             // Get the measured translation
         }
-        std::cout << "Current Pose: " << pose << std::endl;
-
         // update the Kalman filter with good measurements, otherwise with
         // previous valid measurements
         cv::Mat translation(3, 1, CV_64FC1);
@@ -329,11 +308,11 @@ int main(int argc, char *argv[]) {
             cv::imwrite(saveFilename, frameSave);
             frameCount++;
         }
-        if (obtain_transform(from, to, tfBuffer, T_base_camera)) {
-            continue;
-        }
+        //if (obtain_transform(from, to, tfBuffer, T_base_camera)) {
+            //continue;
+        //}
         T_base_camera = T_base_camera * T_camera_object;
-        broadcast(T_base_camera, from, object);
+        //broadcast(T_base_camera, from, object);
         rate.sleep();
     }
     // Close and Destroy Window

@@ -4,6 +4,7 @@
 class Stream {
    public:
     Stream() = default;
+    virtual ~Stream() = default;
     virtual bool read(cv::Mat&) = 0;
 };
 #endif
