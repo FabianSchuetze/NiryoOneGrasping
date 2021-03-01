@@ -48,6 +48,7 @@ const DetectionParameters readDetectionParameters(
     getParameter(paras.useFLANN, "useFLANN", storage);
     getParameter(paras.saveDirectory, "saveDirectory", storage);
     getParameter(paras.displayFilteredPose, "displayFilteredPose", storage);
+    getParameter(paras.stream, "stream", storage);
     return paras;
 }
 

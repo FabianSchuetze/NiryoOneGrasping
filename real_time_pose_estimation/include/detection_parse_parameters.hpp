@@ -18,6 +18,7 @@ struct DetectionParameters{
     int useFLANN;
     std::string saveDirectory;
     int displayFilteredPose;
+    std::string stream;
 };
 
 struct CameraParameters{

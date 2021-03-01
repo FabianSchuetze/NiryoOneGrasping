@@ -14,3 +14,4 @@ featureName: "ORB"
 useFLANN: 0
 saveDirectory: ""
 displayFilteredPose: 0
+stream: "RS"

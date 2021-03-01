@@ -14,7 +14,7 @@ find_package(catkin REQUIRED
 
 find_package(OpenCV REQUIRED)
 find_package(Eigen3 REQUIRED)
-#find_package(realsense2 REQUIRED)
+find_package(realsense2 REQUIRED)
 
 
 catkin_package(
@@ -45,6 +45,8 @@ set(${PROJECT_NAME}_SRC
     src/detection_parse_parameters.cpp
     src/kalman.cpp
     src/ros_interaction.cpp
+    src/VideoStream.cpp
+    src/RSStream.cpp
 )
 include_directories(SYSTEM ${catkin_INCLUDE_DIRS} ${EIGEN3_INCLUDE_DIRS} ${OpenCV_INCLUDE_DIRS} )
 include_directories(include)
@@ -52,4 +54,4 @@ add_library(${PROJECT_NAME} SHARED ${${PROJECT_NAME}_SRC})
 
 add_executable(detection src/main_detection.cpp )
 target_link_libraries(detection ${OpenCV_LIBS} 
-    ${catkin_LIBRARIES} ${PROJECT_NAME})
+    ${catkin_LIBRARIES} ${PROJECT_NAME} realsense2)

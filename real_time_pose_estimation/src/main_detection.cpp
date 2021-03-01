@@ -1,5 +1,6 @@
 // C++
 #include <iostream>
+#include <memory>
 // OpenCV
 #include <kalman.hpp>
 #include <opencv2/calib3d.hpp>
@@ -15,6 +16,9 @@
 #include "PnPProblem.h"
 #include "RobustMatcher.h"
 #include "Utils.h"
+#include "Stream.hpp"
+#include "VideoStream.hpp"
+#include "RSStream.hpp"
 #include "ros_interaction.hpp"
 #include "detection_parse_parameters.hpp"
 #include <opencv2/core/eigen.hpp>
@@ -38,16 +42,16 @@ const std::pair<CameraParameters, DetectionParameters> parse_input(
     return {camera, paras};
 }
 
-cv::VideoCapture openVideo(const DetectionParameters &paras) {
-    cv::VideoCapture cap;             // instantiate VideoCapture
-    cap.open(paras.video_read_path);  // open a recorded video
-    if (!cap.isOpened())              // check if we succeeded
-    {
-        std::cout << "Could not open the camera device" << std::endl;
-        throw std::runtime_error("");
-    }
-    return cap;
-}
+//cv::VideoCapture openVideo(const DetectionParameters &paras) {
+    //cv::VideoCapture cap;             // instantiate VideoCapture
+    //cap.open(paras.video_read_path);  // open a recorded video
+    //if (!cap.isOpened())              // check if we succeeded
+    //{
+        //std::cout << "Could not open the camera device" << std::endl;
+        //throw std::runtime_error("");
+    //}
+    //return cap;
+//}
 
 void match_model_and_frame(const DetectionParameters &paras,
                            RobustMatcher &rmatcher,
@@ -176,13 +180,23 @@ int main(int argc, char *argv[]) {
             cv::utils::fs::createDirectories(paras.saveDirectory);
         }
     }
-    cv::VideoCapture cap = openVideo(paras);
+    std::shared_ptr<Stream> stream;
+    //Stream* stream;
+    if (paras.stream == "Video") {
+        //VideoStream* p = new VideoStream(paras);
+        stream = std::make_shared<VideoStream>(paras);
+        //stream = new VideoStream(paras);
+    } else if (paras.stream == "RS") {
+        stream = std::make_shared<RSStream>(paras);
+        //stream = std::make_shared<RSStream>RSStream(paras);
+    }
+    //cv::VideoCapture cap = openVideo(paras);
 
     // Measure elapsed time
     cv::TickMeter tm;
 
     cv::Mat frame, frame_vis, frame_matching;
-    while (cap.read(frame) && (char)cv::waitKey(30) != 27)  // run til ESC
+    while (stream->read(frame) && (char)cv::waitKey(30) != 27)  // run til ESC
     {
         tm.reset();
         tm.start();
