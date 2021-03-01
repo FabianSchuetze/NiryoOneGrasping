@@ -28,8 +28,17 @@ struct CameraParameters{
     double cy;
 };
 
+struct KalmanFilterParameters{
+    int nStates;       // the number of states
+    int nMeasurements;  // the number of measured states
+    int nInputs;        // the number of control actions
+    double dt;      // time between measurements (1/FPS)
+};
+
 const DetectionParameters readDetectionParameters(const std::filesystem::path&);
 const CameraParameters readCameraParameters(const std::filesystem::path&);
+const KalmanFilterParameters readKalmanFilterParameters(const std::filesystem::path&);
 void displayParameters(const DetectionParameters&);
 void displayCamera(const CameraParameters&);
+void displayKalman(const KalmanFilterParameters&);
 #endif

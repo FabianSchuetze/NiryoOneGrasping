@@ -17,6 +17,7 @@ bool obtain_transform(const std::string& from, const std::string& to,
 void broadcast(const Eigen::Affine3d& transform, const std::string& from,
         const std::string& to) {
     static tf2_ros::TransformBroadcaster br;
+    std::cout << "inside the broadcaster" << std::endl;
     geometry_msgs::TransformStamped trans = tf2::eigenToTransform(transform);
     trans.header.frame_id = from;
     trans.child_frame_id = to;

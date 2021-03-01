@@ -72,15 +72,14 @@ void initKalmanFilter(cv::KalmanFilter &KF, int nStates, int nMeasurements,
 }
 
 /**********************************************************************************************************/
-void updateKalmanFilter(cv::KalmanFilter &KF, cv::Mat &measurement,
+void updateKalmanFilter(cv::KalmanFilter &KF, const cv::Mat &measurement,
                         cv::Mat &translation_estimated,
                         cv::Mat &rotation_estimated) {
-    // First predict, to update the internal statePre variable
-    // Mat prediction = KF.predict();
+    KF.predict();  // changes some internal states, think we need it.
 
     // The "correct" phase that is going to use the predicted value and our
     // measurement
-    cv::Mat estimated = KF.correct(measurement);
+    const cv::Mat estimated = KF.correct(measurement);
 
     // Estimated translation
     translation_estimated.at<double>(0) = estimated.at<double>(0);
@@ -88,7 +87,7 @@ void updateKalmanFilter(cv::KalmanFilter &KF, cv::Mat &measurement,
     translation_estimated.at<double>(2) = estimated.at<double>(2);
 
     // Estimated euler angles
-    cv::Mat eulers_estimated(3, 1, CV_64F);
+    static cv::Mat eulers_estimated(3, 1, CV_64F);
     eulers_estimated.at<double>(0) = estimated.at<double>(9);
     eulers_estimated.at<double>(1) = estimated.at<double>(10);
     eulers_estimated.at<double>(2) = estimated.at<double>(11);

@@ -10,6 +10,8 @@
 #include <opencv2/imgproc.hpp>
 #include <opencv2/video/tracking.hpp>
 // PnP Tutorial
+
+
 #include "Mesh.h"
 #include "Model.h"
 #include "ModelRegistration.h"
@@ -26,20 +28,22 @@
 namespace fs = std::filesystem;
 void help();
 
-/**  Main program  **/
-const std::pair<CameraParameters, DetectionParameters> parse_input(
-    int argc, char **argv) {
+const std::tuple<CameraParameters, DetectionParameters, KalmanFilterParameters>
+parse_input(int argc, char **argv) {
     std::string root(
         "/home/fabian/Documents/work/transforms/src/real_time_pose_estimation/"
         "Data/");
     fs::path parameter_location(root + "parameters.yml");
     fs::path camera_location(root + "camera_parameters.yml");
+    fs::path kalman_location(root + "kalman_parameters.yml");
     const DetectionParameters paras =
         readDetectionParameters(parameter_location);
     displayParameters(paras);
     const CameraParameters camera = readCameraParameters(camera_location);
     displayCamera(camera);
-    return {camera, paras};
+    const auto kalman = readKalmanFilterParameters(kalman_location);
+    displayKalman(kalman);
+    return {camera, paras, kalman};
 }
 
 void match_model_and_frame(const DetectionParameters &paras,
@@ -90,7 +94,7 @@ void drawInliers(const cv::Mat &inliers_idx, const cv::Mat &frame,
     draw2DPoints(frame, inliers, blue);
 }
 
-void Pose(cv::Mat &pose, const PnPProblem &pnp_detection, Eigen::Affine3d& T) {
+void Pose(cv::Mat &pose, const PnPProblem &pnp_detection, Eigen::Affine3d &T) {
     cv::Mat translation = pnp_detection.get_t_matrix();
     cv::Mat rotation = pnp_detection.get_R_matrix();
     Eigen::Matrix3d tmp_rotation;
@@ -102,6 +106,44 @@ void Pose(cv::Mat &pose, const PnPProblem &pnp_detection, Eigen::Affine3d& T) {
     convertToPose(pose, translation, rotation);
 }
 
+void drawPose(bool good_measurement, PnPProblem& pnp_detection,
+              PnPProblem &pnp_detection_est, const cv::Mat &frame_vis,
+              const DetectionParameters &paras) {
+    static Mesh mesh;                       // instantiate Mesh object
+    mesh.load(paras.ply_read_path);  // load an object mesh
+    const float l = 5;
+    const static cv::Scalar yellow(0, 255, 255);
+    const static cv::Scalar green(0, 255, 0);
+    std::vector<cv::Point2f> pose_points2d;
+    if (!good_measurement || paras.displayFilteredPose) {
+        drawObjectMesh(frame_vis, &mesh, &pnp_detection_est,
+                       yellow);  // draw estimated pose
+
+        pose_points2d.push_back(pnp_detection_est.backproject3DPoint(
+            cv::Point3f(0, 0, 0)));  // axis center
+        pose_points2d.push_back(pnp_detection_est.backproject3DPoint(
+            cv::Point3f(l, 0, 0)));  // axis x
+        pose_points2d.push_back(pnp_detection_est.backproject3DPoint(
+            cv::Point3f(0, l, 0)));  // axis y
+        pose_points2d.push_back(pnp_detection_est.backproject3DPoint(
+            cv::Point3f(0, 0, l)));                      // axis z
+        draw3DCoordinateAxes(frame_vis, pose_points2d);  // draw axes
+    } else {
+        drawObjectMesh(frame_vis, &mesh, &pnp_detection,
+                       green);  // draw current pose
+
+        pose_points2d.push_back(pnp_detection.backproject3DPoint(
+            cv::Point3f(0, 0, 0)));  // axis center
+        pose_points2d.push_back(
+            pnp_detection.backproject3DPoint(cv::Point3f(l, 0, 0)));  // axis x
+        pose_points2d.push_back(
+            pnp_detection.backproject3DPoint(cv::Point3f(0, l, 0)));  // axis y
+        pose_points2d.push_back(
+            pnp_detection.backproject3DPoint(cv::Point3f(0, 0, l)));  // axis z
+        draw3DCoordinateAxes(frame_vis, pose_points2d);  // draw axes
+    }
+}
+
 int main(int argc, char *argv[]) {
     ros::init(argc, argv, "broadcast_location");
     ros::NodeHandle node_handle;
@@ -110,7 +152,7 @@ int main(int argc, char *argv[]) {
     tf2_ros::TransformListener listener(tfBuffer);
     Eigen::Affine3d T_base_camera, T_camera_object;
     ros::Rate rate(50);
-    const auto [camera, paras] = parse_input(argc, argv);
+    const auto [camera, paras, kalman] = parse_input(argc, argv);
     //// Some basic colors
     const cv::Scalar red(0, 0, 255);
     const cv::Scalar green(0, 255, 0);
@@ -124,8 +166,6 @@ int main(int argc, char *argv[]) {
     Model model;                      // instantiate Model object
     model.load(paras.yml_read_path);  // load a 3D textured object model
 
-    Mesh mesh;                       // instantiate Mesh object
-    mesh.load(paras.ply_read_path);  // load an object mesh
 
     RobustMatcher rmatcher;  // instantiate RobustMatcher
 
@@ -141,13 +181,9 @@ int main(int argc, char *argv[]) {
         rmatcher.setTrainingImage(trainingImg);
     }
 
-    cv::KalmanFilter KF;    // instantiate Kalman Filter
-    int nStates = 18;       // the number of states
-    int nMeasurements = 6;  // the number of measured states
-    int nInputs = 0;        // the number of control actions
-    double dt = 0.125;      // time between measurements (1/FPS)
-
-    initKalmanFilter(KF, nStates, nMeasurements, nInputs, dt);  // init function
+    cv::KalmanFilter KF;  // instantiate Kalman Filter
+    initKalmanFilter(KF, kalman.nStates, kalman.nMeasurements, kalman.nInputs,
+                     kalman.dt);  // init function
     cv::Mat pose(6, 1, CV_64FC1);
     pose.setTo(cv::Scalar(0));
 
@@ -171,13 +207,14 @@ int main(int argc, char *argv[]) {
     } else if (paras.stream == "RS") {
         stream = std::make_unique<RSStream>(paras);
     }
-    //cv::VideoCapture cap = openVideo(paras);
+    // cv::VideoCapture cap = openVideo(paras);
 
     // Measure elapsed time
     cv::TickMeter tm;
 
     cv::Mat frame, frame_vis, frame_matching;
-    while (stream->read(frame) && node_handle.ok() && (char)cv::waitKey(30) != 27)  // run til ESC
+    while (stream->read(frame) && node_handle.ok() &&
+           (char)cv::waitKey(30) != 27)  // run til ESC
     {
         tm.reset();
         tm.start();
@@ -210,7 +247,7 @@ int main(int argc, char *argv[]) {
         // GOOD MEASUREMENT
         bool good_measurement = false;
         if (inliers_idx.rows >= paras.minInliersKalman) {
-            Pose(pose, pnp_detection, T_camera_object);
+            // Pose(pose, pnp_detection, T_camera_object);
             good_measurement = true;
             // Get the measured translation
         }
@@ -222,40 +259,13 @@ int main(int argc, char *argv[]) {
 
         // -- Step 6: Set estimated projection matrix
         pnp_detection_est.set_P_matrix(rotation, translation);
+        Pose(pose, pnp_detection_est, T_camera_object);
 
         // -- Step X: Draw pose and coordinate frame
-        float l = 5;
-        std::vector<cv::Point2f> pose_points2d;
-        if (!good_measurement || paras.displayFilteredPose) {
-            drawObjectMesh(frame_vis, &mesh, &pnp_detection_est,
-                           yellow);  // draw estimated pose
-
-            pose_points2d.push_back(pnp_detection_est.backproject3DPoint(
-                cv::Point3f(0, 0, 0)));  // axis center
-            pose_points2d.push_back(pnp_detection_est.backproject3DPoint(
-                cv::Point3f(l, 0, 0)));  // axis x
-            pose_points2d.push_back(pnp_detection_est.backproject3DPoint(
-                cv::Point3f(0, l, 0)));  // axis y
-            pose_points2d.push_back(pnp_detection_est.backproject3DPoint(
-                cv::Point3f(0, 0, l)));                      // axis z
-            draw3DCoordinateAxes(frame_vis, pose_points2d);  // draw axes
-        } else {
-            drawObjectMesh(frame_vis, &mesh, &pnp_detection,
-                           green);  // draw current pose
-
-            pose_points2d.push_back(pnp_detection.backproject3DPoint(
-                cv::Point3f(0, 0, 0)));  // axis center
-            pose_points2d.push_back(pnp_detection.backproject3DPoint(
-                cv::Point3f(l, 0, 0)));  // axis x
-            pose_points2d.push_back(pnp_detection.backproject3DPoint(
-                cv::Point3f(0, l, 0)));  // axis y
-            pose_points2d.push_back(pnp_detection.backproject3DPoint(
-                cv::Point3f(0, 0, l)));                      // axis z
-            draw3DCoordinateAxes(frame_vis, pose_points2d);  // draw axes
-        }
 
         // FRAME RATE
         // see how much time has elapsed
+        drawPose(good_measurement, pnp_detection, pnp_detection_est, frame_vis, paras);
         tm.stop();
 
         // calculate current FPS
@@ -308,11 +318,9 @@ int main(int argc, char *argv[]) {
             cv::imwrite(saveFilename, frameSave);
             frameCount++;
         }
-        //if (obtain_transform(from, to, tfBuffer, T_base_camera)) {
-            //continue;
-        //}
+        obtain_transform(from, to, tfBuffer, T_base_camera);
         T_base_camera = T_base_camera * T_camera_object;
-        //broadcast(T_base_camera, from, object);
+        broadcast(T_base_camera, from, object);
         rate.sleep();
     }
     // Close and Destroy Window

@@ -12,7 +12,7 @@ void getParameter(T& para, const std::string& name, const cv::FileStorage fs) {
         throw std::runtime_error(" ");
     }
     para = static_cast<T>(n);
-    //para = static_cast<T>(fs[name]);
+    // para = static_cast<T>(fs[name]);
 }
 
 const cv::FileStorage openStorage(const fs::path& path) {
@@ -92,4 +92,22 @@ void displayCamera(const CameraParameters& paras) {
     std::cout << "fy: " << paras.fy << std::endl;
     std::cout << "cx: " << paras.cx << std::endl;
     std::cout << "cy: " << paras.cy << std::endl;
+}
+
+const KalmanFilterParameters readKalmanFilterParameters(const fs::path& kalman_location) {
+    const cv::FileStorage storage = openStorage(kalman_location);
+    KalmanFilterParameters kalman;
+    kalman.nStates = (int)storage["nStates"];
+    kalman.nMeasurements = (int)storage["nMeasurements"];
+    kalman.nInputs = (int)storage["nInputs"];
+    kalman.dt = (double)storage["dt"];
+    return kalman;
+}
+
+void displayKalman(const KalmanFilterParameters& paras) {
+    std::cout << "The KalmanFilter parameters are:\n----------------------\n"; 
+    std::cout << "fx: " << paras.nStates << std::endl;
+    std::cout << "fy: " << paras.nMeasurements << std::endl;
+    std::cout << "cx: " << paras.nInputs << std::endl;
+    std::cout << "cy: " << paras.dt << std::endl;
 }
