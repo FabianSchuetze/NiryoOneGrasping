@@ -1,4 +1,4 @@
-// C++
+// clang-format off
 #include <iostream>
 #include <memory>
 // OpenCV
@@ -24,7 +24,7 @@
 #include "ros_interaction.hpp"
 #include "detection_parse_parameters.hpp"
 #include <opencv2/core/eigen.hpp>
-
+// clang-format on
 namespace fs = std::filesystem;
 void help();
 
@@ -106,10 +106,10 @@ void Pose(cv::Mat &pose, const PnPProblem &pnp_detection, Eigen::Affine3d &T) {
     convertToPose(pose, translation, rotation);
 }
 
-void drawPose(bool good_measurement, PnPProblem& pnp_detection,
+void drawPose(bool good_measurement, PnPProblem &pnp_detection,
               PnPProblem &pnp_detection_est, const cv::Mat &frame_vis,
               const DetectionParameters &paras) {
-    static Mesh mesh;                       // instantiate Mesh object
+    static Mesh mesh;                // instantiate Mesh object
     mesh.load(paras.ply_read_path);  // load an object mesh
     const float l = 5;
     const static cv::Scalar yellow(0, 255, 255);
@@ -151,7 +151,7 @@ int main(int argc, char *argv[]) {
     tf2_ros::Buffer tfBuffer;
     tf2_ros::TransformListener listener(tfBuffer);
     Eigen::Affine3d T_base_camera, T_camera_object;
-    ros::Rate rate(50);
+    ros::Rate rate(30);
     const auto [camera, paras, kalman] = parse_input(argc, argv);
     //// Some basic colors
     const cv::Scalar red(0, 0, 255);
@@ -165,7 +165,6 @@ int main(int argc, char *argv[]) {
 
     Model model;                      // instantiate Model object
     model.load(paras.yml_read_path);  // load a 3D textured object model
-
 
     RobustMatcher rmatcher;  // instantiate RobustMatcher
 
@@ -265,7 +264,8 @@ int main(int argc, char *argv[]) {
 
         // FRAME RATE
         // see how much time has elapsed
-        drawPose(good_measurement, pnp_detection, pnp_detection_est, frame_vis, paras);
+        drawPose(good_measurement, pnp_detection, pnp_detection_est, frame_vis,
+                 paras);
         tm.stop();
 
         // calculate current FPS

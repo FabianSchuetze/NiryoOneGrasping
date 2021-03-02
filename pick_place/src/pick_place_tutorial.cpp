@@ -17,6 +17,49 @@ typedef actionlib::SimpleActionClient<niryo_one_msgs::RobotMoveAction>
     NiryoClient;
 typedef std::pair<geometry_msgs::Point, niryo_one_msgs::RPY> NiryoPose;
 
+struct EndEffectorPosition {
+    NiryoPose pose;
+    bool open;
+};
+
+const EndEffectorPosition computePreGrasp(const std::vector<double>& goal) {
+    geometry_msgs::Point p;
+    p.x = goal[0];
+    p.y = goal[1];
+    p.z = goal[2] + 0.15;
+    if (p.z < 0.135) {
+        throw std::runtime_error("Z values cannot be lower than 0.135");
+    }
+    niryo_one_msgs::RPY rot;
+    rot.roll = 0;
+    rot.pitch = 1.5;
+    rot.yaw = 0;
+    NiryoPose pose1(p, rot);
+    EndEffectorPosition eef;
+    eef.pose = pose1;
+    eef.open = false;
+    return eef;
+}
+
+const EndEffectorPosition computeGrasp(const std::vector<double>& goal) {
+    geometry_msgs::Point p;
+    p.x = goal[0];
+    p.y = goal[1];
+    p.z = goal[2] + 0.135;
+    if (p.z < 0.135) {
+        throw std::runtime_error("Z values cannot be lower than 0.135");
+    }
+    niryo_one_msgs::RPY rot;
+    rot.roll = 0;
+    rot.pitch = 1.5;
+    rot.yaw = 0;
+    NiryoPose pose1(p, rot);
+    EndEffectorPosition eef;
+    eef.pose = pose1;
+    eef.open = true;
+    return eef;
+}
+
 void establish_connection(NiryoClient& ac) {
     ROS_INFO("Connecting to robot  ========================");
     size_t attempts(0);
@@ -57,45 +100,14 @@ std::vector<double> parseInput(const std::string& input) {
          variables.push_back(std::stod(each)))
         ;
     if (variables.size() != n_elements) {
-        std::string msg("Expected to get: " + input + " elements, but got "
-                + std::to_string(variables.size()));
+        std::string msg("Expected to get: " + input + " elements, but got " +
+                        std::to_string(variables.size()));
         throw std::runtime_error(msg);
     }
     return variables;
 }
 
-bool positionGoal(NiryoClient& ac) {
-    std::vector<double> positions = parseInput("6");
-    geometry_msgs::Point p;
-    p.x = positions[0];
-    p.y = positions[1];
-    if (positions[2] < 0.14) {
-        throw std::runtime_error("Z values cannot be lower than 0.15");
-    }
-    p.z = positions[2];
-    niryo_one_msgs::RPY rot;
-    rot.roll = positions[3];
-    rot.pitch = positions[4];
-    rot.yaw = positions[5];
-    NiryoPose pose1(p, rot);
-    niryo_one_msgs::RobotMoveCommand cmd;
-    cmd.cmd_type = 2;
-    cmd.position = pose1.first;
-    cmd.rpy = pose1.second;
-    niryo_one_msgs::RobotMoveActionGoal action;
-    action.goal.cmd = cmd;
-    ROS_INFO("  Sending command :");
-    ROS_INFO("    position: %f, %f, %f", cmd.pose_quat.position.x,
-             cmd.pose_quat.position.y, cmd.pose_quat.position.z);
-    ROS_INFO("    orientation (x,y,z,w):  %f, %f, %f, %f",
-             cmd.pose_quat.orientation.x, cmd.pose_quat.orientation.y,
-             cmd.pose_quat.orientation.z, cmd.pose_quat.orientation.w);
-    ac.sendGoal(action.goal);
-    bool success = ac.waitForResult(ros::Duration(5.0));
-    return success;
-}
-
-bool moveGripper(NiryoClient& ac, bool open) {
+bool GripperAperture(NiryoClient& ac, bool open) {
     niryo_one_msgs::ToolCommand tcmd;
     if (open) {
         tcmd.cmd_type = 1;
@@ -112,10 +124,39 @@ bool moveGripper(NiryoClient& ac, bool open) {
     return success;
 }
 
+bool MoveEEF(NiryoClient& ac, const NiryoPose& pose) {
+    niryo_one_msgs::RobotMoveCommand cmd;
+    cmd.cmd_type = 2;
+    cmd.position = pose.first;
+    cmd.rpy = pose.second;
+    niryo_one_msgs::RobotMoveActionGoal action;
+    action.goal.cmd = cmd;
+    ROS_INFO("  Sending command :");
+    ROS_INFO("    position: %f, %f, %f", cmd.pose_quat.position.x,
+             cmd.pose_quat.position.y, cmd.pose_quat.position.z);
+    ROS_INFO("    orientation (x,y,z,w):  %f, %f, %f, %f",
+             cmd.pose_quat.orientation.x, cmd.pose_quat.orientation.y,
+             cmd.pose_quat.orientation.z, cmd.pose_quat.orientation.w);
+    ac.sendGoal(action.goal);
+    bool success = ac.waitForResult(ros::Duration(5.0));
+    return success;
+}
+
+void positionGoal(NiryoClient& ac, const EndEffectorPosition& eef) {
+    bool movement = MoveEEF(ac, eef.pose);
+    if (!movement) {
+        ROS_WARN("Could not move the arm");
+    }
+    bool aperture = GripperAperture(ac, eef.open);
+    if (!aperture) {
+        ROS_WARN("Could not open the gripper");
+    }
+}
+
 int main(int argc, char** argv) {
     ros::init(argc, argv, "pick_place");
     ros::NodeHandle n("~");
-    ros::Rate loop_rate(10);
+    // ros::Rate loop_rate(10);
     ros::AsyncSpinner spinner(3);
     spinner.start();
 
@@ -128,28 +169,44 @@ int main(int argc, char** argv) {
     setGripper(n, toolID);
 
     ros::Rate rate(1);
-    while (n.ok()) {
-        ROS_INFO("Send gripper command (open) ========================");
-        bool success = moveGripper(ac, true);
-        if (!success) {
-            ROS_WARN("Could not open the gripper");
-        }
-        success = positionGoal(ac);
-        if (!success) {
-            ROS_WARN("Could not satisfy the pose");
-        }
-        ROS_INFO("Send gripper command (close) ========================");
-        success = moveGripper(ac, false);
-        if (!success) {
-            ROS_WARN("Could not close the gripper");
-        }
-        ROS_INFO("  Press enter to send ...");
-        success = positionGoal(ac);
-        if (!success) {
-            ROS_WARN("Could not satisfy the pose");
-        }
-        rate.sleep();
+    // while (n.ok()) {
+    ROS_INFO("Please specify the grapsing position========================");
+    const std::vector<double> goal = parseInput("6");
+    std::vector<EndEffectorPosition> movements(2);
+    const EndEffectorPosition pre_grasp = computePreGrasp(goal);
+    const EndEffectorPosition grasp = computeGrasp(goal);
+    movements.push_back(pre_grasp);
+    movements.push_back(grasp);
+    for (const auto& movement : movements) {
+        positionGoal(ac, movement);
     }
+    // const EndEffectorPosition pre_grasp = closeHand(goal);
+    // const EndEffectorPosition pre_grasp = comutePostGrasp(goal);
+    // const EndEffectorPosition pre_grasp = computeFinalPosition();
+    // pre-grasp-pose
+    // grasp-pose
+    // grasp
+    // post-grasp pose
+    // move away
+    // bool success = moveGripper(ac, true);
+    // if (!success) {
+    // ROS_WARN("Could not open the gripper");
+    //}
+    // success = positionGoal(ac);
+    // if (!success) {
+    // ROS_WARN("Could not satisfy the pose");
+    //}
+    // ROS_INFO("Send gripper command (close) ========================");
+    // success = moveGripper(ac, false);
+    // if (!success) {
+    // ROS_WARN("Could not close the gripper");
+    //}
+    // ROS_INFO("  Press enter to send ...");
+    // success = positionGoal(ac);
+    // if (!success) {
+    // ROS_WARN("Could not satisfy the pose");
+    //}
+    // rate.sleep();
+    //}
     return 0;
 }
-
