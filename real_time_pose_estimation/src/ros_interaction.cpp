@@ -17,9 +17,16 @@ bool obtain_transform(const std::string& from, const std::string& to,
 void broadcast(const Eigen::Affine3d& transform, const std::string& from,
         const std::string& to) {
     static tf2_ros::TransformBroadcaster br;
-    std::cout << "inside the broadcaster, with\n" << transform.matrix() <<
-        std::endl;
-    geometry_msgs::TransformStamped trans = tf2::eigenToTransform(transform);
+    Eigen::Quaterniond quat(transform.linear());
+    quat.normalize();
+    geometry_msgs::TransformStamped trans;
+    trans.transform.rotation.w = quat.coeffs().w();
+    trans.transform.rotation.x = quat.coeffs().x();
+    trans.transform.rotation.y = quat.coeffs().y();
+    trans.transform.rotation.z = quat.coeffs().z();
+    trans.transform.translation.x = transform.translation().x();
+    trans.transform.translation.y = transform.translation().y();
+    trans.transform.translation.z = transform.translation().z();
     trans.header.frame_id = from;
     trans.child_frame_id = to;
     trans.header.stamp = ros::Time::now();
