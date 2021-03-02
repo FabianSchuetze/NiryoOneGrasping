@@ -2,6 +2,8 @@
 video_read_path: /home/fabian/Documents/work/realsense/data/2021-02-26-17-53/output.mkv
 yml_read_path: /home/fabian/Documents/work/realsense/data/model.yml
 ply_read_path: /home/fabian/Documents/work/realsense/data/small_box.py
+save_storage: /home/fabian/Documents/work/transforms/src/real_time_pose_estimation/Data
+load_files: /home/fabian/Documents/work/transforms/src/real_time_pose_estimation/Data/2021-03-02-16-07/
 numKeyPoints: 2000
 ratioTest: 0.7
 fast_match: 1
@@ -14,4 +16,4 @@ featureName: "ORB"
 useFLANN: 0
 saveDirectory: ""
 displayFilteredPose: 0
-stream: "RS"
+stream: "File"

@@ -1,8 +1,6 @@
-// clang-format off
 #include <iostream>
 #include <memory>
 // OpenCV
-#include <kalman.hpp>
 #include <opencv2/calib3d.hpp>
 #include <opencv2/core.hpp>
 #include <opencv2/core/utils/filesystem.hpp>
@@ -11,22 +9,12 @@
 #include <opencv2/video/tracking.hpp>
 // PnP Tutorial
 
-
-#include "Mesh.h"
-#include "Model.h"
-#include "ModelRegistration.h"
-#include "PnPProblem.h"
-#include "RobustMatcher.h"
-#include "Utils.h"
-#include "Stream.hpp"
-#include "VideoStream.hpp"
-#include "RSStream.hpp"
-#include "ros_interaction.hpp"
-#include "detection_parse_parameters.hpp"
+#include "textured_pnp.hpp"
+// clang-format off
 #include <opencv2/core/eigen.hpp>
 // clang-format on
-namespace fs = std::filesystem;
 void help();
+namespace fs = std::filesystem;
 
 const std::tuple<CameraParameters, DetectionParameters, KalmanFilterParameters>
 parse_input(int argc, char **argv) {
@@ -94,9 +82,9 @@ void drawInliers(const cv::Mat &inliers_idx, const cv::Mat &frame,
     draw2DPoints(frame, inliers, blue);
 }
 
-void Pose(cv::Mat &pose, const PnPProblem &pnp_detection, Eigen::Affine3d &T) {
-    cv::Mat translation = pnp_detection.get_t_matrix();
-    cv::Mat rotation = pnp_detection.get_R_matrix();
+void Pose(cv::Mat &pose, const PnPProblem &pnp, Eigen::Affine3d &T) {
+    cv::Mat translation = pnp.get_t_matrix();
+    cv::Mat rotation = pnp.get_R_matrix();
     Eigen::Matrix3d tmp_rotation;
     Eigen::MatrixXd tmp_translation;
     cv::cv2eigen(rotation, tmp_rotation);
@@ -205,7 +193,13 @@ int main(int argc, char *argv[]) {
         stream = std::make_unique<VideoStream>(paras);
     } else if (paras.stream == "RS") {
         stream = std::make_unique<RSStream>(paras);
+    } else if (paras.stream == "File") {
+        stream = std::make_unique<FileStream>(paras);
+    } else {
+        std::cout << "Could not understand: " << paras.stream << std::endl;
+        throw std::runtime_error("");
     }
+
     // cv::VideoCapture cap = openVideo(paras);
 
     // Measure elapsed time
@@ -246,8 +240,10 @@ int main(int argc, char *argv[]) {
         // GOOD MEASUREMENT
         bool good_measurement = false;
         if (inliers_idx.rows >= paras.minInliersKalman) {
-            // Pose(pose, pnp_detection, T_camera_object);
+            Pose(pose, pnp_detection, T_camera_object);
             good_measurement = true;
+            std::cout << "Original measurement:\n" << T_camera_object.matrix() <<
+                std::endl;
             // Get the measured translation
         }
         // update the Kalman filter with good measurements, otherwise with
@@ -259,6 +255,8 @@ int main(int argc, char *argv[]) {
         // -- Step 6: Set estimated projection matrix
         pnp_detection_est.set_P_matrix(rotation, translation);
         Pose(pose, pnp_detection_est, T_camera_object);
+        std::cout << "New Measurement:\n" << T_camera_object.matrix() <<
+            std::endl;
 
         // -- Step X: Draw pose and coordinate frame
 

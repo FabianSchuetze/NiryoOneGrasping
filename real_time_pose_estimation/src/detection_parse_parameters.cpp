@@ -36,6 +36,8 @@ const DetectionParameters readDetectionParameters(
     paras.video_read_path = fs::path((std::string)storage["video_read_path"]);
     paras.yml_read_path = fs::path((std::string)storage["yml_read_path"]);
     paras.ply_read_path = fs::path((std::string)storage["ply_read_path"]);
+    paras.save_storage = fs::path((std::string)storage["save_storage"]);
+    paras.load_files = fs::path((std::string)storage["load_files"]);
     getParameter(paras.ratioTest, "ratioTest", storage);
     getParameter(paras.iterationsCount, "iterationsCount", storage);
     getParameter(paras.numKeyPoints, "numKeyPoints", storage);

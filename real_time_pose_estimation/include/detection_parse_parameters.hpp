@@ -6,6 +6,8 @@ struct DetectionParameters{
     std::string video_read_path;
     std::string yml_read_path;
     std::string ply_read_path;
+    std::string save_storage;
+    std::string load_files;
     int numKeyPoints;
     float ratioTest;
     int fast_match;

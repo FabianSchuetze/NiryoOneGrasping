@@ -172,6 +172,11 @@ int main(int argc, char** argv) {
     // while (n.ok()) {
     ROS_INFO("Please specify the grapsing position========================");
     const std::vector<double> goal = parseInput("6");
+    std::cout << "received value:\n";
+    for (const auto x : goal) {
+        std::cout << x << ", ";
+    }
+    std::cout << "final\n";
     std::vector<EndEffectorPosition> movements(2);
     const EndEffectorPosition pre_grasp = computePreGrasp(goal);
     const EndEffectorPosition grasp = computeGrasp(goal);
@@ -180,33 +185,5 @@ int main(int argc, char** argv) {
     for (const auto& movement : movements) {
         positionGoal(ac, movement);
     }
-    // const EndEffectorPosition pre_grasp = closeHand(goal);
-    // const EndEffectorPosition pre_grasp = comutePostGrasp(goal);
-    // const EndEffectorPosition pre_grasp = computeFinalPosition();
-    // pre-grasp-pose
-    // grasp-pose
-    // grasp
-    // post-grasp pose
-    // move away
-    // bool success = moveGripper(ac, true);
-    // if (!success) {
-    // ROS_WARN("Could not open the gripper");
-    //}
-    // success = positionGoal(ac);
-    // if (!success) {
-    // ROS_WARN("Could not satisfy the pose");
-    //}
-    // ROS_INFO("Send gripper command (close) ========================");
-    // success = moveGripper(ac, false);
-    // if (!success) {
-    // ROS_WARN("Could not close the gripper");
-    //}
-    // ROS_INFO("  Press enter to send ...");
-    // success = positionGoal(ac);
-    // if (!success) {
-    // ROS_WARN("Could not satisfy the pose");
-    //}
-    // rate.sleep();
-    //}
     return 0;
 }

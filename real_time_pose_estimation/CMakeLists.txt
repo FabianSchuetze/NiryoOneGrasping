@@ -47,6 +47,7 @@ set(${PROJECT_NAME}_SRC
     src/ros_interaction.cpp
     src/VideoStream.cpp
     src/RSStream.cpp
+    src/FileStream.cpp
 )
 include_directories(SYSTEM ${catkin_INCLUDE_DIRS} ${EIGEN3_INCLUDE_DIRS} ${OpenCV_INCLUDE_DIRS} )
 include_directories(include)
