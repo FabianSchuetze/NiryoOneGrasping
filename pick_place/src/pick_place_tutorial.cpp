@@ -120,7 +120,7 @@ bool GripperAperture(NiryoClient& ac, bool open) {
     action.goal.cmd.cmd_type = 6;
     action.goal.cmd.tool_cmd = tcmd;
     ac.sendGoal(action.goal);
-    bool success = ac.waitForResult(ros::Duration(10.0));
+    bool success = ac.waitForResult(ros::Duration(5.0));
     return success;
 }
 
@@ -131,12 +131,11 @@ bool MoveEEF(NiryoClient& ac, const NiryoPose& pose) {
     cmd.rpy = pose.second;
     niryo_one_msgs::RobotMoveActionGoal action;
     action.goal.cmd = cmd;
-    ROS_INFO("  Sending command :");
-    ROS_INFO("    position: %f, %f, %f", cmd.pose_quat.position.x,
-             cmd.pose_quat.position.y, cmd.pose_quat.position.z);
-    ROS_INFO("    orientation (x,y,z,w):  %f, %f, %f, %f",
-             cmd.pose_quat.orientation.x, cmd.pose_quat.orientation.y,
-             cmd.pose_quat.orientation.z, cmd.pose_quat.orientation.w);
+    ROS_INFO("Sending command:");
+    ROS_INFO("position: %.2f, %.2f, %.2f", cmd.position.x, cmd.position.y,
+             cmd.position.z);
+    ROS_INFO("rpy (r,p,y):  %.2f, %.2f, %2f", cmd.rpy.roll, cmd.rpy.pitch,
+             cmd.rpy.yaw);
     ac.sendGoal(action.goal);
     bool success = ac.waitForResult(ros::Duration(5.0));
     return success;
@@ -156,32 +155,31 @@ void positionGoal(NiryoClient& ac, const EndEffectorPosition& eef) {
 int main(int argc, char** argv) {
     ros::init(argc, argv, "pick_place");
     ros::NodeHandle n("~");
-    // ros::Rate loop_rate(10);
     ros::AsyncSpinner spinner(3);
     spinner.start();
 
     // Connecting to the robot ===========================================
     NiryoClient ac("/niryo_one/commander/robot_action/", true);
-    establish_connection(ac);
-    // wait for the action server to start
+    establish_connection(ac);  // wait for the action server to start
 
     int toolID(13);
     setGripper(n, toolID);
 
     ros::Rate rate(1);
-    // while (n.ok()) {
     ROS_INFO("Please specify the grapsing position========================");
     const std::vector<double> goal = parseInput("6");
     std::cout << "received value:\n";
     for (const auto x : goal) {
         std::cout << x << ", ";
     }
-    std::cout << "final\n";
-    std::vector<EndEffectorPosition> movements(2);
+    std::cout << "\n";
+    //std::vector<EndEffectorPosition> movements;
+    //movements.reserve(2);
     const EndEffectorPosition pre_grasp = computePreGrasp(goal);
     const EndEffectorPosition grasp = computeGrasp(goal);
-    movements.push_back(pre_grasp);
-    movements.push_back(grasp);
+    std::vector<EndEffectorPosition> movements = {pre_grasp, grasp};
+    //movements.push_back(pre_grasp);
+    //movements.push_back(grasp);
     for (const auto& movement : movements) {
         positionGoal(ac, movement);
     }

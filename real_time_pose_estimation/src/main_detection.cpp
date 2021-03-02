@@ -244,20 +244,23 @@ int main(int argc, char *argv[]) {
             cv::Mat tmp_pose(6, 1, CV_64FC1);
             pose.setTo(cv::Scalar(0));
             Pose(tmp_pose, pnp_detection, tmp_mat);
+            T_camera_object.matrix() = tmp_mat.matrix();
             good_measurement = true;
-            if (!set_once) {
-                pose = tmp_pose;
-                T_camera_object.matrix() = tmp_mat.matrix();
-                set_once = true;
+            set_once = true;
+            //if (!set_once) 
+                //pose = tmp_pose;
+                //set_once = true;
 
-            } else {
-                pose = tmp_pose * 0.9 + 0.1 * pose;
-                T_camera_object.matrix() = T_camera_object.matrix() * 0.1 + tmp_mat.matrix() * 0.9;
-            }
+            //} else {
+                //pose = tmp_pose * 0.9 + 0.1 * pose;
+                //T_camera_object.matrix() = T_camera_object.matrix() * 0.1 + tmp_mat.matrix() * 0.9;
+            //}
         }
         if (set_once) {
             bool gotTransform = obtain_transform(from, to, tfBuffer, T_base_camera);
             if (gotTransform) {
+                std::cout << "Base camera\n" << T_base_camera.matrix() << std::endl;
+                std::cout << "Estimation\n" << T_camera_object.matrix() << std::endl;
                 T_base_camera = T_base_camera * T_camera_object;
                 std::cout << "The matrix is:\n" << T_base_camera.matrix() << std::endl;
                 Eigen::Quaterniond quat(T_base_camera.linear());
