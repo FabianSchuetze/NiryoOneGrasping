@@ -43,7 +43,6 @@ set(${PROJECT_NAME}_SRC
     src/CsvReader.cpp
     src/CsvReader.cpp
     src/detection_parse_parameters.cpp
-    src/kalman.cpp
     src/ros_interaction.cpp
     src/VideoStream.cpp
     src/RSStream.cpp

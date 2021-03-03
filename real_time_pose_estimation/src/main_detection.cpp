@@ -16,22 +16,34 @@
 void help();
 namespace fs = std::filesystem;
 
-const std::tuple<CameraParameters, DetectionParameters, KalmanFilterParameters>
-parse_input(int argc, char **argv) {
+void convertToPose(cv::Mat &measurements, const cv::Mat &translation_measured,
+                   const cv::Mat &rotation_measured) {
+    // Convert rotation matrix to euler angles
+    cv::Mat measured_eulers(3, 1, CV_64F);
+    measured_eulers = rot2euler(rotation_measured);
+
+    // Set measurement to predict
+    measurements.at<double>(0) = translation_measured.at<double>(0);  // x
+    measurements.at<double>(1) = translation_measured.at<double>(1);  // y
+    measurements.at<double>(2) = translation_measured.at<double>(2);  // z
+    measurements.at<double>(3) = measured_eulers.at<double>(0);       // roll
+    measurements.at<double>(4) = measured_eulers.at<double>(1);       // pitch
+    measurements.at<double>(5) = measured_eulers.at<double>(2);       // yaw
+}
+
+const std::tuple<CameraParameters, DetectionParameters> parse_input(
+    int argc, char **argv) {
     std::string root(
         "/home/fabian/Documents/work/transforms/src/real_time_pose_estimation/"
         "Data/");
     fs::path parameter_location(root + "parameters.yml");
     fs::path camera_location(root + "camera_parameters.yml");
-    fs::path kalman_location(root + "kalman_parameters.yml");
     const DetectionParameters paras =
         readDetectionParameters(parameter_location);
     displayParameters(paras);
     const CameraParameters camera = readCameraParameters(camera_location);
     displayCamera(camera);
-    const auto kalman = readKalmanFilterParameters(kalman_location);
-    displayKalman(kalman);
-    return {camera, paras, kalman};
+    return {camera, paras};
 }
 
 void match_model_and_frame(const DetectionParameters &paras,
@@ -140,7 +152,7 @@ int main(int argc, char *argv[]) {
     tf2_ros::TransformListener listener(tfBuffer);
     Eigen::Affine3d T_base_camera, T_camera_object, tmp_mat;
     ros::Rate rate(30);
-    const auto [camera, paras, kalman] = parse_input(argc, argv);
+    const auto [camera, paras] = parse_input(argc, argv);
     bool set_once = false;
     //// Some basic colors
     const cv::Scalar red(0, 0, 255);
@@ -169,9 +181,6 @@ int main(int argc, char *argv[]) {
         rmatcher.setTrainingImage(trainingImg);
     }
 
-    cv::KalmanFilter KF;  // instantiate Kalman Filter
-    initKalmanFilter(KF, kalman.nStates, kalman.nMeasurements, kalman.nInputs,
-                     kalman.dt);  // init function
     cv::Mat pose(6, 1, CV_64FC1);
     pose.setTo(cv::Scalar(0));
 
@@ -182,13 +191,6 @@ int main(int argc, char *argv[]) {
     // Create & Open Window
     cv::namedWindow("REAL TIME DEMO", cv::WINDOW_KEEPRATIO);
 
-    //if (!paras.saveDirectory.empty()) {
-        //if (!cv::utils::fs::exists(paras.saveDirectory)) {
-            //std::cout << "Create directory: " << paras.saveDirectory
-                      //<< std::endl;
-            //cv::utils::fs::createDirectories(paras.saveDirectory);
-        //}
-    //}
     std::unique_ptr<Stream> stream;
     if (paras.stream == "Video") {
         stream = std::make_unique<VideoStream>(paras);
@@ -200,8 +202,6 @@ int main(int argc, char *argv[]) {
         std::cout << "Could not understand: " << paras.stream << std::endl;
         throw std::runtime_error("");
     }
-
-    // cv::VideoCapture cap = openVideo(paras);
 
     // Measure elapsed time
     cv::TickMeter tm;
@@ -242,29 +242,35 @@ int main(int argc, char *argv[]) {
         bool good_measurement = false;
         if (inliers_idx.rows >= paras.minInliersKalman) {
             cv::Mat tmp_pose(6, 1, CV_64FC1);
-            pose.setTo(cv::Scalar(0));
+            tmp_pose.setTo(cv::Scalar(0));
             Pose(tmp_pose, pnp_detection, tmp_mat);
             T_camera_object.matrix() = tmp_mat.matrix();
             good_measurement = true;
             set_once = true;
-            //if (!set_once) 
-                //pose = tmp_pose;
-                //set_once = true;
+            // if (!set_once)
+            // pose = tmp_pose;
+            // set_once = true;
 
             //} else {
-                //pose = tmp_pose * 0.9 + 0.1 * pose;
-                //T_camera_object.matrix() = T_camera_object.matrix() * 0.1 + tmp_mat.matrix() * 0.9;
+            // pose = tmp_pose * 0.9 + 0.1 * pose;
+            // T_camera_object.matrix() = T_camera_object.matrix() * 0.1 +
+            // tmp_mat.matrix() * 0.9;
             //}
         }
         if (set_once) {
-            bool gotTransform = obtain_transform(from, to, tfBuffer, T_base_camera);
+            bool gotTransform =
+                obtain_transform(from, to, tfBuffer, T_base_camera);
             if (gotTransform) {
-                std::cout << "Base camera\n" << T_base_camera.matrix() << std::endl;
-                std::cout << "Estimation\n" << T_camera_object.matrix() << std::endl;
+                std::cout << "Base camera\n"
+                          << T_base_camera.matrix() << std::endl;
+                std::cout << "Estimation\n"
+                          << T_camera_object.matrix() << std::endl;
                 T_base_camera = T_base_camera * T_camera_object;
-                std::cout << "The matrix is:\n" << T_base_camera.matrix() << std::endl;
+                std::cout << "The matrix is:\n"
+                          << T_base_camera.matrix() << std::endl;
                 Eigen::Quaterniond quat(T_base_camera.linear());
-                std::cout << "The quaternion is: " << quat.coeffs() << std::endl;
+                std::cout << "The quaternion is: " << quat.coeffs()
+                          << std::endl;
                 broadcast(T_base_camera, from, object);
             }
         }
@@ -297,32 +303,6 @@ int main(int argc, char *argv[]) {
 
         cv::imshow("REAL TIME DEMO", frame_vis);
 
-        //if (!paras.saveDirectory.empty()) {
-            //const int widthSave =
-                //!frame_matching.empty() ? frame_matching.cols : frame_vis.cols;
-            //const int heightSave = !frame_matching.empty()
-                                       //? frame_matching.rows + frame_vis.rows
-                                       //: frame_vis.rows;
-            //frameSave = cv::Mat::zeros(heightSave, widthSave, CV_8UC3);
-            //if (!frame_matching.empty()) {
-                //int startX = (int)((widthSave - frame_vis.cols) / 2.0);
-                //cv::Mat roi = frameSave(
-                    //cv::Rect(startX, 0, frame_vis.cols, frame_vis.rows));
-                //frame_vis.copyTo(roi);
-
-                //roi = frameSave(cv::Rect(0, frame_vis.rows, frame_matching.cols,
-                                         //frame_matching.rows));
-                //frame_matching.copyTo(roi);
-            //} else {
-                //frame_vis.copyTo(frameSave);
-            //}
-
-            //std::string saveFilename = cv::format(
-                //std::string(paras.saveDirectory + "/image_%04d.png").c_str(),
-                //frameCount);
-            //cv::imwrite(saveFilename, frameSave);
-            //frameCount++;
-        //}
         rate.sleep();
     }
     // Close and Destroy Window

@@ -11,6 +11,5 @@
 #include "Utils.h"
 #include "VideoStream.hpp"
 #include "detection_parse_parameters.hpp"
-#include "kalman.hpp"
 #include "ros_interaction.hpp"
 #endif
