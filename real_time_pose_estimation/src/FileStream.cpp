@@ -21,6 +21,7 @@ FileStream::FileStream(const DetectionParameters& paras) { open_folder(paras); }
 bool FileStream::read(cv::Mat& img) {
     if (iter != end) {
         fs::path tmp = *iter;
+        std::cout << "The filename is: " << tmp << std::endl;
         img = cv::imread(tmp);
         iter++;
         return true;

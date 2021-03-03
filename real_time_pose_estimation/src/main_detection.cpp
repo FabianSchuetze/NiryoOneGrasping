@@ -107,7 +107,7 @@ void Pose(cv::Mat &pose, const PnPProblem &pnp, Eigen::Affine3d &T) {
 }
 
 void drawPose(bool good_measurement, PnPProblem &pnp_detection,
-              PnPProblem &pnp_detection_est, const cv::Mat &frame_vis,
+              const cv::Mat &frame_vis,
               const DetectionParameters &paras) {
     static Mesh mesh;                // instantiate Mesh object
     mesh.load(paras.ply_read_path);  // load an object mesh
@@ -115,33 +115,19 @@ void drawPose(bool good_measurement, PnPProblem &pnp_detection,
     const static cv::Scalar yellow(0, 255, 255);
     const static cv::Scalar green(0, 255, 0);
     std::vector<cv::Point2f> pose_points2d;
-    if (!good_measurement || paras.displayFilteredPose) {
-        drawObjectMesh(frame_vis, &mesh, &pnp_detection_est,
-                       yellow);  // draw estimated pose
+    drawObjectMesh(frame_vis, &mesh, &pnp_detection,
+                   green);  // draw current pose
 
-        pose_points2d.push_back(pnp_detection_est.backproject3DPoint(
-            cv::Point3f(0, 0, 0)));  // axis center
-        pose_points2d.push_back(pnp_detection_est.backproject3DPoint(
-            cv::Point3f(l, 0, 0)));  // axis x
-        pose_points2d.push_back(pnp_detection_est.backproject3DPoint(
-            cv::Point3f(0, l, 0)));  // axis y
-        pose_points2d.push_back(pnp_detection_est.backproject3DPoint(
-            cv::Point3f(0, 0, l)));                      // axis z
-        draw3DCoordinateAxes(frame_vis, pose_points2d);  // draw axes
-    } else {
-        drawObjectMesh(frame_vis, &mesh, &pnp_detection,
-                       green);  // draw current pose
-
-        pose_points2d.push_back(pnp_detection.backproject3DPoint(
-            cv::Point3f(0, 0, 0)));  // axis center
-        pose_points2d.push_back(
-            pnp_detection.backproject3DPoint(cv::Point3f(l, 0, 0)));  // axis x
-        pose_points2d.push_back(
-            pnp_detection.backproject3DPoint(cv::Point3f(0, l, 0)));  // axis y
-        pose_points2d.push_back(
-            pnp_detection.backproject3DPoint(cv::Point3f(0, 0, l)));  // axis z
-        draw3DCoordinateAxes(frame_vis, pose_points2d);  // draw axes
-    }
+    pose_points2d.push_back(pnp_detection.backproject3DPoint(
+        cv::Point3f(0, 0, 0)));  // axis center
+    pose_points2d.push_back(
+        pnp_detection.backproject3DPoint(cv::Point3f(l, 0, 0)));  // axis x
+    pose_points2d.push_back(
+        pnp_detection.backproject3DPoint(cv::Point3f(0, l, 0)));  // axis y
+    pose_points2d.push_back(
+        pnp_detection.backproject3DPoint(cv::Point3f(0, 0, l)));  // axis z
+    draw3DCoordinateAxes(frame_vis, pose_points2d);  // draw axes
+    //}
 }
 
 int main(int argc, char *argv[]) {
@@ -160,9 +146,8 @@ int main(int argc, char *argv[]) {
     const cv::Scalar yellow(0, 255, 255);
 
     cv::Mat frameSave;
-    int frameCount = 0;
 
-    PnPProblem pnp_detection(camera), pnp_detection_est(camera);
+    PnPProblem pnp_detection(camera);
 
     Model model;                      // instantiate Model object
     model.load(paras.yml_read_path);  // load a 3D textured object model
@@ -235,11 +220,14 @@ int main(int argc, char *argv[]) {
             points3d, points2d, paras.pnpMethod, inliers_idx,
             paras.iterationsCount, paras.reprojectionError, paras.confidence);
         drawInliers(inliers_idx, frame, points2d);
+        const cv::Mat t = pnp_detection.get_t_matrix();
+        std::cout << "The t matrix is: " << t << std::endl;
 
         // -- Step 5: Kalman Filter
 
         // GOOD MEASUREMENT
         bool good_measurement = false;
+        std::cout << "Number of inliers: " << inliers_idx.rows  << std::endl;
         if (inliers_idx.rows >= paras.minInliersKalman) {
             cv::Mat tmp_pose(6, 1, CV_64FC1);
             tmp_pose.setTo(cv::Scalar(0));
@@ -247,6 +235,7 @@ int main(int argc, char *argv[]) {
             T_camera_object.matrix() = tmp_mat.matrix();
             good_measurement = true;
             set_once = true;
+            std::cout << "set once" << std::endl;
             // if (!set_once)
             // pose = tmp_pose;
             // set_once = true;
@@ -260,11 +249,11 @@ int main(int argc, char *argv[]) {
         if (set_once) {
             bool gotTransform =
                 obtain_transform(from, to, tfBuffer, T_base_camera);
+                std::cout << "Estimation\n"
+                          << T_camera_object.matrix() << std::endl;
             if (gotTransform) {
                 std::cout << "Base camera\n"
                           << T_base_camera.matrix() << std::endl;
-                std::cout << "Estimation\n"
-                          << T_camera_object.matrix() << std::endl;
                 T_base_camera = T_base_camera * T_camera_object;
                 std::cout << "The matrix is:\n"
                           << T_base_camera.matrix() << std::endl;
@@ -275,7 +264,7 @@ int main(int argc, char *argv[]) {
             }
         }
         // see how much time has elapsed
-        drawPose(good_measurement, pnp_detection, pnp_detection_est, frame_vis,
+        drawPose(good_measurement, pnp_detection, frame_vis,
                  paras);
         tm.stop();
 
