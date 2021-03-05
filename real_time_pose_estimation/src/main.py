@@ -6,6 +6,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 plt.close('all')
 
+
 def keypoint(node):
     x = node.at(0).real()
     y = node.at(1).real()
@@ -36,10 +37,12 @@ def load_model(path):
     model['keypoints'] = kps
     return model
 
+
 def get_keypoints(img):
     orb = cv2.ORB_create()
     kp, des = orb.detectAndCompute(img, None)
     return kp, des
+
 
 def corresponding_points(model, keypoints_scene, matches):
     model_3d_points = model['points3d']
@@ -55,16 +58,19 @@ def corresponding_points(model, keypoints_scene, matches):
         # breakpoint()
         points_3d.append(point_3d_model)
         points_2d.append(point_2d_scene)
-    return np.array(points_3d), np.array(points_2d), keypoints_train, keypoints_test
+    return np.array(points_3d), np.array(
+        points_2d), keypoints_train, keypoints_test
+
 
 def transform(points3d, points2d, intrinsics):
     distcoefs = np.zeros(4)
     rval, rvec, tvec, inliers = \
-        cv2.solvePnPRansac(points3d, points2d, intrinsics,
-                distcoefs,
-                reprojectionError=1.0,
-                flags=cv2.SOLVEPNP_ITERATIVE)
+        cv2.solvePnPGeneric(points3d, points2d, intrinsics,
+                            distcoefs,
+                            reprojectionError=1.0,
+                            flags=cv2.SOLVEPNP_ITERATIVE)
     return rval, rvec, tvec, inliers
+
 
 def camera():
     mat = np.eye(3)
@@ -80,16 +86,26 @@ def camera():
 
 
 if __name__ == "__main__":
-    MODEL = load_model('Data/model.yml')
-    IMG = cv2.imread("Data/2021-03-03-15-35/107.png")
-    IMG_TRAIN = cv2.imread('/home/fabian/Pictures/matchsticktable_Color.png')
+    MODEL = load_model('Data/teebox_features.yml')
+    IMG = cv2.imread("Data/teebox_Color.png")
+    IMG_TRAIN = cv2.imread("Data/teebox_Color.png")
+    # IMG_TRAIN = cv2.imread('/home/fabian/Pictures/matchsticktable_Color.png')
     KP, DES = get_keypoints(IMG)
-    BF = cv2.BFMatcher()
-    MATCHES = BF.match(DES, MODEL['descriptors'])
-    MATCHES = sorted(MATCHES, key=lambda x:x.distance)
-    POINTS_3D, POINTS_2D, KPS_TRAIN, KPS_TEST = corresponding_points(MODEL, KP,
-            MATCHES[:40])
+    BF = cv2.BFMatcher(cv2.NORM_HAMMING)
+    matches = BF.knnMatch(DES, MODEL['descriptors'], k=2)
+# Apply ratio test
+    good = []
+    for m, n in matches:
+        if m.distance < 0.75 * n.distance:
+            good.append(m)
+    MATCHES = good
+    # MATCHES = BF.match(DES, MODEL['descriptors'])
+    POINTS_3D, POINTS_2D, KPS_TRAIN, KPS_TEST = corresponding_points(
+        MODEL, KP, MATCHES[: 40])
     INTRINSICS = camera()
     OUT = transform(POINTS_3D, POINTS_2D, INTRINSICS)
-    img3 = cv2.drawMatches(IMG, KP, IMG_TRAIN, MODEL['keypoints'], MATCHES[:40], None)
+    img3 = cv2.drawMatches(
+        IMG, KP, IMG_TRAIN, MODEL['keypoints'],
+        MATCHES[: 40],
+        None)
     plt.imshow(img3)
