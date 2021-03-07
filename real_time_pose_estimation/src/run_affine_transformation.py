@@ -1,3 +1,4 @@
+from typing import Tuple
 import cv2 as cv
 import numpy as np
 import open3d as o3d
@@ -37,17 +38,15 @@ def point_cloud(color_img, depth_img):
 
 
 def get_test_model(arguments: dict):
-    # col_loc = '/home/fabian/Documents/work/realsense/data/2021-03-06-17-01/color_imgs/250.png'
-    # dep_loc = '/home/fabian/Documents/work/realsense/data/2021-03-06-17-01/depth_imgs/250.png'
     img = cv.imread(arguments['test_color_img'])
     img = cv.cvtColor(img, cv.COLOR_BGR2RGB)
-    depth = cv.imread(arguments['test_depth_img'])
+    depth = cv.imread(arguments['test_depth_img'], cv.IMREAD_ANYDEPTH)
     camera = Camera(fx=615.4, fy=614.18, cx=326.27, cy=237.21)
     model = GenerateModel(depth, img, camera)
     orb = cv.SIFT_create()
     model.estimate_features(orb)
     model._model['img'] = img
-    model._model['pcd'] = point_cloud(col_loc, dep_loc)
+    model._model['pcd'] = point_cloud(arguments['test_color_img'], arguments['test_depth_img'])
     return model._model
 
 
@@ -83,7 +82,6 @@ def _estimate_rotation(diff_source, diff_target):
 
 
 def estimate_transformation(source: np.array, target: np.array):
-    breakpoint()
     centroid_source = source.mean(axis=0, keepdims=True)
     centroid_target = target.mean(axis=0, keepdims=True)
     rotation = _estimate_rotation(source - centroid_source,
@@ -100,6 +98,21 @@ def parse_yml(file: str):
         data = yaml.safe_load(f)
     return data
 
+def average_distance(source, target):
+    return np.sum(np.abs(source - target), axis=0) / len(source)
+
+
+def convert_points(source, target, estimation: Tuple):
+    """
+    Obtain the points from source and target that also match the correspondence
+    after estiamtion
+    """
+    corr = estimation[2]
+    transform = estimation[1]
+    target = target[corr.squeeze()]
+    source = source[corr.squeeze()]
+    converted_source = (transform[:, :3] @ source.T + transform[:, [3]]).T
+    return converted_source, target
 
 if __name__ == "__main__":
     ARGS = parse_yml('Data/parse_python_commands.yml')
@@ -108,7 +121,8 @@ if __name__ == "__main__":
     TEST = get_test_model(ARGS)
     MATCHES = match(TRAIN, TEST)
     PT_3D_TRAIN, PT_3D_TEST = corresponding_3d_points(TRAIN, TEST, MATCHES)
-    trans = cv.estimateAffine3D(PT_3D_TRAIN, PT_3D_TEST, ransacThreshold=0.009)
-    T = trans[1]
-    out = (T[:, :3] @ PT_3D_TRAIN.T + T[:, [3]]).T
-    transformation = estimate_transformation(out, PT_3D_TEST)
+    ESTIMATION = cv.estimateAffine3D(PT_3D_TRAIN, PT_3D_TEST, ransacThreshold=0.009)
+    # T = trans[1]
+    SOURCE_POINTS, TARGET_POINTS = convert_points(PT_3D_TRAIN, PT_3D_TEST,
+                                                  ESTIMATION)
+    # transformation = estimate_transformation(out, PT_3D_TEST)
