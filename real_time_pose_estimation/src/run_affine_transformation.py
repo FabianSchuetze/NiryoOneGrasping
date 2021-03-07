@@ -1,13 +1,14 @@
 import cv2 as cv
 import numpy as np
+import open3d as o3d
+import yaml
 from src.affine_transformation import Camera, GenerateModel
 from src.main import load_model
-import open3d as o3d
 
 
-def get_train_model():
-    model = load_model('Data/teebox_features.yml')
-    model['img'] = cv.imread('/home/fabian/Documents/work/realsense/data/2021-03-06-17-01/color_imgs/250.png')
+def get_train_model(arguments: dict):
+    model = load_model(arguments['model_features'])
+    model['img'] = cv.imread(arguments['model_img'])
     return model
 
 
@@ -16,6 +17,7 @@ def point_cloud(color_img, depth_img):
     depth = o3d.io.read_image(depth_img)
     rgbd = o3d.geometry.RGBDImage.create_from_color_and_depth(
         img, depth, convert_rgb_to_intensity=False)
+
     def camera():
         mat = np.eye(3)
         fx = 615.4
@@ -33,12 +35,13 @@ def point_cloud(color_img, depth_img):
     pcd = o3d.geometry.PointCloud.create_from_rgbd_image(rgbd, cam)
     return pcd
 
-def get_test_model():
-    col_loc = '/home/fabian/Documents/work/realsense/data/2021-03-06-17-01/color_imgs/250.png'
-    dep_loc = '/home/fabian/Documents/work/realsense/data/2021-03-06-17-01/depth_imgs/250.png'
-    img = cv.imread(col_loc)
+
+def get_test_model(arguments: dict):
+    # col_loc = '/home/fabian/Documents/work/realsense/data/2021-03-06-17-01/color_imgs/250.png'
+    # dep_loc = '/home/fabian/Documents/work/realsense/data/2021-03-06-17-01/depth_imgs/250.png'
+    img = cv.imread(arguments['test_color_img'])
     img = cv.cvtColor(img, cv.COLOR_BGR2RGB)
-    depth = cv.imread(dep_loc, cv.IMREAD_ANYDEPTH)
+    depth = cv.imread(arguments['test_depth_img'])
     camera = Camera(fx=615.4, fy=614.18, cx=326.27, cy=237.21)
     model = GenerateModel(depth, img, camera)
     orb = cv.SIFT_create()
@@ -68,14 +71,16 @@ def match(train, test):
     matches = good
     return matches
 
+
 def _estimate_rotation(diff_source, diff_target):
     h_mat = diff_source.T @ diff_target
     u, s, v = np.linalg.svd(h_mat)
     rotation = v @ u.T
     if np.linalg.det(rotation) < 0:
-        v[:,-2] *= -1
+        v[:, -2] *= -1
         rotation = v @ u.T
     return rotation
+
 
 def estimate_transformation(source: np.array, target: np.array):
     breakpoint()
@@ -86,18 +91,24 @@ def estimate_transformation(source: np.array, target: np.array):
     translation = centroid_target.T - rotation @ centroid_source.T
     transformation = np.concatenate([rotation, translation], axis=1)
     transformation = np.vstack((transformation, np.zeros((1, 4))))
-    transformation[3,3] = 1
+    transformation[3, 3] = 1
     return transformation
 
 
+def parse_yml(file: str):
+    with open(file) as f:
+        data = yaml.safe_load(f)
+    return data
+
+
 if __name__ == "__main__":
-    TRAIN = get_train_model()
+    ARGS = parse_yml('Data/parse_python_commands.yml')
+    TRAIN = get_train_model(ARGS)
     TRAIN['points3d'] /= 100
-    TEST = get_test_model()
+    TEST = get_test_model(ARGS)
     MATCHES = match(TRAIN, TEST)
     PT_3D_TRAIN, PT_3D_TEST = corresponding_3d_points(TRAIN, TEST, MATCHES)
     trans = cv.estimateAffine3D(PT_3D_TRAIN, PT_3D_TEST, ransacThreshold=0.009)
     T = trans[1]
-    out = (T[:,:3] @ PT_3D_TRAIN.T + T[:,[3]]).T
+    out = (T[:, :3] @ PT_3D_TRAIN.T + T[:, [3]]).T
     transformation = estimate_transformation(out, PT_3D_TEST)
-

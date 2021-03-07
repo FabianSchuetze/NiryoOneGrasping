@@ -1,0 +1,5 @@
+model_features: 'Data/teebox_features.yml'
+model_img: '/home/fabian/Documents/work/realsense/data/2021-03-06-17-01/color_imgs/250.png'
+test_color_img: '/home/fabian/Documents/work/realsense/data/2021-03-06-17-01/color_imgs/250.png'
+test_depth_img: '/home/fabian/Documents/work/realsense/data/2021-03-06-17-01/depth_imgs/250.png'
+
