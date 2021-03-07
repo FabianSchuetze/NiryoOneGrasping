@@ -44,7 +44,6 @@ class GenerateModel:
         self._model['descriptors'] = des
 
     def _convert_3d_points(self) -> None:
-        breakpoint()
         points = np.zeros((len(self._model['descriptors']), 3))
         for idx, point in enumerate(self._model['points2d']):
             width, height = int(np.round(point[0])), int(np.round(point[1]))
