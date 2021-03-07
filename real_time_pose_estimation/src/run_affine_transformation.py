@@ -102,27 +102,43 @@ def average_distance(source, target):
     return np.sum(np.abs(source - target), axis=0) / len(source)
 
 
-def convert_points(source, target, estimation: Tuple):
+def convert_points(source, estimation: Tuple):
     """
     Obtain the points from source and target that also match the correspondence
     after estiamtion
     """
     corr = estimation[2]
-    transform = estimation[1]
-    target = target[corr.squeeze()]
+    # transform = estimation[1]
+    # target = target[corr.squeeze()]
     source = source[corr.squeeze()]
-    converted_source = (transform[:, :3] @ source.T + transform[:, [3]]).T
-    return converted_source, target
+    return source
+    # converted_source = (transform[:, :3] @ source.T + transform[:, [3]]).T
+    # return converted_source, target
+
+def remove_duplicate_point(points):
+    final_points = []
+    breakpoint()
+    for idx in range(len(points)):
+        point = points[idx]
+        distances = np.sum(np.abs(points[idx + 1:] - point), axis=1)
+        if np.all(distances > 1e-6):
+            final_points.append(point)
+    return np.array(final_points)
+
+def average_point(points):
+    return np.mean(points, axis=0)
 
 if __name__ == "__main__":
     ARGS = parse_yml('Data/parse_python_commands.yml')
-    TRAIN = get_train_model(ARGS)
-    TRAIN['points3d'] /= 100
-    TEST = get_test_model(ARGS)
-    MATCHES = match(TRAIN, TEST)
-    PT_3D_TRAIN, PT_3D_TEST = corresponding_3d_points(TRAIN, TEST, MATCHES)
-    ESTIMATION = cv.estimateAffine3D(PT_3D_TRAIN, PT_3D_TEST, ransacThreshold=0.009)
+    TARGET = get_train_model(ARGS)
+    TARGET['points3d'] /= 100
+    SOURCE = get_test_model(ARGS)
+    MATCHES = match(TARGET, SOURCE)
+    PT_3D_TARGET, PT_3D_SOURCE = corresponding_3d_points(TARGET, SOURCE, MATCHES)
+    ESTIMATION = cv.estimateAffine3D(PT_3D_TARGET, PT_3D_SOURCE,
+                                     ransacThreshold=0.009)
     # T = trans[1]
-    SOURCE_POINTS, TARGET_POINTS = convert_points(PT_3D_TRAIN, PT_3D_TEST,
-                                                  ESTIMATION)
+    ESTIMATED_LOCATION = convert_points(PT_3D_SOURCE, ESTIMATION)
+    SINGLE_POINTS = remove_duplicate_point(ESTIMATED_LOCATION)
+    AVG = average_point(SINGLE_POINTS)
     # transformation = estimate_transformation(out, PT_3D_TEST)
