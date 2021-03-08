@@ -5,17 +5,25 @@ import open3d as o3d
 import yaml
 import tf
 import rospy
+from pytransform3d import transformations as pt
+from pytransform3d import rotations as pr
+from pytransform3d.transform_manager import TransformManager
 from src.affine_transformation import Camera, GenerateModel
 from src.main import load_model
-from pytransform3d import transformations as pt
-from pytransform3d.transform_manager import TransformManager
 
 def lookupTransform():
-    t = tf.Transformer(True, rospy.Duration(10.0))
-    pose = t.lookupTransform("world", "camera_link", rospy.Time(10.0))
+    rospy.init_node('tf_P3AT')
+    t = tf.TransformListener()
+    rate = rospy.Rate(1.0)
+    for i in range(20):
+        try:
+            pose = t.lookupTransform("world", "camera_link", rospy.Time(0.0))
+            break
+        except (tf.LookupException, tf.ConnectivityException):
+            rate.sleep()
+    if i == 19:
+        raise "Could Not find transform"
     return pose
-
-
 
 
 def get_train_model(arguments: dict):
@@ -124,7 +132,6 @@ def convert_points(source, estimation: Tuple):
 
 def remove_duplicate_point(points):
     final_points = []
-    breakpoint()
     for idx in range(len(points)):
         point = points[idx]
         distances = np.sum(np.abs(points[idx + 1:] - point), axis=1)
@@ -135,18 +142,16 @@ def remove_duplicate_point(points):
 def average_point(points):
     return np.mean(points, axis=0)
 
-def final_tranform(pose: np.ndarray):
+def final_transform(pose: np.ndarray):
     tm = TransformManager()
     object2cam = pt.transform_from_pq(np.hstack((AVG, pr.q_id)))
     cam2base = lookupTransform()
-    cam2base = pt.transform_from(
-             pr.active_matrix_from_intrinsic_euler_xyz(pose[1]),
-             pose[0]))
+    cam2base = pt.transform_from_pq(np.hstack((cam2base[0], cam2base[1])))
     tm.add_transform("world", "camera_link", cam2base)
     tm.add_transform("camera_link", "object", object2cam)
     world2object = tm.get_transform("world", "object")
     print(world2object)
-    return ee2object
+    return world2object
 
 if __name__ == "__main__":
     ARGS = parse_yml('Data/parse_python_commands.yml')
