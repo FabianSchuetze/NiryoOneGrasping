@@ -3,8 +3,19 @@ import cv2 as cv
 import numpy as np
 import open3d as o3d
 import yaml
+import tf
+import rospy
 from src.affine_transformation import Camera, GenerateModel
 from src.main import load_model
+from pytransform3d import transformations as pt
+from pytransform3d.transform_manager import TransformManager
+
+def lookupTransform():
+    t = tf.Transformer(True, rospy.Duration(10.0))
+    pose = t.lookupTransform("world", "camera_link", rospy.Time(10.0))
+    return pose
+
+
 
 
 def get_train_model(arguments: dict):
@@ -108,12 +119,8 @@ def convert_points(source, estimation: Tuple):
     after estiamtion
     """
     corr = estimation[2]
-    # transform = estimation[1]
-    # target = target[corr.squeeze()]
     source = source[corr.squeeze()]
     return source
-    # converted_source = (transform[:, :3] @ source.T + transform[:, [3]]).T
-    # return converted_source, target
 
 def remove_duplicate_point(points):
     final_points = []
@@ -128,6 +135,19 @@ def remove_duplicate_point(points):
 def average_point(points):
     return np.mean(points, axis=0)
 
+def final_tranform(pose: np.ndarray):
+    tm = TransformManager()
+    object2cam = pt.transform_from_pq(np.hstack((AVG, pr.q_id)))
+    cam2base = lookupTransform()
+    cam2base = pt.transform_from(
+             pr.active_matrix_from_intrinsic_euler_xyz(pose[1]),
+             pose[0]))
+    tm.add_transform("world", "camera_link", cam2base)
+    tm.add_transform("camera_link", "object", object2cam)
+    world2object = tm.get_transform("world", "object")
+    print(world2object)
+    return ee2object
+
 if __name__ == "__main__":
     ARGS = parse_yml('Data/parse_python_commands.yml')
     TARGET = get_train_model(ARGS)
@@ -137,8 +157,7 @@ if __name__ == "__main__":
     PT_3D_TARGET, PT_3D_SOURCE = corresponding_3d_points(TARGET, SOURCE, MATCHES)
     ESTIMATION = cv.estimateAffine3D(PT_3D_TARGET, PT_3D_SOURCE,
                                      ransacThreshold=0.009)
-    # T = trans[1]
     ESTIMATED_LOCATION = convert_points(PT_3D_SOURCE, ESTIMATION)
     SINGLE_POINTS = remove_duplicate_point(ESTIMATED_LOCATION)
     AVG = average_point(SINGLE_POINTS)
-    # transformation = estimate_transformation(out, PT_3D_TEST)
+    final_transform(AVG)
