@@ -5,6 +5,7 @@ import open3d as o3d
 import yaml
 import tf
 import rospy
+import matplotlib.pyplot as plt
 from pytransform3d import transformations as pt
 from pytransform3d import rotations as pr
 from pytransform3d.transform_manager import TransformManager
@@ -127,7 +128,7 @@ def convert_points(source, estimation: Tuple):
     after estiamtion
     """
     corr = estimation[2]
-    source = source[corr.squeeze()]
+    source = source[corr.squeeze().astype(bool), :]
     return source
 
 def remove_duplicate_point(points):
@@ -163,6 +164,5 @@ if __name__ == "__main__":
     ESTIMATION = cv.estimateAffine3D(PT_3D_TARGET, PT_3D_SOURCE,
                                      ransacThreshold=0.009)
     ESTIMATED_LOCATION = convert_points(PT_3D_SOURCE, ESTIMATION)
-    SINGLE_POINTS = remove_duplicate_point(ESTIMATED_LOCATION)
-    AVG = average_point(SINGLE_POINTS)
-    final_transform(AVG)
+    AVG = average_point(ESTIMATED_LOCATION)
+    # final_transform(AVG)

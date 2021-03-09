@@ -46,10 +46,10 @@ class GenerateModel:
     def _convert_3d_points(self) -> None:
         points = np.zeros((len(self._model['descriptors']), 3))
         for idx, point in enumerate(self._model['points2d']):
-            width, height = int(np.round(point[0])), int(np.round(point[1]))
-            p_z = self._depth_img[height, width] / 1000
-            p_x = (height - self._camera.cx) * p_z / self._camera.fx
-            p_y = (width - self._camera.cy) * p_z / self._camera.fy
+            x, y = int(np.round(point[0])), int(np.round(point[1]))
+            p_z = self._depth_img[y, x] / 1000
+            p_x = (x - self._camera.cx) * p_z / self._camera.fx
+            p_y = (y - self._camera.cy) * p_z / self._camera.fy
             points[idx] = [p_x, p_y, p_z]
         self._model['points3d'] = points
 
