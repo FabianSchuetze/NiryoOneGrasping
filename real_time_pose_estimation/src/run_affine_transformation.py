@@ -6,9 +6,10 @@ import yaml
 import tf
 import rospy
 import matplotlib.pyplot as plt
-from pytransform3d import transformations as pt
-from pytransform3d import rotations as pr
-from pytransform3d.transform_manager import TransformManager
+from scipy.spatial.transform import Rotation as R
+# from pytransform3d import transformations as pt
+# from pytransform3d import rotations as pr
+# from pytransform3d.transform_manager import TransformManager
 from src.affine_transformation import Camera, GenerateModel
 from src.main import load_model
 
@@ -16,14 +17,15 @@ def lookupTransform():
     rospy.init_node('tf_P3AT')
     t = tf.TransformListener()
     rate = rospy.Rate(1.0)
+
     for i in range(20):
         try:
-            pose = t.lookupTransform("world", "camera_link", rospy.Time(0.0))
+            pose = t.lookupTransform("world", "camera_depth_optical_frame", rospy.Time(0.0))
             break
         except (tf.LookupException, tf.ConnectivityException):
             rate.sleep()
     if i == 19:
-        raise "Could Not find transform"
+        raise BaseException("Could Not find transform")
     return pose
 
 
@@ -102,6 +104,7 @@ def _estimate_rotation(diff_source, diff_target):
 
 
 def estimate_transformation(source: np.array, target: np.array):
+    breakpoint()
     centroid_source = source.mean(axis=0, keepdims=True)
     centroid_target = target.mean(axis=0, keepdims=True)
     rotation = _estimate_rotation(source - centroid_source,
@@ -144,15 +147,11 @@ def average_point(points):
     return np.mean(points, axis=0)
 
 def final_transform(pose: np.ndarray):
-    tm = TransformManager()
-    object2cam = pt.transform_from_pq(np.hstack((AVG, pr.q_id)))
-    cam2base = lookupTransform()
-    cam2base = pt.transform_from_pq(np.hstack((cam2base[0], cam2base[1])))
-    tm.add_transform("world", "camera_link", cam2base)
-    tm.add_transform("camera_link", "object", object2cam)
-    world2object = tm.get_transform("world", "object")
-    print(world2object)
-    return world2object
+    breakpoint()
+    base2cam = lookupTransform()
+    t_mat = R.from_quat(base2cam[1]).as_matrix()
+    out = t_mat @ pose  + base2cam[0]
+    return out
 
 if __name__ == "__main__":
     ARGS = parse_yml('Data/parse_python_commands.yml')
@@ -165,4 +164,4 @@ if __name__ == "__main__":
                                      ransacThreshold=0.009)
     ESTIMATED_LOCATION = convert_points(PT_3D_SOURCE, ESTIMATION)
     AVG = average_point(ESTIMATED_LOCATION)
-    # final_transform(AVG)
+    final_transform(AVG)

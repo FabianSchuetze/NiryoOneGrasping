@@ -8,6 +8,8 @@
 <!--</node>-->
 <!--</launch>-->
 <launch>
-<node pkg="tf2_ros" type="static_transform_publisher" name="link1_broadcaster" args="0.0 -0.04 0.06 0.0 0.0 -1.570796331 forearm_link camera_link" />
+    <node pkg="tf2_ros" type="static_transform_publisher" 
+        name="link1_broadcaster" 
+        args="0.02 -0.04 0.06 0.0 0.0 0.70710678 -0.70710678 forearm_link camera_link" />
 </launch>
 
