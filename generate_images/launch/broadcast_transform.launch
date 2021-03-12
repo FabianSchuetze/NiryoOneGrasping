@@ -1,9 +1,13 @@
+<!--<launch>-->
+    <!--<arg name="root_dir"/>-->
+    <!--<arg name="transform_file"/>-->
+  <!--<node pkg="generate_images" type="BroadcastTransform" name="BroadcastTransform" output="screen">-->
+  <!--[> handeye_calib_camodocal arg pass <]-->
+    <!--<param name="root_dir"       type="str" value="$(arg root_dir)" />-->
+    <!--<param name="transform_file"       type="str" value="$(arg transform_file)" />-->
+<!--</node>-->
+<!--</launch>-->
 <launch>
-    <arg name="root_dir"/>
-    <arg name="transform_file"/>
-  <node pkg="generate_images" type="BroadcastTransform" name="BroadcastTransform" output="screen">
-  <!-- handeye_calib_camodocal arg pass -->
-    <param name="root_dir"       type="str" value="$(arg root_dir)" />
-    <param name="transform_file"       type="str" value="$(arg transform_file)" />
-</node>
+<node pkg="tf2_ros" type="static_transform_publisher" name="link1_broadcaster" args="0.0 -0.04 0.06 0.0 0.0 -1.570796331 forearm_link camera_link" />
 </launch>
+
