@@ -1,0 +1,25 @@
+<?xml version="1.0"?>
+<package>
+  <name>pose_detection</name>
+  <version>0.1.0</version>
+  <description>The moveit_tutorials package</description>
+  <license>BSD</license>
+  <author email="fs@main.com">FS</author>
+
+  <maintainer email="fs@main.com">FS</maintainer>
+
+  <buildtool_depend>catkin</buildtool_depend>
+  <build_depend>eigen</build_depend>
+  <build_depend>moveit_core</build_depend>
+  <build_depend>rviz_visual_tools</build_depend>
+  <build_depend>tf2_ros</build_depend>
+  <build_depend>tf2_eigen</build_depend>
+  <build_depend>tf2_geometry_msgs</build_depend>
+  <run_depend>eigen</run_depend>
+  <run_depend>moveit_core</run_depend>
+  <run_depend>rviz_visual_tools</run_depend>
+  <run_depend>tf2_ros</run_depend>
+  <run_depend>tf2_eigen</run_depend>
+  <run_depend>tf2_geometry_msgs</run_depend>
+
+</package>
