@@ -1,0 +1,7 @@
+---
+Checks: 'llvm,
+         cppcoreguidelines*,
+         modernize*,
+         -modernize-use-trailing-return-type'
+
+HeaderFilterRegex: ''

@@ -46,11 +46,8 @@ include_directories(include)
 add_library(${PROJECT_NAME} SHARED ${${PROJECT_NAME}_SRC})
 
 add_executable(DisplayImage src/main.cpp )
-add_executable(BroadcastTransform src/broadcast_transform.cpp )
 add_executable(WriteImagesToFile src/write_images_to_file.cpp)
 target_link_libraries(DisplayImage ${OpenCV_LIBS} 
     ${catkin_LIBRARIES})
-target_link_libraries(BroadcastTransform ${OpenCV_LIBS} 
-    ${catkin_LIBRARIES} realsense2 ${PROJECT_NAME})
 target_link_libraries(WriteImagesToFile ${OpenCV_LIBS} 
     ${catkin_LIBRARIES} realsense2 ${PROJECT_NAME})
