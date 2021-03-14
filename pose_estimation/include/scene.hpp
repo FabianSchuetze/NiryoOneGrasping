@@ -24,14 +24,19 @@ class Scene {
         //virtual ~Scene() = default;
         //Scene(const std::filesystem::path&, const std::filesystem::path&); 
         void callback(const PointCloud::Ptr&);
-        void decipher_image(const PointCloud::Ptr&);
-        void decipher_depth(const PointCloud::Ptr&);
+        void decipherImage(const PointCloud::Ptr&);
+        void decipherDepth(const PointCloud::Ptr&);
+        void estimateFeatures(cv::Ptr<cv::SIFT>&);
+        const cv::Mat& descriptors() {return descriptors_;};
     private:
         cv::Mat depth;
         Camera camera;
         cv::Mat img;
         std::vector<cv::KeyPoint> kps;
-        cv::Mat descriptors;
-        cv::Mat points2d;
+        cv::Mat descriptors_;
+        //cv::Mat points2d;
         cv::Mat points3d;
+        std::tuple<float, float, float> deprojectPoint(size_t, size_t) const;
+        void create_points();
+
 };

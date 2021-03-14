@@ -6,10 +6,11 @@
 class Target {
     public:
         Target(const std::filesystem::path&, const std::filesystem::path&);
+        const cv::Mat& descriptors() {return descriptors_;};
     private:
-        cv::Mat descriptors;
+        cv::Mat descriptors_;
         cv::Mat points3d;
-        cv::Mat points2d;
+        //cv::Mat points2d;
         std::vector<cv::KeyPoint> kps;
         cv::Mat img;
 };

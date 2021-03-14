@@ -4,13 +4,16 @@
 #include <sensor_msgs/Image.h>
 
 #include <iostream>
+#include <cmath>
 #include <opencv2/highgui.hpp>
 #include <opencv2/imgcodecs.hpp>
+#include <opencv2/features2d.hpp>
 #include <opencv2/opencv.hpp>
 
 #include "scene.hpp"
 
 constexpr int TOCM = 100;
+constexpr int TOMM = 1000;
 constexpr uint HEIGHT = 480;
 constexpr uint WIDTH = 640;
 // Scene read_scene_static() {
@@ -29,7 +32,7 @@ constexpr uint WIDTH = 640;
 //}
 //
 
-void Scene::decipher_image(const PointCloud::Ptr& cloud) {
+void Scene::decipherImage(const PointCloud::Ptr& cloud) {
     sensor_msgs::Image ros_img;
     pcl::toROSMsg(*cloud, ros_img);
     cv_bridge::CvImagePtr tmp_img =
@@ -40,7 +43,7 @@ void Scene::decipher_image(const PointCloud::Ptr& cloud) {
     img = tmp_img->image;
 }
 
-void Scene::decipher_depth(const PointCloud::Ptr& cloud) {
+void Scene::decipherDepth(const PointCloud::Ptr& cloud) {
     if (cloud->height != HEIGHT) {
         throw std::runtime_error("Has different height");
     }
@@ -57,6 +60,35 @@ void Scene::decipher_depth(const PointCloud::Ptr& cloud) {
 }
 
 void Scene::callback(const PointCloud::Ptr& point_cloud) {
-    decipher_image(point_cloud);
-    decipher_depth(point_cloud);
+    decipherImage(point_cloud);
+    decipherDepth(point_cloud);
 }
+
+std::tuple<float, float, float> inline Scene::deprojectPoint(size_t x, size_t y)  const {
+    float p_z = static_cast<float>(depth.at<ushort>(y, x)) / TOMM;
+    float p_x = (static_cast<float>(x) - camera.cx) * p_z / camera.fx;
+    float p_y = (static_cast<float>(y) - camera.cy) * p_z / camera.fy;
+    return {p_x, p_y, p_z};
+}
+
+void Scene::create_points() {
+    points3d = cv::Mat(kps.size(), 3, CV_32FC1);
+    size_t i(0);
+    for (const cv::KeyPoint& kp : kps) {
+        uint x = static_cast<uint>(std::round(kp.pt.x));
+        uint y = static_cast<uint>(std::round(kp.pt.y));
+        const auto [p_x, p_y, p_z] = deprojectPoint(x, y);
+        points3d.at<float>(i, 0) = p_x;
+        points3d.at<float>(i, 1) = p_y;
+        points3d.at<float>(i, 2) = p_z;
+        ++i;
+    }
+}
+
+void Scene::estimateFeatures(cv::Ptr<cv::SIFT>& estimator) {
+    kps.clear();
+    descriptors_.release();
+    estimator->detectAndCompute(img, cv::noArray(), kps, descriptors_);
+    create_points();
+}
+
