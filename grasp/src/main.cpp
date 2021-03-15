@@ -35,9 +35,8 @@ void move_arm(const gpd_ros::GraspConfigList& msg) {
         if (success) {
             move_group.move();
             break;
-        } else {
-            std::cout << "not working" << std::endl;
         }
+        std::cout << "not working" << std::endl;
         std::this_thread::sleep_for(std::chrono::seconds(1));
         ++i;
     }

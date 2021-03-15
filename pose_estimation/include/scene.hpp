@@ -26,7 +26,7 @@ class Scene : public Model {
     void callback(const PointCloud::Ptr &);
     void decipherImage(const PointCloud::Ptr &);
     void decipherDepth(const PointCloud::Ptr &);
-    void estimateFeatures(cv::Ptr<cv::SIFT> &);
+    void estimateFeatures(const cv::Ptr<cv::SIFT> &);
 
   private:
     cv::Mat depth_;

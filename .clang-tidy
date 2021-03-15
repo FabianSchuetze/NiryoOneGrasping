@@ -2,6 +2,11 @@
 Checks: 'llvm,
          cppcoreguidelines*,
          modernize*,
-         -modernize-use-trailing-return-type'
+         performance*,
+         readability*,
+         portability*,
+         -modernize-use-trailing-return-type,
+         -cppcoreguidelines-pro-type-vararg,
+         -readability-isolate-declaration'
 
 HeaderFilterRegex: ''

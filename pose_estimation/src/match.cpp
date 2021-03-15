@@ -2,12 +2,12 @@
 #include "opencv2/highgui.hpp"
 #include <iostream>
 
-Match::matches Match::RatioTest(std::vector<matches> &&match_vec) {
+Match::matches Match::RatioTest(std::vector<matches> &&match_vec) const {
     matches good_matches;
     for (matches &match : match_vec) {
         cv::DMatch &m(match[0]), n(match[1]);
         if (m.distance < ratio * n.distance) {
-            good_matches.push_back(std::move(m));
+            good_matches.push_back(m);
         }
     }
     return good_matches;
@@ -16,11 +16,6 @@ Match::matches Match::RatioTest(std::vector<matches> &&match_vec) {
 Match::matches Match::matchDescriptors(const cv::Mat &target_descriptors,
                                        const cv::Mat &scene_descriptors) {
     std::vector<std::vector<cv::DMatch>> knn_matches;
-    // std::cout << "target_descriptors:\n" << target_descriptors << std::endl;
-    // std::cout << "scene descriptors:\n" << scene_descriptors << std::endl;
-    // std::cout << "target_type and scene type " << target_descriptors.type()
-    // <<
-    //", " << scene_descriptors.type() << std::endl;
     matcher.knnMatch(target_descriptors, scene_descriptors, knn_matches, 2);
     return RatioTest(std::move(knn_matches));
 }
@@ -32,14 +27,22 @@ inline void copy(size_t source_idx, size_t target_idx, const cv::Mat &source,
 
 std::pair<cv::Mat, cv::Mat>
 Match::corresponding3dPoints(const matches &match_vec,
-                             const cv::Mat &scene_pop_3d_points,
-                             const cv::Mat &ref_pop_3d_points) {
+                             const cv::Mat &ref_pop_3d_points,
+                             const cv::Mat &scene_pop_3d_points) {
     cv::Mat scene_3d_points = cv::Mat(match_vec.size(), 3, CV_32FC1);
     cv::Mat ref_3d_points = cv::Mat(match_vec.size(), 3, CV_32FC1);
+    //std::cout << "Size scene: " << scene_pop_3d_points.rows << ", "
+              //<< scene_pop_3d_points.cols << std::endl;
+    //std::cout << "Size target: " << ref_pop_3d_points.rows << ", "
+              //<< ref_pop_3d_points.cols << std::endl;
     size_t idx(0);
     for (const cv::DMatch &match : match_vec) {
-        copy(idx, match.queryIdx, scene_pop_3d_points, scene_3d_points);
-        copy(idx, match.trainIdx, ref_pop_3d_points, ref_3d_points);
+        //std::cout << "Trying to match: " << idx << "queryIdx" << match.queryIdx
+                  //<< ", "
+                  //<< " trainIdx: " << match.trainIdx << std::endl;
+        copy(match.trainIdx, idx, scene_pop_3d_points, scene_3d_points);
+        copy(match.queryIdx, idx, ref_pop_3d_points, ref_3d_points);
+        // The assignment of trainIDx and queryIdx is a bit counterintuitive
         ++idx;
     }
     return {scene_3d_points, ref_3d_points};

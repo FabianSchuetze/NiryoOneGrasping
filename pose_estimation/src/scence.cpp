@@ -79,7 +79,7 @@ void Scene::create_points() {
     }
 }
 
-void Scene::estimateFeatures(cv::Ptr<cv::SIFT> &estimator) {
+void Scene::estimateFeatures(const cv::Ptr<cv::SIFT> &estimator) {
     kps_.clear();
     estimator->detectAndCompute(img_, cv::noArray(), kps_, descriptors_);
     create_points();

@@ -15,7 +15,7 @@
 
 typedef actionlib::SimpleActionClient<niryo_one_msgs::RobotMoveAction>
     NiryoClient;
-typedef std::pair<geometry_msgs::Point, niryo_one_msgs::RPY> NiryoPose;
+using NiryoPose = std::pair<geometry_msgs::Point, niryo_one_msgs::RPY>;
 
 struct EndEffectorPosition {
     NiryoPose pose;

@@ -17,6 +17,6 @@ class Match {
   private:
     const float ratio;
     cv::BFMatcher matcher;
-    matches RatioTest(std::vector<matches> &&);
+    matches RatioTest(std::vector<matches> &&) const;
 };
 #endif

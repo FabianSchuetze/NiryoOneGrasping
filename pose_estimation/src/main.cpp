@@ -7,6 +7,7 @@
 
 constexpr uint QUEUE = 5;
 constexpr uint RATE = 10;
+constexpr float RATIO = 0.7;
 
 std::vector<Target> read_targets() {
     std::filesystem::path model_description(
@@ -36,26 +37,23 @@ int main(int argc, char **argv) {
         "depth_imgs/200.png";
     scene.deserialize(first_arg, second_arg);
     ros::Rate rate(RATE);
-    Match matcher(0.75);
+    Match matcher(RATIO);
     while (ros::ok()) {
         std::cout << "Inside the ros function\n";
         // ros::spin();
-        std::cout << "Sift to be created\n";
-        auto sift = cv::SIFT::create(100, 3, 0.04, 10, 1.6, CV_8U);
-        std::cout << "Crearted sift\n";
+        const auto sift = cv::SIFT::create(100, 3, 0.04, 10, 1.6, CV_8U);
         scene.estimateFeatures(sift);
-        std::cout << "Estimated features\n";
         std::vector<cv::DMatch> matches = matcher.matchDescriptors(
             targets[0].descriptors(), scene.descriptors());
-        std::cout << "Estimated machtes\n";
         Match::drawMatches(targets[0].img(), targets[0].kps(), scene.img(),
                            scene.kps(), matches);
-         const auto [est_scene_points, est_target_points] =
-         matcher.corresponding3dPoints(matches, scene.points3d(),
-         targets[0].points3d());
-         cv::Mat inliers;
-         cv::estimateAffine3D(est_target_points, est_scene_points, cv::Mat(),
-         inliers);
+        const auto [est_scene_points, est_target_points] =
+            Match::corresponding3dPoints(matches, targets[0].points3d(),
+                    scene.points3d());
+        cv::Mat inliers, not_used;
+        cv::estimateAffine3D(est_target_points, est_scene_points, not_used,
+                             inliers);
+        std::cout << inliers << std::endl;
         rate.sleep();
     }
     // sub.shutdown();
