@@ -35,9 +35,9 @@ Target::Target(const fs::path& _model_description,
                const fs::path& _img_location) {
     cv::FileStorage fs = openStorage(_model_description);
     getParameter(descriptors_, "descriptors", fs);
-    getParameter(points3d, "points3d", fs);
+    getParameter(points3d_, "points3d", fs);
     //getParameter(points2d, "points2d", fs);
-    cv::read(fs["keypoints"], kps);
+    cv::read(fs["keypoints"], kps_);
     //descriptors = fs["descriptors"].mat();
 
 

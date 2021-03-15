@@ -40,6 +40,7 @@ catkin_package(
 set(${PROJECT_NAME}_SRC
     src/target.cpp
     src/scence.cpp
+    src/match.cpp
 )
 include_directories(SYSTEM ${catkin_INCLUDE_DIRS} ${EIGEN3_INCLUDE_DIRS} ${OpenCV_INCLUDE_DIRS} 
                            ${PCL_INCLUDE_DIRS})

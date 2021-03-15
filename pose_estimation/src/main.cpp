@@ -1,12 +1,12 @@
 #include <opencv2/features2d.hpp>
 #include <vector>
 
+#include "match.hpp"
 #include "scene.hpp"
 #include "target.hpp"
 
 constexpr uint QUEUE = 5;
 constexpr uint RATE = 10;
-constexpr float RATIO = 0.7;
 
 std::vector<Target> read_targets() {
     std::filesystem::path model_description(
@@ -21,26 +21,6 @@ std::vector<Target> read_targets() {
     return targets;
 }
 
-std::vector<cv::DMatch>
-RatioTest(std::vector<std::vector<cv::DMatch>> &&matches) {
-    std::vector<cv::DMatch> good_matches;
-    for (std::vector<cv::DMatch> &match : matches) {
-        cv::DMatch &m(match[0]), n(match[1]);
-        if (m.distance < RATIO * n.distance) {
-            good_matches.push_back(std::move(m));
-        }
-    }
-    return good_matches;
-}
-
-std::vector<cv::DMatch> matchDescriptors(const cv::Mat &target_descriptors,
-                                         const cv::Mat &scene_descriptors) {
-    cv::BFMatcher matcher;
-    std::vector<std::vector<cv::DMatch>> matches;
-    matcher.knnMatch(target_descriptors, scene_descriptors, matches, 2);
-    return RatioTest(std::move(matches));
-}
-
 int main(int argc, char **argv) {
     ros::init(argc, argv, "publish_pose");
     ros::NodeHandle nh;
@@ -50,12 +30,22 @@ int main(int argc, char **argv) {
     ros::Subscriber sub = nh.subscribe("/camera/depth_registered/points", QUEUE,
                                        &Scene::callback, &scene);
     ros::Rate rate(RATE);
+    Match matcher(0.75);
     while (ros::ok()) {
         ros::spin();
         auto sift = cv::SIFT::create(100, 3, 0.04, 10, 1.6, CV_8U);
         scene.estimateFeatures(sift);
-        std::vector<cv::DMatch> matches =
-            matchDescriptors(targets[0].descriptors(), scene.descriptors());
+        std::vector<cv::DMatch> matches = matcher.matchDescriptors(
+            targets[0].descriptors(), scene.descriptors());
+        Match::drawMaches(scene.img(), scene.kps(), targets[0].img(),
+                          targets[0].kps(), matches);
+        const auto [est_scene_points, est_target_points] =
+            matcher.corresponding3dPoints(matches, scene.points3d(),
+                                          targets[0].points3d());
+        cv::Mat inliers;
+        cv::estimateAffine3D(est_target_points, est_scene_points, cv::Mat(),
+                             inliers);
+
         // cv::Ptr<cv_SIFT> sift = cv::SIFT::create(100);
         // cv::SIFT
         // ros::spin();
