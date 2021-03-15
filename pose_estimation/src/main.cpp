@@ -5,16 +5,18 @@
 #include "scene.hpp"
 #include "target.hpp"
 
-constexpr uint QUEUE = 5;
-constexpr uint RATE = 10;
-constexpr float RATIO = 0.7;
+static constexpr uint QUEUE = 5;
+static constexpr uint RATE = 10;
+static constexpr float RATIO = 0.7;
+static constexpr uint MIN_MATCHES = 5;
+static constexpr float RANSAC_THRESHOLD = 0.009;
 
 std::vector<Target> read_targets() {
     std::filesystem::path model_description(
         "/home/fabian/Documents/work/transforms/src/pose_estimation/data/"
         "teebox_features.yml");
     std::filesystem::path img_path(
-        "/home/fabian/Documents/work/realsense/data/2021-03-04-17-39/"
+        "/home/fabian/Documents/work/realsense/data/2021-03-06-17-01/"
         "color_imgs/125.png");
     std::vector<Target> targets;
     targets.emplace_back(model_description, img_path);
@@ -39,21 +41,26 @@ int main(int argc, char **argv) {
     ros::Rate rate(RATE);
     Match matcher(RATIO);
     while (ros::ok()) {
-        std::cout << "Inside the ros function\n";
         // ros::spin();
-        const auto sift = cv::SIFT::create(100, 3, 0.04, 10, 1.6, CV_8U);
+        const auto sift = cv::SIFT::create(0, 3, 0.04, 10, 1.6, CV_8U);
+        //const auto sift = cv::SIFT::create();
         scene.estimateFeatures(sift);
         std::vector<cv::DMatch> matches = matcher.matchDescriptors(
             targets[0].descriptors(), scene.descriptors());
-        Match::drawMatches(targets[0].img(), targets[0].kps(), scene.img(),
-                           scene.kps(), matches);
-        const auto [est_scene_points, est_target_points] =
+        //Match::drawMatches(targets[0].img(), targets[0].kps(), scene.img(),
+                           //scene.kps(), matches);
+        const auto [est_ref_points, est_scene_points] =
             Match::corresponding3dPoints(matches, targets[0].points3d(),
                     scene.points3d());
-        cv::Mat inliers, not_used;
-        cv::estimateAffine3D(est_target_points, est_scene_points, not_used,
-                             inliers);
-        std::cout << inliers << std::endl;
+        cv::Mat inliers, transform;
+        cv::estimateAffine3D(est_ref_points, est_scene_points, transform,
+                             inliers, RANSAC_THRESHOLD);
+        if (static_cast<uint>(cv::sum(inliers)[0]) > MIN_MATCHES) {
+            std::cout << inliers << std::endl;
+            std::cout <<  transform << std::endl;
+        } else{ 
+            std::cerr << "Could not find the minimum number of matches\n";
+        }
         rate.sleep();
     }
     // sub.shutdown();

@@ -5,6 +5,8 @@
 #include <type_traits>
 namespace fs = std::filesystem;
 
+static constexpr float TOMM = 100;
+
 template <typename T>
 void getParameter(T &para, const std::string &name, const cv::FileStorage &fs) {
     cv::FileNode n = fs[name];
@@ -38,6 +40,7 @@ Target::Target(const fs::path &_model_description,
     getParameter(descriptors_, "descriptors", fs);
     descriptors_.convertTo(descriptors_, CV_8U);
     getParameter(points3d_, "points_3d", fs);
+    points3d_ = points3d_ / TOMM;
     cv::read(fs["keypoints"], kps_);
     img_ = cv::imread(_img_location);
 }

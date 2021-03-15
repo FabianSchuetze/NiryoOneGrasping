@@ -4,8 +4,8 @@
 
 Match::matches Match::RatioTest(std::vector<matches> &&match_vec) const {
     matches good_matches;
-    for (matches &match : match_vec) {
-        cv::DMatch &m(match[0]), n(match[1]);
+    for (const matches &match : match_vec) {
+        const cv::DMatch &m(match[0]), n(match[1]);
         if (m.distance < ratio * n.distance) {
             good_matches.push_back(m);
         }
@@ -31,21 +31,13 @@ Match::corresponding3dPoints(const matches &match_vec,
                              const cv::Mat &scene_pop_3d_points) {
     cv::Mat scene_3d_points = cv::Mat(match_vec.size(), 3, CV_32FC1);
     cv::Mat ref_3d_points = cv::Mat(match_vec.size(), 3, CV_32FC1);
-    //std::cout << "Size scene: " << scene_pop_3d_points.rows << ", "
-              //<< scene_pop_3d_points.cols << std::endl;
-    //std::cout << "Size target: " << ref_pop_3d_points.rows << ", "
-              //<< ref_pop_3d_points.cols << std::endl;
     size_t idx(0);
     for (const cv::DMatch &match : match_vec) {
-        //std::cout << "Trying to match: " << idx << "queryIdx" << match.queryIdx
-                  //<< ", "
-                  //<< " trainIdx: " << match.trainIdx << std::endl;
         copy(match.trainIdx, idx, scene_pop_3d_points, scene_3d_points);
         copy(match.queryIdx, idx, ref_pop_3d_points, ref_3d_points);
-        // The assignment of trainIDx and queryIdx is a bit counterintuitive
         ++idx;
     }
-    return {scene_3d_points, ref_3d_points};
+    return {ref_3d_points, scene_3d_points};
 }
 
 void Match::drawMatches(const cv::Mat &target_img,
