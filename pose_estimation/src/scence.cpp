@@ -19,21 +19,6 @@ constexpr int TOCM = 100;
 constexpr int TOMM = 1000;
 constexpr uint HEIGHT = 480;
 constexpr uint WIDTH = 640;
-// Scene read_scene_static() {
-// Scene scene;
-// return scene;
-
-//// Scene(
-//}
-
-// Scene read_scene_dynamic() {
-// Scene scene;
-// ros::NodeHandle n;
-// ros::ServiceClient client =
-// n.serviceClient<PointCloud::Ptr>(read_scene_dynamic Scene scene; return
-// scene;
-//}
-//
 
 void Scene::decipherImage(const PointCloud::Ptr &cloud) {
     sensor_msgs::Image ros_img;
@@ -96,7 +81,6 @@ void Scene::create_points() {
 
 void Scene::estimateFeatures(cv::Ptr<cv::SIFT> &estimator) {
     kps_.clear();
-    descriptors_.release();
     estimator->detectAndCompute(img_, cv::noArray(), kps_, descriptors_);
     create_points();
 }

@@ -10,9 +10,9 @@ class Match {
     matches matchDescriptors(const cv::Mat &, const cv::Mat &);
     static std::pair<cv::Mat, cv::Mat>
     corresponding3dPoints(const matches &, const cv::Mat &, const cv::Mat &);
-    static void drawMaches(const cv::Mat &, const std::vector<cv::KeyPoint> &,
-                           const cv::Mat &, const std::vector<cv::KeyPoint> &,
-                           const std::vector<cv::DMatch> &);
+    static void drawMatches(const cv::Mat &, const std::vector<cv::KeyPoint> &,
+                            const cv::Mat &, const std::vector<cv::KeyPoint> &,
+                            const std::vector<cv::DMatch> &);
 
   private:
     const float ratio;

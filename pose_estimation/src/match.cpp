@@ -1,5 +1,6 @@
 #include "match.hpp"
 #include "opencv2/highgui.hpp"
+#include <iostream>
 
 Match::matches Match::RatioTest(std::vector<matches> &&match_vec) {
     matches good_matches;
@@ -15,6 +16,11 @@ Match::matches Match::RatioTest(std::vector<matches> &&match_vec) {
 Match::matches Match::matchDescriptors(const cv::Mat &target_descriptors,
                                        const cv::Mat &scene_descriptors) {
     std::vector<std::vector<cv::DMatch>> knn_matches;
+    // std::cout << "target_descriptors:\n" << target_descriptors << std::endl;
+    // std::cout << "scene descriptors:\n" << scene_descriptors << std::endl;
+    // std::cout << "target_type and scene type " << target_descriptors.type()
+    // <<
+    //", " << scene_descriptors.type() << std::endl;
     matcher.knnMatch(target_descriptors, scene_descriptors, knn_matches, 2);
     return RatioTest(std::move(knn_matches));
 }
@@ -39,17 +45,24 @@ Match::corresponding3dPoints(const matches &match_vec,
     return {scene_3d_points, ref_3d_points};
 }
 
-void Match::drawMaches(const cv::Mat &scene_img,
-                         const std::vector<cv::KeyPoint> &kps_scene,
-                         const cv::Mat &target_img,
-                         const std::vector<cv::KeyPoint> &kps_target,
-                         const std::vector<cv::DMatch>& match_vec) {
+void Match::drawMatches(const cv::Mat &target_img,
+                        const std::vector<cv::KeyPoint> &kps_target,
+                        const cv::Mat &scene_img,
+                        const std::vector<cv::KeyPoint> &kps_scene,
+                        const std::vector<cv::DMatch> &match_vec) {
+    if ((scene_img.rows != target_img.rows) ||
+        (scene_img.cols != target_img.cols)) {
+        std::cerr << "Images don't have the same size, target: "
+                  << target_img.rows << ", " << target_img.cols
+                  << " vs, scene: " << scene_img.rows << ", " << scene_img.cols
+                  << std::endl;
+        throw std::runtime_error("");
+    }
     cv::Mat img_matches;
-    cv::drawMatches(scene_img, kps_scene, target_img, kps_target, match_vec,
+    cv::drawMatches(target_img, kps_target, scene_img, kps_scene, match_vec,
                     img_matches, cv::Scalar::all(-1), cv::Scalar::all(-1),
                     std::vector<char>(),
                     cv::DrawMatchesFlags::NOT_DRAW_SINGLE_POINTS);
-    //-- Show detected matches
     cv::imshow("Good Matches", img_matches);
     cv::waitKey();
 }

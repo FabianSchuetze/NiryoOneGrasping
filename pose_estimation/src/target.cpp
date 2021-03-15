@@ -1,14 +1,15 @@
 #include "target.hpp"
-#include <opencv2/core.hpp>
 #include <iostream>
+#include <opencv2/imgcodecs.hpp>
+#include <opencv2/core.hpp>
 #include <type_traits>
 namespace fs = std::filesystem;
 
 template <typename T>
-void getParameter(T& para, const std::string& name, const cv::FileStorage fs) {
+void getParameter(T &para, const std::string &name, const cv::FileStorage fs) {
     cv::FileNode n = fs[name];
     if (n.empty()) {
-        std::cerr << "Could not open" << name << std::endl;
+        std::cerr << "Could not open: " << name << std::endl;
         throw std::runtime_error(" ");
     }
     if constexpr (std::is_same_v<T, cv::Mat>) {
@@ -18,7 +19,7 @@ void getParameter(T& para, const std::string& name, const cv::FileStorage fs) {
     }
 }
 
-const cv::FileStorage openStorage(const fs::path& path) {
+const cv::FileStorage openStorage(const fs::path &path) {
     bool exists = fs::exists(path);
     if (!exists) {
         std::cerr << "File does not exists " << path << std::endl;
@@ -31,14 +32,12 @@ const cv::FileStorage openStorage(const fs::path& path) {
     }
     return storage;
 }
-Target::Target(const fs::path& _model_description,
-               const fs::path& _img_location) {
+Target::Target(const fs::path &_model_description,
+               const fs::path &_img_location) {
     cv::FileStorage fs = openStorage(_model_description);
     getParameter(descriptors_, "descriptors", fs);
-    getParameter(points3d_, "points3d", fs);
-    //getParameter(points2d, "points2d", fs);
+    descriptors_.convertTo(descriptors_, CV_8U);
+    getParameter(points3d_, "points_3d", fs);
     cv::read(fs["keypoints"], kps_);
-    //descriptors = fs["descriptors"].mat();
-
-
+    img_ = cv::imread(_img_location);
 }
