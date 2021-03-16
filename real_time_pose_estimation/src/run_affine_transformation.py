@@ -7,9 +7,6 @@ import tf
 import rospy
 import matplotlib.pyplot as plt
 from scipy.spatial.transform import Rotation as R
-# from pytransform3d import transformations as pt
-# from pytransform3d import rotations as pr
-# from pytransform3d.transform_manager import TransformManager
 from src.affine_transformation import Camera, GenerateModel
 from src.main import load_model
 
@@ -73,6 +70,7 @@ def get_test_model(arguments: dict):
 
 
 def corresponding_3d_points(train, test, matches):
+    """Train is the fixed reference model. test is the one from the scene"""
     points_3d_train, points_3d_test = [], []
     for match in matches:
         point_3d_train = train['points3d'][match.trainIdx]
@@ -83,6 +81,7 @@ def corresponding_3d_points(train, test, matches):
 
 
 def match(train, test):
+    """Train is the fixed reference model. test is the one from the scene"""
     bf = cv.BFMatcher(crossCheck=False)
     matches = bf.knnMatch(test['descriptors'], train['descriptors'], k=2)
     good = []
@@ -164,4 +163,4 @@ if __name__ == "__main__":
                                      ransacThreshold=0.009)
     ESTIMATED_LOCATION = convert_points(PT_3D_SOURCE, ESTIMATION)
     AVG = average_point(ESTIMATED_LOCATION)
-    final_transform(AVG)
+    # final_transform(AVG)
