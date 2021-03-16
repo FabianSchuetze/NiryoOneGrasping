@@ -6,7 +6,9 @@ Checks: 'llvm,
          readability*,
          portability*,
          -modernize-use-trailing-return-type,
+         -modernize-use-nodiscard,
          -cppcoreguidelines-pro-type-vararg,
-         -readability-isolate-declaration'
+         -readability-isolate-declaration,
+         -cppcoreguidelines-pro-bounds-array-to-pointer-decay'
 
 HeaderFilterRegex: ''

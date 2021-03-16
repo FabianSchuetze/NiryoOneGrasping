@@ -40,6 +40,7 @@ Target::Target(const fs::path &_model_description,
     getParameter(descriptors_, "descriptors", fs);
     descriptors_.convertTo(descriptors_, CV_8U);
     getParameter(points3d_, "points_3d", fs);
+    points3d_ = points3d_.reshape(1, descriptors_.rows);
     points3d_ = points3d_ / TOMM;
     cv::read(fs["keypoints"], kps_);
     img_ = cv::imread(_img_location);

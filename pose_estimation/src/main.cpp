@@ -47,11 +47,13 @@ int main(int argc, char **argv) {
         scene.estimateFeatures(sift);
         std::vector<cv::DMatch> matches = matcher.matchDescriptors(
             targets[0].descriptors(), scene.descriptors());
-        //Match::drawMatches(targets[0].img(), targets[0].kps(), scene.img(),
-                           //scene.kps(), matches);
+        Match::drawMatches(targets[0].img(), targets[0].kps(), scene.img(),
+                           scene.kps(), matches);
         const auto [est_ref_points, est_scene_points] =
             Match::corresponding3dPoints(matches, targets[0].points3d(),
                     scene.points3d());
+        std::cout << "Reference 3d Points\n" << est_ref_points <<std::endl;
+        std::cout << "Scene 3d Points\n" << est_scene_points <<std::endl;
         cv::Mat inliers, transform;
         cv::estimateAffine3D(est_ref_points, est_scene_points, transform,
                              inliers, RANSAC_THRESHOLD);
