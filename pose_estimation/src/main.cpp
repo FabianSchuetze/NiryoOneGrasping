@@ -1,5 +1,6 @@
 #include <opencv2/features2d.hpp>
 #include <vector>
+#include <geometry_msgs/Point.h>
 
 #include "match.hpp"
 #include "scene.hpp"
@@ -32,6 +33,8 @@ int main(int argc, char **argv) {
     // std::cout << "inside the main function" << std::endl;
     ros::Subscriber sub = nh.subscribe("/camera/depth_registered/points", QUEUE,
                                        &Scene::callback, &scene);
+    ros::Publisher pub = nh.advertise<geometry_msgs::Point>("grasp_position",
+            1, true);
     // std::filesystem::path first_arg =
     //"/home/fabian/Documents/work/realsense/data/2021-03-12-18-50/"
     //"color_imgs/200.png";
@@ -68,7 +71,12 @@ int main(int argc, char **argv) {
             ROS_WARN_STREAM("Could not find the minimum number of matches\n");
             continue;
         }
-        cv::Mat test = Match::averagePosition(est_scene_points, inliers);
+        cv::Mat grasp_point = Match::averagePosition(est_scene_points, inliers);
+        geometry_msgs::Point point;
+        point.x = grasp_point.at<float>(0,0);
+        point.y = grasp_point.at<float>(0,1);
+        point.z = grasp_point.at<float>(0,2);
+        pub.publish(point);
     }
     sub.shutdown();
     return 0;
