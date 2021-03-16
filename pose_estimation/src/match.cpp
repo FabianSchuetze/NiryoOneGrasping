@@ -45,6 +45,7 @@ void Match::drawMatches(const cv::Mat &target_img,
                         const cv::Mat &scene_img,
                         const std::vector<cv::KeyPoint> &kps_scene,
                         const std::vector<cv::DMatch> &match_vec) {
+    static const std::string window_name("Good Matches");
     if ((scene_img.rows != target_img.rows) ||
         (scene_img.cols != target_img.cols)) {
         std::cerr << "Images don't have the same size, target: "
@@ -59,8 +60,8 @@ void Match::drawMatches(const cv::Mat &target_img,
                     std::vector<char>(),
                     cv::DrawMatchesFlags::NOT_DRAW_SINGLE_POINTS);
     // Not GOOD: compiler has to reaorder stack
-    cv::imshow("Good Matches", img_matches);
-    cv::waitKey();
+    cv::imshow(window_name, img_matches);
+    //cv::waitKey();
 }
 
 cv::Mat Match::averagePosition(const cv::Mat &population,

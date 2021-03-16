@@ -8,6 +8,8 @@
 #include <pcl_ros/point_cloud.h>
 #include <ros/ros.h>
 
+#include <string>
+#include <opencv2/imgproc/imgproc.hpp>
 typedef pcl::PointCloud<pcl::PointXYZRGB> PointCloud;
 
 struct Camera {

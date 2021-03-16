@@ -15,7 +15,7 @@
 
 namespace fs = std::filesystem;
 
-constexpr int TOCM = 100;
+//constexpr int TO_DEPTH = 100;
 constexpr int TOMM = 1000;
 constexpr uint HEIGHT = 480;
 constexpr uint WIDTH = 640;
@@ -42,7 +42,8 @@ void Scene::decipherDepth(const PointCloud::Ptr &cloud) {
     for (size_t row = 0; row < HEIGHT; ++row) {
         for (size_t column = 0; column < WIDTH; ++column) {
             const auto &pt = cloud->at(column, row);
-            depth_.at<ushort>(row, column) = pt.z / TOCM;
+            auto val = static_cast<ushort>(std::round(pt.z * TOMM)); // NOLINT
+            depth_.at<ushort>(row, column) = val;
         }
     }
 }
@@ -50,6 +51,10 @@ void Scene::decipherDepth(const PointCloud::Ptr &cloud) {
 void Scene::callback(const PointCloud::Ptr &point_cloud) {
     decipherImage(point_cloud);
     decipherDepth(point_cloud);
+    if (!img().empty()) {
+        cv::imshow("test", img());
+        cv::waitKey(1);
+    }
 }
 
 void Scene::deserialize(const fs::path &color_pth, const fs::path &depth_pth) {
@@ -60,8 +65,8 @@ void Scene::deserialize(const fs::path &color_pth, const fs::path &depth_pth) {
 std::tuple<float, float, float> inline Scene::deprojectPoint(size_t x,
                                                              size_t y) const {
     float p_z = static_cast<float>(depth_.at<ushort>(y, x)) / TOMM;
-    float p_x = (static_cast<float>(x) - camera.cx) * p_z / camera.fx;
-    float p_y = (static_cast<float>(y) - camera.cy) * p_z / camera.fy;
+    float p_x = (static_cast<float>(x) - Camera::cx) * p_z / Camera::fx;
+    float p_y = (static_cast<float>(y) - Camera::cy) * p_z / Camera::fy;
     return {p_x, p_y, p_z};
 }
 
