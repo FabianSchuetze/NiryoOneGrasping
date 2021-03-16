@@ -13,6 +13,7 @@ class Match {
     static void drawMatches(const cv::Mat &, const std::vector<cv::KeyPoint> &,
                             const cv::Mat &, const std::vector<cv::KeyPoint> &,
                             const std::vector<cv::DMatch> &);
+    static cv::Mat averagePosition(const cv::Mat&, const cv::Mat&);
 
   private:
     const float ratio;

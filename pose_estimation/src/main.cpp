@@ -43,7 +43,6 @@ int main(int argc, char **argv) {
     while (ros::ok()) {
         // ros::spin();
         const auto sift = cv::SIFT::create(0, 3, 0.04, 10, 1.6, CV_8U);
-        //const auto sift = cv::SIFT::create();
         scene.estimateFeatures(sift);
         std::vector<cv::DMatch> matches = matcher.matchDescriptors(
             targets[0].descriptors(), scene.descriptors());
@@ -51,18 +50,15 @@ int main(int argc, char **argv) {
                            scene.kps(), matches);
         const auto [est_ref_points, est_scene_points] =
             Match::corresponding3dPoints(matches, targets[0].points3d(),
-                    scene.points3d());
-        std::cout << "Reference 3d Points\n" << est_ref_points <<std::endl;
-        std::cout << "Scene 3d Points\n" << est_scene_points <<std::endl;
+                                         scene.points3d());
         cv::Mat inliers, transform;
         cv::estimateAffine3D(est_ref_points, est_scene_points, transform,
                              inliers, RANSAC_THRESHOLD);
-        if (static_cast<uint>(cv::sum(inliers)[0]) > MIN_MATCHES) {
-            std::cout << inliers << std::endl;
-            std::cout <<  transform << std::endl;
-        } else{ 
+        if (static_cast<uint>(cv::sum(inliers)[0]) <= MIN_MATCHES) {
             std::cerr << "Could not find the minimum number of matches\n";
         }
+        cv::Mat test = Match::averagePosition(est_scene_points, inliers);
+        std::cout << "Resulting matrix\n" << test << std::endl;
         rate.sleep();
     }
     // sub.shutdown();

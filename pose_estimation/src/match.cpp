@@ -62,3 +62,15 @@ void Match::drawMatches(const cv::Mat &target_img,
     cv::imshow("Good Matches", img_matches);
     cv::waitKey();
 }
+
+cv::Mat Match::averagePosition(const cv::Mat &population,
+                                const cv::Mat &inliers) {
+    float rows = static_cast<float>(cv::sum(inliers)[0]);
+    cv::Mat matches = cv::Mat(1, 3, CV_32FC1, 0.0);
+    for (int i = 0; i < inliers.rows; ++i) {
+        if (inliers.at<uint8_t>(i) > 0) {
+            matches.row(0) += population.row(i) / rows;
+        }
+    }
+    return matches;
+}

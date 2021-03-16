@@ -67,8 +67,6 @@ std::tuple<float, float, float> inline Scene::deprojectPoint(size_t x,
 
 void Scene::create_points() {
     points3d_ = cv::Mat(kps_.size(), 3, CV_32FC1);
-    std::cout << "Creating points of size" << points3d_.rows << ", " << points3d_.cols << 
-        std::endl;
     size_t i(0);
     for (const cv::KeyPoint &kp : kps_) {
         uint x = static_cast<uint>(std::round(kp.pt.x));
