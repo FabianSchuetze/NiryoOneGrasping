@@ -50,3 +50,6 @@ add_library(${PROJECT_NAME} SHARED ${${PROJECT_NAME}_SRC})
 add_executable(detect_pose src/main.cpp )
 target_link_libraries(detect_pose ${OpenCV_LIBS} 
     ${catkin_LIBRARIES} ${PROJECT_NAME} realsense2 ${PCL_LIBRARIES})
+
+add_executable(broadcast_pose_transform src/broadcast_transform.cpp )
+target_link_libraries(broadcast_pose_transform ${catkin_LIBRARIES})
