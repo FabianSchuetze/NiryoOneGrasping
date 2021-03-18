@@ -12,7 +12,7 @@ void poseCallback(const geometry_msgs::Point &msg) {
     static tf2_ros::TransformBroadcaster br;
     geometry_msgs::TransformStamped transformStamped;
     transformStamped.header.stamp = ros::Time::now();
-    transformStamped.header.frame_id = "camera_link";
+    transformStamped.header.frame_id = "camera_depth_optical_frame";
     transformStamped.child_frame_id = "object";
     transformStamped.transform.translation.x = msg.x;
     transformStamped.transform.translation.y = msg.y;

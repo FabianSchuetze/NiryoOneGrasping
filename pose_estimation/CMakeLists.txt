@@ -12,12 +12,23 @@ find_package(catkin REQUIRED
     tf2_geometry_msgs
     pcl_ros
     cv_bridge
+    actionlib_msgs
 )
 
 find_package(OpenCV REQUIRED)
 find_package(Eigen3 REQUIRED)
 find_package(realsense2 REQUIRED)
 find_package(PCL REQUIRED)
+
+add_action_files(
+  DIRECTORY action
+  FILES BroadcastPose.action
+)
+
+
+generate_messages(
+  DEPENDENCIES actionlib_msgs std_msgs geometry_msgs # Or other packages containing msgs
+)
 
 
 catkin_package(
@@ -28,6 +39,7 @@ catkin_package(
     tf2_ros
     tf2_eigen
     tf2_geometry_msgs
+    actionlib_msgs
   DEPENDS
     EIGEN3
     OpenCV
@@ -53,3 +65,4 @@ target_link_libraries(detect_pose ${OpenCV_LIBS}
 
 add_executable(broadcast_pose_transform src/broadcast_transform.cpp )
 target_link_libraries(broadcast_pose_transform ${catkin_LIBRARIES})
+

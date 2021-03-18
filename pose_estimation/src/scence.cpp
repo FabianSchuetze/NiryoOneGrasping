@@ -15,7 +15,7 @@
 
 namespace fs = std::filesystem;
 
-//constexpr int TO_DEPTH = 100;
+// constexpr int TO_DEPTH = 100;
 constexpr int TOMM = 1000;
 constexpr uint HEIGHT = 480;
 constexpr uint WIDTH = 640;
@@ -62,25 +62,35 @@ void Scene::deserialize(const fs::path &color_pth, const fs::path &depth_pth) {
     depth_ = cv::imread(depth_pth, cv::IMREAD_ANYDEPTH);
 }
 
-std::tuple<float, float, float> inline Scene::deprojectPoint(size_t x,
-                                                             size_t y) const {
+std::tuple<float, float, float, int16_t> inline Scene::deprojectPoint(
+    size_t x, size_t y) const {
+    int16_t val = depth_.at<ushort>(y, x);
     float p_z = static_cast<float>(depth_.at<ushort>(y, x)) / TOMM;
-    float p_x = (static_cast<float>(x) - Camera::cx) * p_z / Camera::fx;
-    float p_y = (static_cast<float>(y) - Camera::cy) * p_z / Camera::fy;
-    return {p_x, p_y, p_z};
+    float p_x = (static_cast<float>(x) - camera.cx) * p_z / camera.fx;
+    float p_y = (static_cast<float>(y) - camera.cy) * p_z / camera.fy;
+    // std::cout << "The points is: " << val << ":" << p_x << ", " << p_y << ",
+    // "
+    //<< p_z << std::endl;
+    return {p_x, p_y, p_z, val};
 }
 
 void Scene::create_points() {
     points3d_ = cv::Mat(kps_.size(), 3, CV_32FC1);
-    size_t i(0);
+    size_t i(0), invalid_depth_counter(0);
     for (const cv::KeyPoint &kp : kps_) {
         uint x = static_cast<uint>(std::round(kp.pt.x));
         uint y = static_cast<uint>(std::round(kp.pt.y));
-        const auto [p_x, p_y, p_z] = deprojectPoint(x, y);
+        const auto [p_x, p_y, p_z, depth] = deprojectPoint(x, y);
         points3d_.at<float>(i, 0) = p_x;
         points3d_.at<float>(i, 1) = p_y;
         points3d_.at<float>(i, 2) = p_z;
+        if (depth < 1) {
+            invalid_depth_counter++;
+        }
         ++i;
+    }
+    if (invalid_depth_counter > 100) {
+        ROS_WARN_STREAM("Many depth values are zero. Camera working correctly");
     }
 }
 

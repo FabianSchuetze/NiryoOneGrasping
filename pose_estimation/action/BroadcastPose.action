@@ -1,0 +1,7 @@
+#goal definition
+---
+#result definition
+geometry_msgs/TransformStamped pose
+---
+#feedback
+bool finished

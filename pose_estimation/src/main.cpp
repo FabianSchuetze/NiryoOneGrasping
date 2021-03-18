@@ -59,11 +59,13 @@ int main(int argc, char **argv) {
             ROS_WARN_STREAM("Found less than 10 matches\n");
             continue;
         }
+        //std::cout << "Matches size" << matches.size() << std::endl;
         Match::drawMatches(targets[0].img(), targets[0].kps(), scene.img(),
                            scene.kps(), matches);
         const auto [est_ref_points, est_scene_points] =
             Match::corresponding3dPoints(matches, targets[0].points3d(),
                                          scene.points3d());
+        //std::cout << "Estimated scene points1\n" << est_scene_points << std::endl;
         cv::Mat inliers, transform;
         cv::estimateAffine3D(est_ref_points, est_scene_points, transform,
                              inliers, RANSAC_THRESHOLD);
@@ -71,12 +73,15 @@ int main(int argc, char **argv) {
             ROS_WARN_STREAM("Could not find the minimum number of matches\n");
             continue;
         }
+        //std::cout << "Estimated scene points\n" << est_scene_points << std::endl;
+        //std::cout << "inliers\n" << inliers << std::endl;
         cv::Mat grasp_point = Match::averagePosition(est_scene_points, inliers);
         geometry_msgs::Point point;
         point.x = grasp_point.at<float>(0,0);
         point.y = grasp_point.at<float>(0,1);
         point.z = grasp_point.at<float>(0,2);
         pub.publish(point);
+        ROS_INFO_STREAM("The points is at: " << grasp_point);
     }
     sub.shutdown();
     return 0;
