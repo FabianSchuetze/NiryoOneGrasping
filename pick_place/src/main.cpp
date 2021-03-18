@@ -6,9 +6,9 @@
 #include <actionlib/server/simple_action_server.h>
 #include <niryo_one_msgs/RobotMoveAction.h>
 #include <niryo_one_msgs/SetInt.h>
+#include <pose_detection/BroadcastPoseAction.h>
 #include <sensor_msgs/JointState.h>
 #include <std_msgs/String.h>
-#include <pose_detection/BroadcastPoseAction.h>
 
 #include <sstream>
 
@@ -126,56 +126,32 @@ int main(int argc, char **argv) {
     spinner.start();
 
     // Connecting to the robot ===========================================
-    //Picking::NiryoClient ac("/niryo_one/commander/robot_action/", true);
-    //Picking::establish_connection(ac); // wait for the action server to start
+    Picking::NiryoClient ac("/niryo_one/commander/robot_action/", true);
+    Picking::establish_connection(
+        ac, "robot"); // wait for the action server to start
 
-    //Picking::setGripper(n, TOOL_ID);
-    actionlib::SimpleActionClient<pose_detection::BroadcastPoseAction> ac2(
-        "poseaction", true);
+    // Picking::setGripper(n, TOOL_ID);
+    Picking::PoseClient ac2("poseaction", true);
+    Picking::establish_connection(ac2, "pose_estimate");
+    std::vector<double> goal = Picking::obtainPose(ac2);
 
-    ROS_INFO("Waiting for action server to start.");
-    // wait for the action server to start
-    ac2.waitForServer(); // will wait for infinite time
-
-    ROS_INFO("Action server started, sending goal.");
-    // send a goal to the action
-    pose_detection::BroadcastPoseGoal goal;
-    // goal.order = 20;
-    ac2.sendGoal(goal);
-
-    // wait for the action to return
-    bool finished_before_timeout = ac2.waitForResult(ros::Duration(30.0));
-
-    if (finished_before_timeout) {
-        const auto result = ac2.getResult();
-        geometry_msgs::TransformStamped out = result->pose;
-        actionlib::SimpleClientGoalState state = ac2.getState();
-        std::cout << "The translation is: " << out.transform.translation.x;
-        ROS_INFO("Action finished: %s", state.toString().c_str());
-    } else
-        ROS_INFO("Action did not finish before the time out.");
-
-    // exit
-    return 0;
-
-    // ros::Rate rate(1);
-    ////ROS_INFO_STREAM("Please specify the grapsing
-    ///position===================");
-    // const std::vector<double> goal = parseInput("6");
-    // std::cout << "received value:\n";
-    // for (const auto x : goal) {
-    // std::cout << x << ", ";
-    //}
-    // std::cout << "\n";
-    //// std::vector<EndEffectorPosition> movements;
-    //// movements.reserve(2);
-    // const EndEffectorPosition pre_grasp = computePreGrasp(goal);
-    // const EndEffectorPosition grasp = computeGrasp(goal);
-    // std::vector<EndEffectorPosition> movements = {pre_grasp, grasp};
-    //// movements.push_back(pre_grasp);
-    //// movements.push_back(grasp);
-    // for (const auto &movement : movements) {
-    // positionGoal(ac, movement);
-    //}
+    // ROS_INFO("Action server started, sending goal.");
+    ros::Rate rate(1);
+    std::cout << "received value:\n";
+    for (const auto x : goal) {
+        std::cout << x << ", ";
+    }
+    std::cout << "\n";
+    // std::vector<EndEffectorPosition> movements;
+    // movements.reserve(2);
+    const Picking::EndEffectorPosition pre_grasp =
+        Picking::computePreGrasp(goal);
+    const Picking::EndEffectorPosition grasp = Picking::computeGrasp(goal);
+    std::vector<Picking::EndEffectorPosition> movements = {pre_grasp, grasp};
+    // movements.push_back(pre_grasp);
+    // movements.push_back(grasp);
+    for (const auto &movement : movements) {
+        Picking::positionGoal(ac, movement);
+    }
     return 0;
 }
