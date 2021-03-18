@@ -17,14 +17,12 @@ void BroadcastPoseAction::initializeService() { as_.start(); }
 void BroadcastPoseAction::initializeSubscriber() {
     subscriber_ = nh_.subscribe("grasp_position", 1,
                                 &BroadcastPoseAction::receiveInfo, this);
-    // subscriber_(nh_, "grasp_position",
-    // boost::bind(&BroadcastPoseAction::receiveInfo, this, _1), false);
 }
 
 void BroadcastPoseAction::executeCB(
     const pose_detection::BroadcastPoseGoalConstPtr &goal) {
     ros::Rate r(1);
-    bool success = true;
+    bool success = false;
     feedback_.finished = false;
     geometry_msgs::TransformStamped tmp;
     while (true) {
@@ -36,7 +34,13 @@ void BroadcastPoseAction::executeCB(
         }
         {
             std::lock_guard<std::mutex> guard(g_pages_mutex);
+            // (TODO)Need to check if lock can be acquired and wait otherwise to
+            // publish feedback!
             tmp = pose;
+            tmp.transform.translation.x = 10;
+            // (TODO) Check the most recent time different and set success based
+            // on this!
+            success = true;
         }
         as_.publishFeedback(feedback_);
         r.sleep();

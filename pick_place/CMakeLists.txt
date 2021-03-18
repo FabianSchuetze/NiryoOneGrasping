@@ -14,6 +14,7 @@ find_package(catkin REQUIRED COMPONENTS
   std_msgs
   niryo_one_msgs
   actionlib
+  pose_detection
 )
 
 ###################################
@@ -35,14 +36,22 @@ catkin_package(
 ###########
 ## Build ##
 ###########
+set(${PROJECT_NAME}_SRC
+    src/picking.cpp
+)
+include_directories(SYSTEM ${catkin_INCLUDE_DIRS} ${EIGEN3_INCLUDE_DIRS} ${OpenCV_INCLUDE_DIRS} 
+                           ${PCL_INCLUDE_DIRS})
+include_directories(include)
+add_library(${PROJECT_NAME} SHARED ${${PROJECT_NAME}_SRC})
+
 
 ## Specify additional locations of header files
 ## Your package locations should be listed before other locations
 include_directories(
-# include
+  include
   ${catkin_INCLUDE_DIRS}
 )
 
 
-add_executable(pick_place src/pick_place_tutorial.cpp)
-target_link_libraries(pick_place ${catkin_LIBRARIES})
+add_executable(pick_place_exe src/main.cpp)
+target_link_libraries(pick_place_exe ${catkin_LIBRARIES} ${PROJECT_NAME})
