@@ -66,3 +66,6 @@ target_link_libraries(detect_pose ${OpenCV_LIBS}
 add_executable(broadcast_pose_transform src/broadcast_transform.cpp )
 target_link_libraries(broadcast_pose_transform ${catkin_LIBRARIES})
 
+add_executable(broadcast_pose_action_server src/broadcast_action_server.cpp )
+target_link_libraries(broadcast_pose_action_server ${catkin_LIBRARIES})
+

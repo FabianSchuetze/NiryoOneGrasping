@@ -1,78 +1,76 @@
+#include "broadcast_action_server.hpp"
+#include <tf2/LinearMath/Quaternion.h>
+static constexpr uint QUEUE = 10;
+static constexpr char listen[] = "/grasp_position"; // NOLINT
 
-//#include <actionlib/server/simple_action_server.h>
-//#include <pose_detection/BroadcastPoseAction.h>
-//#include <ros/ros.h>
+BroadcastPoseAction::BroadcastPoseAction(const std::string &name,
+                                         ros::NodeHandle *nodehandle)
+    : nh_(*nodehandle),
+      as_(nh_, name, boost::bind(&BroadcastPoseAction::executeCB, this, _1),
+          false) {
+    initializeSubscriber();
+    initializeService();
+};
 
-//class BroadcastPoseServer{
-  //protected:
-    //ros::NodeHandle nh_;
-    //actionlib::SimpleActionServer<pose_detection::FibonacciAction>
-        //as_; // NodeHandle instance must be created before this line. Otherwise
-             //// strange error occurs.
-    //std::string action_name_;
-    //// create messages that are used to published feedback/result
-    //actionlib_tutorials::FibonacciFeedback feedback_;
-    //actionlib_tutorials::FibonacciResult result_;
+void BroadcastPoseAction::initializeService() { as_.start(); }
 
-  //public:
-    //FibonacciAction(std::string name)
-        //: as_(nh_, name, boost::bind(&FibonacciAction::executeCB, this, _1),
-              //false),
-          //action_name_(name) {
-        //as_.start();
-    //}
+void BroadcastPoseAction::initializeSubscriber() {
+    subscriber_ = nh_.subscribe("grasp_position", 1,
+                                &BroadcastPoseAction::receiveInfo, this);
+    // subscriber_(nh_, "grasp_position",
+    // boost::bind(&BroadcastPoseAction::receiveInfo, this, _1), false);
+}
 
-    //~FibonacciAction(void) {}
+void BroadcastPoseAction::executeCB(
+    const pose_detection::BroadcastPoseGoalConstPtr &goal) {
+    ros::Rate r(1);
+    bool success = true;
+    feedback_.finished = false;
+    geometry_msgs::TransformStamped tmp;
+    while (true) {
+        if (as_.isPreemptRequested() || !ros::ok()) {
+            ROS_INFO_STREAM("Preempted Server ");
+            as_.setPreempted();
+            success = false;
+            break;
+        }
+        {
+            std::lock_guard<std::mutex> guard(g_pages_mutex);
+            tmp = pose;
+        }
+        as_.publishFeedback(feedback_);
+        r.sleep();
+        break;
+    }
 
-    //void executeCB(const actionlib_tutorials::FibonacciGoalConstPtr &goal) {
-        //// helper variables
-        //ros::Rate r(1);
-        //bool success = true;
+    if (success) {
+        result_.pose = tmp;
+        ROS_INFO_STREAM("Succeeded");
+        // set the action state to succeeded
+        as_.setSucceeded(result_);
+    }
+}
 
-        //// push_back the seeds for the fibonacci sequence
-        //feedback_.sequence.clear();
-        //feedback_.sequence.push_back(0);
-        //feedback_.sequence.push_back(1);
+void BroadcastPoseAction::receiveInfo(const geometry_msgs::Point &msg) {
+    tf2::Quaternion q;
+    q.setRPY(0, 0, 0);
+    std::lock_guard<std::mutex> guard(g_pages_mutex);
+    pose.header.stamp = ros::Time::now();
+    pose.header.frame_id = "camera_depth_optical_frame";
+    pose.child_frame_id = "object";
+    pose.transform.translation.x = msg.x;
+    pose.transform.translation.y = msg.y;
+    pose.transform.translation.z = msg.z;
+    pose.transform.rotation.x = q.x();
+    pose.transform.rotation.y = q.y();
+    pose.transform.rotation.z = q.z();
+    pose.transform.rotation.w = q.w();
+}
 
-        //// publish info to the console for the user
-        //ROS_INFO("%s: Executing, creating fibonacci sequence of order %i with "
-                 //"seeds %i, %i",
-                 //action_name_.c_str(), goal->order, feedback_.sequence[0],
-                 //feedback_.sequence[1]);
-
-        //// start executing the action
-        //for (int i = 1; i <= goal->order; i++) {
-            //// check that preempt has not been requested by the client
-            //if (as_.isPreemptRequested() || !ros::ok()) {
-                //ROS_INFO("%s: Preempted", action_name_.c_str());
-                //// set the action state to preempted
-                //as_.setPreempted();
-                //success = false;
-                //break;
-            //}
-            //feedback_.sequence.push_back(feedback_.sequence[i] +
-                                         //feedback_.sequence[i - 1]);
-            //// publish the feedback
-            //as_.publishFeedback(feedback_);
-            //// this sleep is not necessary, the sequence is computed at 1 Hz for
-            //// demonstration purposes
-            //r.sleep();
-        //}
-
-        //if (success) {
-            //result_.sequence = feedback_.sequence;
-            //ROS_INFO("%s: Succeeded", action_name_.c_str());
-            //// set the action state to succeeded
-            //as_.setSucceeded(result_);
-        //}
-    //}
-//};
-
-//int main(int argc, char **argv) {
-    //ros::init(argc, argv, "fibonacci");
-
-    //FibonacciAction fibonacci("fibonacci");
-    //ros::spin();
-
-    //return 0;
-//}
+int main(int argc, char **argv) {
+    ros::init(argc, argv, "poseaction");
+    ros::NodeHandle nh;
+    BroadcastPoseAction poseaction("poseaction", &nh);
+    ros::spin();
+    return 0;
+}

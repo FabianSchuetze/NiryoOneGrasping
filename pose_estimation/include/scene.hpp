@@ -34,6 +34,6 @@ class Scene : public Model {
   private:
     cv::Mat depth_;
     Camera camera;
-    std::tuple<float, float, float> deprojectPoint(size_t, size_t) const;
+    std::tuple<float, float, float, int16_t> deprojectPoint(size_t, size_t) const;
     void create_points();
 };
