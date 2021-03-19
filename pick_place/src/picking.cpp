@@ -86,9 +86,10 @@ std::vector<double> obtainPose(PoseClient &ac) {
     if (finished) {
         result = ac.getResult()->pose;
         actionlib::SimpleClientGoalState state = ac.getState();
-        ROS_INFO("Action finished: %s", state.toString().c_str());
+        ROS_INFO_STREAM("Action finished: " << state.toString());
     } else {
-        ROS_INFO("Action did not finish before the time out.");
+        ROS_INFO_STREAM("Could not obtain pose before timeout.");
+        throw std::runtime_error("Could not obtain pose before timeout");
     }
     const auto &translation = result.transform.translation;
     // (TODO) Add proper rotation;
