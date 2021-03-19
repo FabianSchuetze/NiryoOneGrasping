@@ -29,9 +29,11 @@ EndEffectorPosition computeGrasp(const std::vector<double> &goal) {
     geometry_msgs::Point p;
     p.x = goal[0];
     p.y = goal[1];
-    p.z = goal[2] + 0.135;
+    p.z = goal[2];
     if (p.z < 0.135) {
-        throw std::runtime_error("Z values cannot be lower than 0.135");
+        p.z = 0.135;
+        ROS_WARN_STREAM("Set the height value to 0.135");
+        //throw std::runtime_error("Z values cannot be lower than 0.135");
     }
     niryo_one_msgs::RPY rot;
     rot.roll = 0;
@@ -107,7 +109,7 @@ bool GripperAperture(NiryoClient &ac, bool open) {
     action.goal.cmd.cmd_type = 6;
     action.goal.cmd.tool_cmd = tcmd;
     ac.sendGoal(action.goal);
-    bool success = ac.waitForResult(ros::Duration(5.0));
+    bool success = ac.waitForResult(ros::Duration(MAX_DURATION));
     return success;
 }
 
@@ -124,7 +126,7 @@ bool MoveEEF(NiryoClient& ac, const NiryoPose& pose) {
     ROS_INFO("rpy (r,p,y):  %.2f, %.2f, %2f", cmd.rpy.roll, cmd.rpy.pitch,
              cmd.rpy.yaw);
     ac.sendGoal(action.goal);
-    bool success = ac.waitForResult(ros::Duration(5.0));
+    bool success = ac.waitForResult(ros::Duration(MAX_DURATION));
     return success;
 }
 

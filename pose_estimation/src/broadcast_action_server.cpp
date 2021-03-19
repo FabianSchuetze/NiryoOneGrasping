@@ -1,30 +1,26 @@
 #include "broadcast_action_server.hpp"
+#include <geometry_msgs/TransformStamped.h>
 #include <tf2/LinearMath/Quaternion.h>
-static constexpr uint QUEUE = 10;
-static constexpr char listen[] = "/grasp_position"; // NOLINT
+#include <tf2_ros/transform_listener.h>
 
 BroadcastPoseAction::BroadcastPoseAction(const std::string &name,
                                          ros::NodeHandle *nodehandle)
     : nh_(*nodehandle),
       as_(nh_, name, boost::bind(&BroadcastPoseAction::executeCB, this, _1),
           false) {
-    initializeSubscriber();
     initializeService();
 };
 
 void BroadcastPoseAction::initializeService() { as_.start(); }
-
-void BroadcastPoseAction::initializeSubscriber() {
-    subscriber_ = nh_.subscribe("grasp_position", 1,
-                                &BroadcastPoseAction::receiveInfo, this);
-}
 
 void BroadcastPoseAction::executeCB(
     const pose_detection::BroadcastPoseGoalConstPtr &goal) {
     ros::Rate r(1);
     bool success = false;
     feedback_.finished = false;
-    geometry_msgs::TransformStamped tmp;
+    tf2_ros::Buffer tfBuffer;
+    tf2_ros::TransformListener tfListener(tfBuffer);
+    geometry_msgs::TransformStamped transformStamped;
     while (true) {
         if (as_.isPreemptRequested() || !ros::ok()) {
             ROS_INFO_STREAM("Preempted Server ");
@@ -32,43 +28,23 @@ void BroadcastPoseAction::executeCB(
             success = false;
             break;
         }
-        {
-            std::lock_guard<std::mutex> guard(g_pages_mutex);
-            // (TODO)Need to check if lock can be acquired and wait otherwise to
-            // publish feedback!
-            tmp = pose;
-            tmp.transform.translation.x = 10;
-            // (TODO) Check the most recent time different and set success based
-            // on this!
-            success = true;
+        try {
+            transformStamped =
+                tfBuffer.lookupTransform("base_link", "object", ros::Time(0));
+        } catch (tf2::TransformException &ex) {
+            ROS_WARN("%s", ex.what());
+            as_.publishFeedback(feedback_);
+            r.sleep();
+            continue;
         }
-        as_.publishFeedback(feedback_);
-        r.sleep();
+        success = true;
         break;
     }
-
     if (success) {
-        result_.pose = tmp;
+        result_.pose = transformStamped;
         ROS_INFO_STREAM("Succeeded");
-        // set the action state to succeeded
         as_.setSucceeded(result_);
     }
-}
-
-void BroadcastPoseAction::receiveInfo(const geometry_msgs::Point &msg) {
-    tf2::Quaternion q;
-    q.setRPY(0, 0, 0);
-    std::lock_guard<std::mutex> guard(g_pages_mutex);
-    pose.header.stamp = ros::Time::now();
-    pose.header.frame_id = "camera_depth_optical_frame";
-    pose.child_frame_id = "object";
-    pose.transform.translation.x = msg.x;
-    pose.transform.translation.y = msg.y;
-    pose.transform.translation.z = msg.z;
-    pose.transform.rotation.x = q.x();
-    pose.transform.rotation.y = q.y();
-    pose.transform.rotation.z = q.z();
-    pose.transform.rotation.w = q.w();
 }
 
 int main(int argc, char **argv) {
