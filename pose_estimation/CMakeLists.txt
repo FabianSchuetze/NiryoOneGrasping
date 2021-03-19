@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.15)
+cmake_minimum_required(VERSION 3.11)
 project(pose_detection)
 
 set(CMAKE_CXX_STANDARD 17)
@@ -15,7 +15,9 @@ find_package(catkin REQUIRED
     actionlib_msgs
 )
 
-find_package(OpenCV REQUIRED)
+find_package(OpenCV REQUIRED PATHS /usr/local/lib/cmake/opencv4
+             NO_DEFAULT_PATH)
+include_directories(/usr/local/include/opencv4)
 find_package(Eigen3 REQUIRED)
 find_package(realsense2 REQUIRED)
 find_package(PCL REQUIRED)

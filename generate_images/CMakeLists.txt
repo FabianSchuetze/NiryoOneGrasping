@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.1.3)
+cmake_minimum_required(VERSION 3.11)
 project(generate_images)
 
 set(CMAKE_CXX_STANDARD 17)
@@ -16,7 +16,9 @@ find_package(catkin REQUIRED
     tf2_geometry_msgs
 )
 
-find_package(OpenCV REQUIRED)
+find_package(OpenCV REQUIRED PATHS /usr/local/lib/cmake/opencv4
+             NO_DEFAULT_PATH)
+set(OpenCV_INCLUDE_DIRS /usr/local/include/opencv4)
 find_package(Eigen3 REQUIRED)
 find_package(realsense2 REQUIRED)
 
@@ -34,6 +36,10 @@ catkin_package(
     OpenCV
 )
 
+if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
+        set(CXX_FILESYSTEM_LIBRARIES "stdc++fs")
+endif()
+
 ###########
 ## Build ##
 ###########
@@ -48,6 +54,8 @@ add_library(${PROJECT_NAME} SHARED ${${PROJECT_NAME}_SRC})
 add_executable(DisplayImage src/main.cpp )
 add_executable(WriteImagesToFile src/write_images_to_file.cpp)
 target_link_libraries(DisplayImage ${OpenCV_LIBS} 
-    ${catkin_LIBRARIES})
+    ${catkin_LIBRARIES}
+    ${CXX_FILESYSTEM_LIBRARIES})
 target_link_libraries(WriteImagesToFile ${OpenCV_LIBS} 
-    ${catkin_LIBRARIES} realsense2 ${PROJECT_NAME})
+    ${catkin_LIBRARIES} realsense2 ${PROJECT_NAME}
+    ${CXX_FILESYSTEM_LIBRARIES})

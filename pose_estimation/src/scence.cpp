@@ -1,4 +1,6 @@
+#include <opencv2/features2d.hpp>
 #include <cv_bridge/cv_bridge.h>
+
 #include <pcl_conversions/pcl_conversions.h>
 #include <ros/ros.h>
 #include <sensor_msgs/Image.h>
@@ -6,14 +8,12 @@
 #include <cmath>
 #include <filesystem>
 #include <iostream>
-#include <opencv2/features2d.hpp>
 #include <opencv2/highgui.hpp>
 #include <opencv2/imgcodecs.hpp>
 #include <opencv2/opencv.hpp>
 
 #include "scene.hpp"
 
-namespace fs = std::filesystem;
 
 // constexpr int TO_DEPTH = 100;
 constexpr int TOMM = 1000;
