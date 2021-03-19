@@ -38,16 +38,13 @@ int main(int argc, char **argv) {
         std::cout << x << ", ";
     }
     std::cout << "\n";
-    // std::vector<EndEffectorPosition> movements;
-    // movements.reserve(2);
     const Picking::EndEffectorPosition pre_grasp =
         Picking::computePreGrasp(goal);
     const Picking::EndEffectorPosition grasp = Picking::computeGrasp(goal);
     std::vector<Picking::EndEffectorPosition> movements = {pre_grasp, grasp};
-    // movements.push_back(pre_grasp);
-    // movements.push_back(grasp);
     for (const auto &movement : movements) {
         Picking::positionGoal(ac, movement);
+        rate.sleep(); // pause between movements
     }
     return 0;
 }
