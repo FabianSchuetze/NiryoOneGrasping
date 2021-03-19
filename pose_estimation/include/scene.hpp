@@ -10,6 +10,7 @@
 
 #include <string>
 #include <opencv2/imgproc/imgproc.hpp>
+namespace fs = std::filesystem;
 typedef pcl::PointCloud<pcl::PointXYZRGB> PointCloud;
 
 struct Camera {
@@ -23,8 +24,8 @@ class Scene : public Model {
   public:
     Scene() = default;
     ~Scene() override = default;
-    void deserialize(const std::filesystem::path &,
-                     const std::filesystem::path &);
+    void deserialize(const fs::path &,
+                     const fs::path &);
     void callback(const PointCloud::Ptr &);
     void decipherImage(const PointCloud::Ptr &);
     void decipherDepth(const PointCloud::Ptr &);

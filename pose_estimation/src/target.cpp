@@ -3,7 +3,6 @@
 #include <opencv2/core.hpp>
 #include <opencv2/imgcodecs.hpp>
 #include <type_traits>
-namespace fs = std::filesystem;
 
 static constexpr float TOMM = 100;
 
