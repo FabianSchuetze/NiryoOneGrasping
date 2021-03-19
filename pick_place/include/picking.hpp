@@ -20,6 +20,9 @@ struct EndEffectorPosition {
 
 EndEffectorPosition computePreGrasp(const std::vector<double> &);
 EndEffectorPosition computeGrasp(const std::vector<double> &);
+EndEffectorPosition PreFinal();
+EndEffectorPosition Final();
+EndEffectorPosition Rest();
 void setGripper(ros::NodeHandle&, int);
 template <typename T>
 void establish_connection(const T&, const std::string&);

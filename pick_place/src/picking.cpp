@@ -6,6 +6,51 @@ static constexpr int MAX_ATTPEMTS = 10;
 static constexpr float MAX_DURATION = 10.0;
 
 namespace Picking {
+EndEffectorPosition Rest() {
+    geometry_msgs::Point p;
+    p.x = 0.3,
+    p.y = 0;
+    p.z = 0.35;
+    niryo_one_msgs::RPY rot;
+    rot.roll = 0;
+    rot.pitch = 1.5;
+    rot.yaw = 0;
+    NiryoPose pose1(p, rot);
+    EndEffectorPosition eef;
+    eef.pose = pose1;
+    eef.open = true;
+    return eef;
+}
+EndEffectorPosition PreFinal() {
+    geometry_msgs::Point p;
+    p.x = 0.1;
+    p.y = -0.2;
+    p.z = 0.2;
+    niryo_one_msgs::RPY rot;
+    rot.roll = 0;
+    rot.pitch = 1.5;
+    rot.yaw = 0;
+    NiryoPose pose1(p, rot);
+    EndEffectorPosition eef;
+    eef.pose = pose1;
+    eef.open = false;
+    return eef;
+}
+EndEffectorPosition Final() {
+    geometry_msgs::Point p;
+    p.x = 0.1;
+    p.y = -0.2;
+    p.z = 0.2;
+    niryo_one_msgs::RPY rot;
+    rot.roll = 0;
+    rot.pitch = 1.5;
+    rot.yaw = 0;
+    NiryoPose pose1(p, rot);
+    EndEffectorPosition eef;
+    eef.pose = pose1;
+    eef.open = true;
+    return eef;
+}
 EndEffectorPosition computePreGrasp(const std::vector<double> &goal) {
     geometry_msgs::Point p;
     p.x = goal[0];
