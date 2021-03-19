@@ -20,6 +20,7 @@ struct EndEffectorPosition {
 
 EndEffectorPosition computePreGrasp(const std::vector<double> &);
 EndEffectorPosition computeGrasp(const std::vector<double> &);
+EndEffectorPosition Close(const std::vector<double>&);
 EndEffectorPosition PreFinal();
 EndEffectorPosition Final();
 EndEffectorPosition Rest();

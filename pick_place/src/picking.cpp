@@ -66,7 +66,7 @@ EndEffectorPosition computePreGrasp(const std::vector<double> &goal) {
     NiryoPose pose1(p, rot);
     EndEffectorPosition eef;
     eef.pose = pose1;
-    eef.open = false;
+    eef.open = true;
     return eef;
 }
 
@@ -90,6 +90,27 @@ EndEffectorPosition computeGrasp(const std::vector<double> &goal) {
     eef.open = true;
     return eef;
 }
+EndEffectorPosition Close(const std::vector<double> &goal) {
+    geometry_msgs::Point p;
+    p.x = goal[0];
+    p.y = goal[1];
+    p.z = goal[2];
+    if (p.z < 0.135) {
+        p.z = 0.135;
+        ROS_WARN_STREAM("Set the height value to 0.135");
+        //throw std::runtime_error("Z values cannot be lower than 0.135");
+    }
+    niryo_one_msgs::RPY rot;
+    rot.roll = 0;
+    rot.pitch = 1.5;
+    rot.yaw = 0;
+    NiryoPose pose1(p, rot);
+    EndEffectorPosition eef;
+    eef.pose = pose1;
+    eef.open = false;
+    return eef;
+}
+
 void setGripper(ros::NodeHandle &node, int toolID) {
     ROS_INFO("Setting gripper");
     ros::ServiceClient changeToolClient_;

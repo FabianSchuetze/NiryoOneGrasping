@@ -41,11 +41,12 @@ int main(int argc, char **argv) {
     const Picking::EndEffectorPosition pre_grasp =
         Picking::computePreGrasp(goal);
     const Picking::EndEffectorPosition grasp = Picking::computeGrasp(goal);
+    const Picking::EndEffectorPosition close = Picking::Close(goal);
     const Picking::EndEffectorPosition pre_final = Picking::PreFinal();
     const Picking::EndEffectorPosition open = Picking::Final();
     const Picking::EndEffectorPosition rest_position = Picking::Rest();
     std::vector<Picking::EndEffectorPosition> movements = {
-        pre_grasp, grasp, pre_final, open, rest_position};
+        pre_grasp, grasp, close, pre_final, open, rest_position};
     for (const auto &movement : movements) {
         Picking::positionGoal(ac, movement);
         rate.sleep(); // pause between movements
