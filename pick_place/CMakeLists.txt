@@ -55,3 +55,6 @@ include_directories(
 
 add_executable(pick_place_exe src/main.cpp)
 target_link_libraries(pick_place_exe ${catkin_LIBRARIES} ${PROJECT_NAME})
+
+add_executable(simple_pick_place_exe src/simple_pick_place.cpp)
+target_link_libraries(simple_pick_place_exe ${catkin_LIBRARIES} ${PROJECT_NAME})
