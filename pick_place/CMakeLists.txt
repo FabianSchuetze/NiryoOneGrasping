@@ -56,6 +56,7 @@ set(${PROJECT_NAME}_SRC
 include_directories(SYSTEM ${catkin_INCLUDE_DIRS} ${EIGEN3_INCLUDE_DIRS})
 include_directories(include)
 add_library(${PROJECT_NAME} SHARED ${${PROJECT_NAME}_SRC})
+target_link_libraries(${PROJECT_NAME} ${catkin_LIBRARIES})
 
 
 ## Specify additional locations of header files
@@ -70,4 +71,4 @@ add_executable(pick_place_exe src/main.cpp)
 target_link_libraries(pick_place_exe ${catkin_LIBRARIES} ${PROJECT_NAME})
 
 add_executable(simple_pick_place_exe src/simple_pick_place.cpp)
-target_link_libraries(simple_pick_place_exe ${catkin_LIBRARIES} ${PROJECT_NAME})
+target_link_libraries(simple_pick_place_exe ${catkin_LIBRARIES})
