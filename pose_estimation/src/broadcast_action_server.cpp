@@ -6,7 +6,8 @@
 BroadcastPoseAction::BroadcastPoseAction(const std::string &name,
                                          ros::NodeHandle *nodehandle)
     : nh_(*nodehandle),
-      as_(nh_, name, boost::bind(&BroadcastPoseAction::executeCB, this, _1),
+      as_(nh_, name, [this](auto && PH1) {executeCB(PH1);},
+      //as_(nh_, name, boost::bind(&BroadcastPoseAction::executeCB, this, _1),
           false) {
     initializeService();
 };

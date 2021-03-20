@@ -2,9 +2,11 @@
 #include <niryo_one_msgs/RobotMoveAction.h>
 #include <niryo_one_msgs/SetInt.h>
 
-static constexpr int MAX_ATTPEMTS = 10;
-static constexpr float MAX_DURATION = 10.0;
-constexpr static int TOOL_ID(13);
+static constexpr int MAX_ATTPEMTS(10);
+static constexpr float MAX_DURATION(10.0);
+static constexpr int TOOL_ID(13);
+static constexpr int MAX_SPEED(200);
+static constexpr int CMD_TYPE(6);
 
 Picking::Picking()
     : robot("/niryo_one/commander/robot_action/", true),
@@ -26,59 +28,18 @@ Picking::EndEffectorPosition Picking::Rest() {
     EndEffectorPosition pose1 = pose(p, true);
     return pose1;
 }
-// geometry_msgs::Point p;
-// p.x = 0.3,
-// p.y = 0;
-// p.z = 0.35;
-// niryo_one_msgs::RPY rot;
-// rot.roll = 0;
-// rot.pitch = 1.5;
-// rot.yaw = 0;
-// NiryoPose pose1(p, rot);
-// EndEffectorPosition eef;
-// eef.pose = pose1;
-// eef.open = true;
-// return eef;
-//}
 Picking::EndEffectorPosition Picking::PreFinal() {
     geometry_msgs::Point p = point(0.1, -0.2, 0.2);
     EndEffectorPosition pose1 = pose(p, false);
     return pose1;
 }
-// geometry_msgs::Point p;
-// p.x = 0.1;
-// p.y = -0.2;
-// p.z = 0.2;
-// niryo_one_msgs::RPY rot;
-// rot.roll = 0;
-// rot.pitch = 1.5;
-// rot.yaw = 0;
-// NiryoPose pose1(p, rot);
-// EndEffectorPosition eef;
-// eef.pose = pose1;
-// eef.open = false;
-// return eef;
-//}
 Picking::EndEffectorPosition Picking::Final() {
     geometry_msgs::Point p = point(0.1, -0.2, 0.2);
     EndEffectorPosition pose1 = pose(p, true);
     return pose1;
 }
-// p.x = 0.1;
-// p.y = -0.2;
-// p.z = 0.2;
-// niryo_one_msgs::RPY rot;
-// rot.roll = 0;
-// rot.pitch = 1.5;
-// rot.yaw = 0;
-// NiryoPose pose1(p, rot);
-// EndEffectorPosition eef;
-// eef.pose = pose1;
-// eef.open = true;
-// return eef;
-//}
 Picking::EndEffectorPosition
-Picking::computePreGrasp(const std::vector<double> &goal) {
+Picking::computePreGrasp(const std::vector<float> &goal) {
     geometry_msgs::Point p = point(goal[0], goal[1], goal[2] + 0.15);
     // p.z = goal[2] + 0.15;
     if (p.z < 0.135) {
@@ -98,7 +59,7 @@ Picking::computePreGrasp(const std::vector<double> &goal) {
 // return eef;
 //}
 
-Picking::EndEffectorPosition Picking::computeGrasp(const std::vector<double> &goal) {
+Picking::EndEffectorPosition Picking::computeGrasp(const std::vector<float> &goal) {
     geometry_msgs::Point p = point(goal[0], goal[1], goal[2]);
     if (p.z < 0.135) {
         p.z = 0.135;
@@ -118,7 +79,7 @@ Picking::EndEffectorPosition Picking::computeGrasp(const std::vector<double> &go
     //eef.open = true;
     //return eef;
 //}
-Picking::EndEffectorPosition Picking::Close(const std::vector<double> &goal) {
+Picking::EndEffectorPosition Picking::Close(const std::vector<float> &goal) {
     geometry_msgs::Point p = point(goal[0], goal[1], goal[2]);
     if (p.z < 0.135) {
         p.z = 0.135;
@@ -207,7 +168,7 @@ template void
 Picking::establish_connection<Picking::PoseClient>(const PoseClient &,
                                                    const std::string &);
 
-std::vector<double> Picking::obtainPose() {
+std::vector<float> Picking::obtainPose() {
     pose_detection::BroadcastPoseGoal goal;
     target.sendGoal(goal);
     geometry_msgs::TransformStamped result;
@@ -220,10 +181,11 @@ std::vector<double> Picking::obtainPose() {
         ROS_INFO_STREAM("Could not obtain pose before timeout.");
         throw std::runtime_error("Could not obtain pose before timeout");
     }
-    const auto &translation = result.transform.translation;
+    const auto& translation = result.transform.translation;
     // (TODO) Add proper rotation;
-    std::vector<double> pose = {
-        translation.x, translation.y, translation.z, 0, 0, 0};
+    std::vector<float> pose = {
+        static_cast<float>(translation.x), static_cast<float>(translation.y), 
+        static_cast<float>(translation.z), 0, 0, 0};
     return pose;
 }
 
@@ -234,10 +196,10 @@ bool Picking::GripperAperture(bool open) {
     } else {
         tcmd.cmd_type = 2;
     }
-    tcmd.gripper_open_speed = 200;
-    tcmd.tool_id = 13;
+    tcmd.gripper_open_speed = MAX_SPEED;
+    tcmd.tool_id = TOOL_ID;
     niryo_one_msgs::RobotMoveActionGoal action;
-    action.goal.cmd.cmd_type = 6;
+    action.goal.cmd.cmd_type = CMD_TYPE;
     action.goal.cmd.tool_cmd = tcmd;
     robot.sendGoal(action.goal);
     bool success = robot.waitForResult(ros::Duration(MAX_DURATION));

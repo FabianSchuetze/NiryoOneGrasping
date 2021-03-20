@@ -23,7 +23,7 @@ int main(int argc, char **argv) {
     Picking picker;
     picker.connectToRobot();
     picker.connectToPositionServer();
-    std::vector<double> goal = picker.obtainPose();
+    std::vector<float> goal = picker.obtainPose();
     ros::Rate rate(1);
     std::cout << "received value:\n";
     for (const auto x : goal) {

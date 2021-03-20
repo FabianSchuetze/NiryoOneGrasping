@@ -19,6 +19,7 @@
 constexpr int TOMM = 1000;
 constexpr uint HEIGHT = 480;
 constexpr uint WIDTH = 640;
+constexpr uint MIN_VALUES = 100;
 
 void Scene::decipherImage(const PointCloud::Ptr &cloud) {
     sensor_msgs::Image ros_img;
@@ -66,11 +67,8 @@ std::tuple<float, float, float, int16_t> inline Scene::deprojectPoint(
     size_t x, size_t y) const {
     int16_t val = depth_.at<ushort>(y, x);
     float p_z = static_cast<float>(depth_.at<ushort>(y, x)) / TOMM;
-    float p_x = (static_cast<float>(x) - camera.cx) * p_z / camera.fx;
-    float p_y = (static_cast<float>(y) - camera.cy) * p_z / camera.fy;
-    // std::cout << "The points is: " << val << ":" << p_x << ", " << p_y << ",
-    // "
-    //<< p_z << std::endl;
+    float p_x = (static_cast<float>(x) - Camera::cx) * p_z / Camera::fx;
+    float p_y = (static_cast<float>(y) - Camera::cy) * p_z / Camera::fy;
     return {p_x, p_y, p_z, val};
 }
 
@@ -89,7 +87,7 @@ void Scene::create_points() {
         }
         ++i;
     }
-    if (invalid_depth_counter > 100) {
+    if (invalid_depth_counter > MIN_VALUES) {
         ROS_WARN_STREAM("Many depth values are zero. Camera working correctly");
     }
 }

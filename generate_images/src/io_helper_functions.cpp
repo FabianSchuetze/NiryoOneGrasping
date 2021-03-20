@@ -52,9 +52,9 @@ void extract_frames(const rs2::frameset &stream, cv::Mat &depth_img,
     rs2::frame color = stream.get_color_frame();
     static const int w = depth.as<rs2::video_frame>().get_width();
     static const int h = depth.as<rs2::video_frame>().get_height();
-    depth_img = cv::Mat(cv::Size(w, h), CV_16UC1, (void *)depth.get_data(),
+    depth_img = cv::Mat(cv::Size(w, h), CV_16UC1, const_cast<void *>(depth.get_data()),
                         cv::Mat::AUTO_STEP);
-    color_img = cv::Mat(cv::Size(w, h), CV_8UC3, (void *)color.get_data(),
+    color_img = cv::Mat(cv::Size(w, h), CV_8UC3, const_cast<void *>(color.get_data()),
                         cv::Mat::AUTO_STEP);
     // cv::cvtColor(r_rgb, color_img, cv::COLOR_RGB2BGR);
 }
