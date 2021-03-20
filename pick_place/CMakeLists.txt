@@ -2,7 +2,7 @@
 cmake_minimum_required(VERSION 3.1.3)
 project(pick_place)
 
-set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
 
@@ -12,9 +12,14 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 find_package(catkin REQUIRED COMPONENTS
   roscpp
   std_msgs
-  niryo_one_msgs
   actionlib
+  actionlib_msgs
+  niryo_one_msgs
   pose_detection
+  tf2_ros
+  genmsg
+  #tf2_eigen
+  tf2_geometry_msgs
 )
 
 ###################################
@@ -27,10 +32,19 @@ find_package(catkin REQUIRED COMPONENTS
 ## CATKIN_DEPENDS: catkin_packages dependent projects also need
 ## DEPENDS: system dependencies of this project that dependent projects also need
 catkin_package(
-  #INCLUDE_DIRS include
-#  LIBRARIES robot_tester
-  CATKIN_DEPENDS roscpp
-#  DEPENDS system_lib
+  INCLUDE_DIRS include
+  LIBRARIES ${PROJECT_NAME}
+  CATKIN_DEPENDS
+      roscpp
+      std_msgs
+      actionlib
+      actionlib_msgs
+      niryo_one_msgs
+      pose_detection
+      tf2_geometry_msgs
+      tf2_ros
+      genmsg
+  #DEPENDS 
 )
 
 ###########
@@ -39,8 +53,7 @@ catkin_package(
 set(${PROJECT_NAME}_SRC
     src/picking.cpp
 )
-include_directories(SYSTEM ${catkin_INCLUDE_DIRS} ${EIGEN3_INCLUDE_DIRS} ${OpenCV_INCLUDE_DIRS} 
-                           ${PCL_INCLUDE_DIRS})
+include_directories(SYSTEM ${catkin_INCLUDE_DIRS} ${EIGEN3_INCLUDE_DIRS})
 include_directories(include)
 add_library(${PROJECT_NAME} SHARED ${${PROJECT_NAME}_SRC})
 

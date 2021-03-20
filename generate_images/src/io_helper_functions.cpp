@@ -10,20 +10,20 @@
 #include <opencv2/imgproc.hpp>
 
 template <typename... Args>
-std::string string_format(const std::string& format, Args... args) {
+std::string string_format(const std::string &format, Args... args) {
     int size = snprintf(nullptr, 0, format.c_str(), args...) +
-               1;  // Extra space for '\0'
+               1; // Extra space for '\0'
     if (size <= 0) {
         throw std::runtime_error("Error during formatting.");
     }
     std::unique_ptr<char[]> buf(new char[size]);
     snprintf(buf.get(), size, format.c_str(), args...);
     return std::string(buf.get(),
-                       buf.get() + size - 1);  // We don't want the '\0' inside
+                       buf.get() + size - 1); // We don't want the '\0' inside
 }
 
-std::string get_param(const ros::NodeHandle& node_handle,
-                      const std::string& name, const std::string& identifier) {
+std::string get_param(const ros::NodeHandle &node_handle,
+                      const std::string &name, const std::string &identifier) {
     std::string result;
     if ((node_handle.getParam(name, result))) {
         std::string msg = "the " + identifier + " is at " + result;
@@ -39,28 +39,28 @@ std::string get_param(const ros::NodeHandle& node_handle,
     return result;
 }
 
-cv::FileStorage read_open_cv_file(const std::string& path) {
+cv::FileStorage read_open_cv_file(const std::string &path) {
     cv::FileStorage fs;
     fs.open(path, cv::FileStorage::READ);
     return fs;
 }
 
 namespace vision {
-void extract_frames(const rs2::frameset& stream, cv::Mat& depth_img,
-                    cv::Mat& color_img) {
+void extract_frames(const rs2::frameset &stream, cv::Mat &depth_img,
+                    cv::Mat &color_img) {
     rs2::frame depth = stream.get_depth_frame();
     rs2::frame color = stream.get_color_frame();
     static const int w = depth.as<rs2::video_frame>().get_width();
     static const int h = depth.as<rs2::video_frame>().get_height();
-    depth_img = cv::Mat(cv::Size(w, h), CV_16UC1, (void*)depth.get_data(),
+    depth_img = cv::Mat(cv::Size(w, h), CV_16UC1, (void *)depth.get_data(),
                         cv::Mat::AUTO_STEP);
-    color_img = cv::Mat(cv::Size(w, h), CV_8UC3, (void*)color.get_data(),
+    color_img = cv::Mat(cv::Size(w, h), CV_8UC3, (void *)color.get_data(),
                         cv::Mat::AUTO_STEP);
     // cv::cvtColor(r_rgb, color_img, cv::COLOR_RGB2BGR);
 }
 
-void write_intrinsics_to_file(const rs2::pipeline_profile& profile,
-                              const std::string& root_dir) {
+void write_intrinsics_to_file(const rs2::pipeline_profile &profile,
+                              const std::string &root_dir) {
     rs2::video_stream_profile vsp(profile.get_stream(RS2_STREAM_COLOR));
     const rs2_intrinsics Kc = vsp.get_intrinsics();
     std::ofstream intrinsics_file;
@@ -85,7 +85,7 @@ void write_intrinsics_to_file(const rs2::pipeline_profile& profile,
     img_details << "Width: " << Kc.width << "\n";
 }
 
-void create_folders_if_neccessary(const std::string& root) {
+void create_folders_if_neccessary(const std::string &root) {
     namespace fs = std::filesystem;
     if (!fs::is_directory(root) || !fs::exists(root)) {
         fs::create_directory(root);
@@ -99,8 +99,8 @@ void create_folders_if_neccessary(const std::string& root) {
     }
 }
 
-void write_frames_to_file(cv::Mat color, cv::Mat depth, const std::string& root,
-                          size_t counter) {
+void write_frames_to_file(cv::Mat &color, cv::Mat &depth,
+                          const std::string &root, size_t counter) {
     static const std::string rgbd_dir = root + "/rgbd/";
     std::string number = string_format("%04d", counter);
     const std::string depth_file = rgbd_dir + "frame-" + number + ".depth.png";
@@ -109,8 +109,8 @@ void write_frames_to_file(cv::Mat color, cv::Mat depth, const std::string& root,
     cv::imwrite(col_file, color);
 }
 
-void write_transform_to_file(const Eigen::Affine3d& transform,
-                             const std::string& root, size_t counter) {
+void write_transform_to_file(const Eigen::Affine3d &transform,
+                             const std::string &root, size_t counter) {
     static const std::string rgbd_dir = root + "/rgbd/";
     const std::string number = string_format("%04d", counter);
     const std::string pose_loc = rgbd_dir + "frame-" + number + ".pose.txt";
@@ -125,7 +125,7 @@ void write_transform_to_file(const Eigen::Affine3d& transform,
 
 // This does not work! This is a fixed namespace, but it must be for each
 // exetcuable!
-Paras get_paras(const ros::NodeHandle& node_handle) {
+Paras get_paras(const ros::NodeHandle &node_handle) {
     Paras paras;
     paras.root_dir =
         get_param(node_handle, "/BroadcastTransform/root_dir", "root director");
@@ -135,8 +135,8 @@ Paras get_paras(const ros::NodeHandle& node_handle) {
     return paras;
 }
 
-Eigen::Matrix4d read_transform(const cv::FileStorage& fs,
-                               const std::string& pos) {
+Eigen::Matrix4d read_transform(const cv::FileStorage &fs,
+                               const std::string &pos) {
     cv::Mat transformation;
     fs[pos] >> transformation;
     Eigen::Matrix4d tmp;
@@ -144,7 +144,7 @@ Eigen::Matrix4d read_transform(const cv::FileStorage& fs,
     return tmp;
 }
 
-const Eigen::Affine3d read_hand_to_eye_transform(const std::string& loc) {
+Eigen::Affine3d read_hand_to_eye_transform(const std::string &loc) {
     cv::FileStorage nodes = read_open_cv_file(loc);
     if (!nodes.isOpened()) {
         std::cerr << "Failed to open " << loc << std::endl;
@@ -155,12 +155,12 @@ const Eigen::Affine3d read_hand_to_eye_transform(const std::string& loc) {
     return trans;
 }
 
-bool obtain_transform(std::string from, std::string to,
-                      const tf2_ros::Buffer& buffer, Eigen::Affine3d& T_curr) {
+bool obtain_transform(const std::string &from, const std::string &to,
+                      const tf2_ros::Buffer &buffer, Eigen::Affine3d &T_curr) {
     static geometry_msgs::TransformStamped trans;
     try {
         trans = buffer.lookupTransform(from, to, ros::Time(0));
-    } catch (tf2::TransformException& ex) {
+    } catch (tf2::TransformException &ex) {
         ROS_ERROR("%s", ex.what());
         return false;
     }
@@ -168,4 +168,4 @@ bool obtain_transform(std::string from, std::string to,
     return true;
 }
 
-}  // namespace vision
+} // namespace vision

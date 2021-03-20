@@ -18,20 +18,12 @@ constexpr static int TOOL_ID(13);
 
 int main(int argc, char **argv) {
     ros::init(argc, argv, "pick_place");
-    ros::NodeHandle n("~");
     ros::AsyncSpinner spinner(3);
     spinner.start();
-
-    // Connecting to the robot ===========================================
-    Picking::NiryoClient ac("/niryo_one/commander/robot_action/", true);
-    Picking::establish_connection(
-        ac, "robot"); // wait for the action server to start
-    Picking::setGripper(n, TOOL_ID);
-    Picking::PoseClient ac2("poseaction", true);
-    Picking::establish_connection(ac2, "pose_estimate");
-    std::vector<double> goal = Picking::obtainPose(ac2);
-
-    // ROS_INFO("Action server started, sending goal.");
+    Picking picker;
+    picker.connectToRobot();
+    picker.connectToPositionServer();
+    std::vector<double> goal = picker.obtainPose();
     ros::Rate rate(1);
     std::cout << "received value:\n";
     for (const auto x : goal) {
@@ -48,7 +40,7 @@ int main(int argc, char **argv) {
     std::vector<Picking::EndEffectorPosition> movements = {
         pre_grasp, grasp, close, pre_final, open, rest_position};
     for (const auto &movement : movements) {
-        Picking::positionGoal(ac, movement);
+        picker.moveToPosition(movement);
         rate.sleep(); // pause between movements
     }
     return 0;
