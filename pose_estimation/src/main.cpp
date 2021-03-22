@@ -23,6 +23,13 @@ std::vector<Target> read_targets() {
         "color_imgs/125.png");
     std::vector<Target> targets;
     targets.emplace_back(model_description, img_path);
+    std::filesystem::path model_description2(
+        "/home/fabian/Documents/work/transforms/src/pose_estimation/data/"
+        "ibuprofen.yml");
+    std::filesystem::path img_path2(
+        "/home/fabian/Documents/work/realsense/data/2021-03-22-15-08/"
+        "color_imgs/250.png");
+    targets.emplace_back(model_description2, img_path2);
     return targets;
 }
 

@@ -13,10 +13,10 @@ class Model {
     virtual const std::vector<cv::KeyPoint> &kps() const { return kps_; }
 
   protected:
-    cv::Mat img_;
-    std::vector<cv::KeyPoint> kps_;
-    cv::Mat descriptors_;
-    cv::Mat points3d_;
+    cv::Mat img_; //NOLINT
+    std::vector<cv::KeyPoint> kps_; //NOLINT
+    cv::Mat descriptors_; //NOLINT
+    cv::Mat points3d_; //NOLINT
 
   private:
     static const cv::Mat &matrix(const cv::Mat &mat) {
