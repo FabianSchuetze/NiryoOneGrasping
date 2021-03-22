@@ -21,14 +21,14 @@ class Picking {
     Picking();
     void connectToRobot();
     void connectToPositionServer();
-    static EndEffectorPosition computePreGrasp(const std::vector<float> &);
-    static EndEffectorPosition computeGrasp(const std::vector<float> &);
-    static EndEffectorPosition Close(const std::vector<float> &);
+    static EndEffectorPosition computePreGrasp(geometry_msgs::Point);
+    static EndEffectorPosition computeGrasp(geometry_msgs::Point);
+    static EndEffectorPosition Close(geometry_msgs::Point);
     static EndEffectorPosition PreFinal();
     static EndEffectorPosition Final();
     static EndEffectorPosition Rest();
     void setGripper();
-    std::vector<float> obtainPose();
+    bool obtainPose(geometry_msgs::Point&);
     void moveToPosition(const EndEffectorPosition &);
 
   private:

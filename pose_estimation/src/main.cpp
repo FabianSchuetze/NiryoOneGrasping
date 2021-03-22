@@ -11,7 +11,7 @@ static constexpr uint QUEUE = 50;
 static constexpr uint RATE = 10;
 static constexpr float RATIO = 0.7;
 static constexpr uint MIN_RANSAC = 5;
-static constexpr uint MIN_MATCHES = 10;
+static constexpr uint MIN_MATCHES = 8;
 static constexpr float RANSAC_THRESHOLD = 0.009;
 
 std::vector<Target> read_targets() {
@@ -62,14 +62,16 @@ bool graspPoint(const Target &t, const Scene &scene,
     return true;
 }
 
-std::vector<std::vector<cv::DMatch>>
+std::vector<std::pair<std::vector<cv::DMatch>, Target>>
 matchImages(const std::vector<Target> &targets, const Scene &scene,
             const Match &matcher) {
-    std::vector<std::vector<cv::DMatch>> matches;
+    std::vector<std::pair<std::vector<cv::DMatch>, Target>> matches;
     for (const Target &t : targets) {
         const auto match =
             matcher.matchDescriptors(t.descriptors(), scene.descriptors());
-        matches.push_back(match);
+        if (match.size() > 10) {
+            matches.push_back({match, t});
+        }
     }
     return matches;
 }
@@ -82,7 +84,7 @@ int main(int argc, char **argv) {
     ros::Subscriber sub = nh.subscribe("/camera/depth_registered/points", QUEUE,
                                        &Scene::callback, &scene);
     ros::Publisher pub =
-        nh.advertise<geometry_msgs::PoseArray>("grasp_position", 1);
+        nh.advertise<geometry_msgs::Point>("grasp_position", 1);
     ros::Rate rate(RATE);
     Match matcher(RATIO);
     const auto sift = cv::SIFT::create(0, 3, 0.04, 10, 1.6, CV_8U);
@@ -93,23 +95,19 @@ int main(int argc, char **argv) {
             continue;
         }
         const auto matches = matchImages(targets, scene, matcher);
-        geometry_msgs::PoseArray poses;
+        if (matches.empty()) {
+            ROS_WARN_STREAM("Did not find a match with any target");
+            continue;
+        }
         for (size_t i = 0; i < matches.size(); ++i) {
-            const auto &match = matches[i];
-            const auto &t = targets[i];
-            if (match.size() < MIN_MATCHES) {
-                ROS_WARN_STREAM("Found less than 10 matches\n");
-                continue;
-            }
-            geometry_msgs::Pose pose;
-            bool success = graspPoint(t, scene, match, pose.position);
-            if (success) {
-                poses.poses.push_back(pose);
+            const auto [match, t ] = matches[i];
+            geometry_msgs::Point point;
+            if (graspPoint(t, scene, match, point)) {
+                pub.publish(point);
             } else {
                 ROS_WARN_STREAM("Cannot define grasp location");
             }
         }
-        pub.publish(poses);
     }
     sub.shutdown();
     return 0;

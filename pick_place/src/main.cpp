@@ -23,25 +23,24 @@ int main(int argc, char **argv) {
     Picking picker;
     picker.connectToRobot();
     picker.connectToPositionServer();
-    std::vector<float> goal = picker.obtainPose();
-    ros::Rate rate(1);
-    std::cout << "received value:\n";
-    for (const auto x : goal) {
-        std::cout << x << ", ";
-    }
-    std::cout << "\n";
-    const Picking::EndEffectorPosition pre_grasp =
-        Picking::computePreGrasp(goal);
-    const Picking::EndEffectorPosition grasp = Picking::computeGrasp(goal);
-    const Picking::EndEffectorPosition close = Picking::Close(goal);
-    const Picking::EndEffectorPosition pre_final = Picking::PreFinal();
-    const Picking::EndEffectorPosition open = Picking::Final();
-    const Picking::EndEffectorPosition rest_position = Picking::Rest();
-    std::vector<Picking::EndEffectorPosition> movements = {
-        pre_grasp, grasp, close, pre_final, open, rest_position};
-    for (const auto &movement : movements) {
-        picker.moveToPosition(movement);
-        rate.sleep(); // pause between movements
+    geometry_msgs::Point goal;
+    while (picker.obtainPose(goal)) {
+        ros::Rate rate(1);
+        ROS_INFO_STREAM("received value:\n"
+                        << goal.x << ", " << goal.y << ", " << goal.z);
+        const Picking::EndEffectorPosition pre_grasp =
+            Picking::computePreGrasp(goal);
+        const Picking::EndEffectorPosition grasp = Picking::computeGrasp(goal);
+        const Picking::EndEffectorPosition close = Picking::Close(goal);
+        const Picking::EndEffectorPosition pre_final = Picking::PreFinal();
+        const Picking::EndEffectorPosition open = Picking::Final();
+        const Picking::EndEffectorPosition rest_position = Picking::Rest();
+        std::vector<Picking::EndEffectorPosition> movements = {
+            pre_grasp, grasp, close, pre_final, open, rest_position};
+        for (const auto &movement : movements) {
+            picker.moveToPosition(movement);
+            rate.sleep(); // pause between movements
+        }
     }
     return 0;
 }

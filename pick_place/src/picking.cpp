@@ -38,10 +38,7 @@ Picking::EndEffectorPosition Picking::Final() {
     EndEffectorPosition pose1 = pose(p, true);
     return pose1;
 }
-Picking::EndEffectorPosition
-Picking::computePreGrasp(const std::vector<float> &goal) {
-    geometry_msgs::Point p = point(goal[0], goal[1], goal[2] + 0.15);
-    // p.z = goal[2] + 0.15;
+Picking::EndEffectorPosition Picking::computePreGrasp(geometry_msgs::Point p) {
     if (p.z < 0.135) {
         throw std::runtime_error("Z values cannot be lower than 0.135");
     }
@@ -49,18 +46,8 @@ Picking::computePreGrasp(const std::vector<float> &goal) {
     return pose1;
 }
 
-// rot.roll = 0;
-// rot.pitch = 1.5;
-// rot.yaw = 0;
-// NiryoPose pose1(p, rot);
-// EndEffectorPosition eef;
-// eef.pose = pose1;
-// eef.open = true;
-// return eef;
-//}
 
-Picking::EndEffectorPosition Picking::computeGrasp(const std::vector<float> &goal) {
-    geometry_msgs::Point p = point(goal[0], goal[1], goal[2]);
+Picking::EndEffectorPosition Picking::computeGrasp(geometry_msgs::Point p) {
     if (p.z < 0.135) {
         p.z = 0.135;
         ROS_WARN_STREAM("Set the height value to 0.135");
@@ -69,18 +56,7 @@ Picking::EndEffectorPosition Picking::computeGrasp(const std::vector<float> &goa
     EndEffectorPosition pose1 = pose(p, true);
     return pose1;
 }
-    //niryo_one_msgs::RPY rot;
-    //rot.roll = 0;
-    //rot.pitch = 1.5;
-    //rot.yaw = 0;
-    //NiryoPose pose1(p, rot);
-    //EndEffectorPosition eef;
-    //eef.pose = pose1;
-    //eef.open = true;
-    //return eef;
-//}
-Picking::EndEffectorPosition Picking::Close(const std::vector<float> &goal) {
-    geometry_msgs::Point p = point(goal[0], goal[1], goal[2]);
+Picking::EndEffectorPosition Picking::Close(geometry_msgs::Point p) {
     if (p.z < 0.135) {
         p.z = 0.135;
         ROS_WARN_STREAM("Set the height value to 0.135");
@@ -89,25 +65,7 @@ Picking::EndEffectorPosition Picking::Close(const std::vector<float> &goal) {
     EndEffectorPosition pose1 = pose(p, false);
     return pose1;
 }
-    //geometry_msgs::Point p;
-    //p.x = goal[0];
-    //p.y = goal[1];
-    //p.z = goal[2];
-    //if (p.z < 0.135) {
-        //p.z = 0.135;
-        //ROS_WARN_STREAM("Set the height value to 0.135");
-        //// throw std::runtime_error("Z values cannot be lower than 0.135");
-    //}
-    //niryo_one_msgs::RPY rot;
-    //rot.roll = 0;
-    //rot.pitch = 1.5;
-    //rot.yaw = 0;
-    //NiryoPose pose1(p, rot);
-    //EndEffectorPosition eef;
-    //eef.pose = pose1;
-    //eef.open = false;
-    //return eef;
-//}
+
 niryo_one_msgs::RPY Picking::rotation() {
     niryo_one_msgs::RPY rot;
     rot.roll = 0;
@@ -115,6 +73,7 @@ niryo_one_msgs::RPY Picking::rotation() {
     rot.yaw = 0;
     return rot;
 }
+
 geometry_msgs::Point Picking::point(float x, float y, float z) {
     geometry_msgs::Point p;
     p.x = x;
@@ -168,7 +127,8 @@ template void
 Picking::establish_connection<Picking::PoseClient>(const PoseClient &,
                                                    const std::string &);
 
-std::vector<float> Picking::obtainPose() {
+bool Picking::obtainPose(geometry_msgs::Point& pose){
+    //geometry_msgs::Point pose;
     pose_detection::BroadcastPoseGoal goal;
     target.sendGoal(goal);
     geometry_msgs::TransformStamped result;
@@ -176,17 +136,17 @@ std::vector<float> Picking::obtainPose() {
     if (finished) {
         result = target.getResult()->pose;
         actionlib::SimpleClientGoalState state = target.getState();
-        ROS_INFO_STREAM("Action finished: " << state.toString());
+        ROS_INFO_STREAM("Obtained a new pose: " << state.toString());
     } else {
         ROS_INFO_STREAM("Could not obtain pose before timeout.");
-        throw std::runtime_error("Could not obtain pose before timeout");
+        return false;
+        //throw std::runtime_error("Could not obtain pose before timeout");
     }
-    const auto& translation = result.transform.translation;
-    // (TODO) Add proper rotation;
-    std::vector<float> pose = {
-        static_cast<float>(translation.x), static_cast<float>(translation.y), 
-        static_cast<float>(translation.z), 0, 0, 0};
-    return pose;
+    const auto &translation = result.transform.translation;
+    pose.x = static_cast<float>(translation.x);
+    pose.y = static_cast<float>(translation.y);
+    pose.z = static_cast<float>(translation.z);
+    return true;
 }
 
 bool Picking::GripperAperture(bool open) {
