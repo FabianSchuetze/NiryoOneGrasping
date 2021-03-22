@@ -24,6 +24,7 @@ class Picking {
     static EndEffectorPosition computePreGrasp(geometry_msgs::Point);
     static EndEffectorPosition computeGrasp(geometry_msgs::Point);
     static EndEffectorPosition Close(geometry_msgs::Point);
+    static EndEffectorPosition PostGrasp(geometry_msgs::Point);
     static EndEffectorPosition PreFinal();
     static EndEffectorPosition Final();
     static EndEffectorPosition Rest();

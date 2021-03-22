@@ -9,6 +9,8 @@
 #include <pose_detection/BroadcastPoseAction.h>
 #include <sensor_msgs/JointState.h>
 #include <std_msgs/String.h>
+#include <chrono>
+#include <thread>
 
 #include <sstream>
 
@@ -24,23 +26,25 @@ int main(int argc, char **argv) {
     picker.connectToRobot();
     picker.connectToPositionServer();
     geometry_msgs::Point goal;
+    std::chrono::seconds sec(1);
     while (picker.obtainPose(goal)) {
-        ros::Rate rate(1);
         ROS_INFO_STREAM("received value:\n"
                         << goal.x << ", " << goal.y << ", " << goal.z);
         const Picking::EndEffectorPosition pre_grasp =
             Picking::computePreGrasp(goal);
         const Picking::EndEffectorPosition grasp = Picking::computeGrasp(goal);
         const Picking::EndEffectorPosition close = Picking::Close(goal);
+        const Picking::EndEffectorPosition post_grasp = Picking::PostGrasp(goal);
         const Picking::EndEffectorPosition pre_final = Picking::PreFinal();
         const Picking::EndEffectorPosition open = Picking::Final();
         const Picking::EndEffectorPosition rest_position = Picking::Rest();
         std::vector<Picking::EndEffectorPosition> movements = {
-            pre_grasp, grasp, close, pre_final, open, rest_position};
+            pre_grasp, grasp, close, post_grasp, pre_final, open, rest_position};
         for (const auto &movement : movements) {
             picker.moveToPosition(movement);
-            rate.sleep(); // pause between movements
+            std::this_thread::sleep_for(sec);
         }
+        std::this_thread::sleep_for(sec);
     }
     return 0;
 }

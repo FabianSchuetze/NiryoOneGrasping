@@ -29,12 +29,12 @@ Picking::EndEffectorPosition Picking::Rest() {
     return pose1;
 }
 Picking::EndEffectorPosition Picking::PreFinal() {
-    geometry_msgs::Point p = point(0.1, -0.2, 0.2);
+    geometry_msgs::Point p = point(0.1, -0.2, 0.25);
     EndEffectorPosition pose1 = pose(p, false);
     return pose1;
 }
 Picking::EndEffectorPosition Picking::Final() {
-    geometry_msgs::Point p = point(0.1, -0.2, 0.2);
+    geometry_msgs::Point p = point(0.1, -0.2, 0.25);
     EndEffectorPosition pose1 = pose(p, true);
     return pose1;
 }
@@ -64,6 +64,12 @@ Picking::EndEffectorPosition Picking::Close(geometry_msgs::Point p) {
         ROS_WARN_STREAM("Set the height value to 0.135");
         // throw std::runtime_error("Z values cannot be lower than 0.135");
     }
+    EndEffectorPosition pose1 = pose(p, false);
+    return pose1;
+}
+
+Picking::EndEffectorPosition Picking::PostGrasp(geometry_msgs::Point p) {
+    p.z = 0.25;
     EndEffectorPosition pose1 = pose(p, false);
     return pose1;
 }
