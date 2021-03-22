@@ -1,6 +1,7 @@
+#include <geometry_msgs/Point.h>
+#include <geometry_msgs/PoseArray.h>
 #include <opencv2/features2d.hpp>
 #include <vector>
-#include <geometry_msgs/Point.h>
 
 #include "match.hpp"
 #include "scene.hpp"
@@ -25,63 +26,83 @@ std::vector<Target> read_targets() {
     return targets;
 }
 
+bool obtainedFeatures(Scene &scene, const cv::Ptr<cv::SIFT> &sift) {
+    if (scene.img().empty()) {
+        ROS_WARN_STREAM("NO data arrived");
+        return false;
+    }
+    scene.estimateFeatures(sift);
+    return true;
+}
+
+bool graspPoint(const Target &t, const Scene &scene,
+                const std::vector<cv::DMatch> &matches,
+                geometry_msgs::Point &point) {
+    Match::drawMatches(t.img(), t.kps(), scene.img(), scene.kps(), matches);
+    const auto [est_ref_points, est_scene_points] =
+        Match::corresponding3dPoints(matches, t.points3d(), scene.points3d());
+    cv::Mat inliers, transform;
+    cv::estimateAffine3D(est_ref_points, est_scene_points, transform, inliers,
+                         RANSAC_THRESHOLD);
+    if (static_cast<uint>(cv::sum(inliers)[0]) <= MIN_RANSAC) {
+        ROS_WARN_STREAM("Could not find the minimum number of matches\n");
+        return false;
+    }
+    cv::Mat grasp_point = Match::averagePosition(est_scene_points, inliers);
+    point.x = grasp_point.at<float>(0, 0);
+    point.y = grasp_point.at<float>(0, 1);
+    point.z = grasp_point.at<float>(0, 2);
+    return true;
+}
+
+std::vector<std::vector<cv::DMatch>>
+matchImages(const std::vector<Target> &targets, const Scene &scene,
+            const Match &matcher) {
+    std::vector<std::vector<cv::DMatch>> matches;
+    for (const Target &t : targets) {
+        const auto match =
+            matcher.matchDescriptors(t.descriptors(), scene.descriptors());
+        matches.push_back(match);
+    }
+    return matches;
+}
+
 int main(int argc, char **argv) {
     ros::init(argc, argv, "publish_pose");
     ros::NodeHandle nh;
     std::vector<Target> targets = read_targets();
     Scene scene;
-    // std::cout << "inside the main function" << std::endl;
     ros::Subscriber sub = nh.subscribe("/camera/depth_registered/points", QUEUE,
                                        &Scene::callback, &scene);
-    ros::Publisher pub = nh.advertise<geometry_msgs::Point>("grasp_position",
-            1, true);
-    // std::filesystem::path first_arg =
-    //"/home/fabian/Documents/work/realsense/data/2021-03-12-18-50/"
-    //"color_imgs/200.png";
-    // std::filesystem::path second_arg =
-    //"/home/fabian/Documents/work/realsense/data/2021-03-12-18-50/"
-    //"depth_imgs/200.png";
-    // scene.deserialize(first_arg, second_arg);
+    ros::Publisher pub =
+        nh.advertise<geometry_msgs::PoseArray>("grasp_position", 1);
     ros::Rate rate(RATE);
     Match matcher(RATIO);
     const auto sift = cv::SIFT::create(0, 3, 0.04, 10, 1.6, CV_8U);
     while (ros::ok()) {
         rate.sleep();
         ros::spinOnce();
-        if (scene.img().empty()) {
-            ROS_WARN_STREAM("NO data arrived");
+        if (!obtainedFeatures(scene, sift)) {
             continue;
         }
-        scene.estimateFeatures(sift);
-        std::vector<cv::DMatch> matches = matcher.matchDescriptors(
-            targets[0].descriptors(), scene.descriptors());
-        if (matches.size() < MIN_MATCHES) {
-            ROS_WARN_STREAM("Found less than 10 matches\n");
-            continue;
+        const auto matches = matchImages(targets, scene, matcher);
+        geometry_msgs::PoseArray poses;
+        for (size_t i = 0; i < matches.size(); ++i) {
+            const auto &match = matches[i];
+            const auto &t = targets[i];
+            if (match.size() < MIN_MATCHES) {
+                ROS_WARN_STREAM("Found less than 10 matches\n");
+                continue;
+            }
+            geometry_msgs::Pose pose;
+            bool success = graspPoint(t, scene, match, pose.position);
+            if (success) {
+                poses.poses.push_back(pose);
+            } else {
+                ROS_WARN_STREAM("Cannot define grasp location");
+            }
         }
-        //std::cout << "Matches size" << matches.size() << std::endl;
-        Match::drawMatches(targets[0].img(), targets[0].kps(), scene.img(),
-                           scene.kps(), matches);
-        const auto [est_ref_points, est_scene_points] =
-            Match::corresponding3dPoints(matches, targets[0].points3d(),
-                                         scene.points3d());
-        //std::cout << "Estimated scene points1\n" << est_scene_points << std::endl;
-        cv::Mat inliers, transform;
-        cv::estimateAffine3D(est_ref_points, est_scene_points, transform,
-                             inliers, RANSAC_THRESHOLD);
-        if (static_cast<uint>(cv::sum(inliers)[0]) <= MIN_RANSAC) {
-            ROS_WARN_STREAM("Could not find the minimum number of matches\n");
-            continue;
-        }
-        //std::cout << "Estimated scene points\n" << est_scene_points << std::endl;
-        //std::cout << "inliers\n" << inliers << std::endl;
-        cv::Mat grasp_point = Match::averagePosition(est_scene_points, inliers);
-        geometry_msgs::Point point;
-        point.x = grasp_point.at<float>(0,0);
-        point.y = grasp_point.at<float>(0,1);
-        point.z = grasp_point.at<float>(0,2);
-        pub.publish(point);
-        ROS_INFO_STREAM("The points is at: " << grasp_point);
+        pub.publish(poses);
     }
     sub.shutdown();
     return 0;

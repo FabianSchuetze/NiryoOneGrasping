@@ -7,10 +7,10 @@ class Model {
   public:
     Model() = default;
     virtual ~Model() = default;
-    virtual const cv::Mat &descriptors() { return matrix(descriptors_); };
-    virtual const cv::Mat &points3d() { return matrix(points3d_); };
-    virtual const cv::Mat &img() { return matrix(img_); }
-    virtual const std::vector<cv::KeyPoint> &kps() { return kps_; }
+    virtual const cv::Mat &descriptors() const { return matrix(descriptors_); };
+    virtual const cv::Mat &points3d() const { return matrix(points3d_); };
+    virtual const cv::Mat &img() const { return matrix(img_); }
+    virtual const std::vector<cv::KeyPoint> &kps() const { return kps_; }
 
   protected:
     cv::Mat img_;

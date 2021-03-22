@@ -14,7 +14,7 @@ Match::matches Match::RatioTest(std::vector<matches> &&match_vec) const {
 }
 
 Match::matches Match::matchDescriptors(const cv::Mat &target_descriptors,
-                                       const cv::Mat &scene_descriptors) {
+                                       const cv::Mat &scene_descriptors) const {
     std::vector<std::vector<cv::DMatch>> knn_matches;
     matcher.knnMatch(scene_descriptors, target_descriptors, knn_matches, 2);
     return RatioTest(std::move(knn_matches));
@@ -61,11 +61,11 @@ void Match::drawMatches(const cv::Mat &target_img,
                     cv::DrawMatchesFlags::NOT_DRAW_SINGLE_POINTS);
     // Not GOOD: compiler has to reaorder stack
     cv::imshow(window_name, img_matches);
-    //cv::waitKey();
+    // cv::waitKey();
 }
 
 cv::Mat Match::averagePosition(const cv::Mat &population,
-                                const cv::Mat &inliers) {
+                               const cv::Mat &inliers) {
     float rows = static_cast<float>(cv::sum(inliers)[0]);
     cv::Mat matches = cv::Mat(1, 3, CV_32FC1, 0.0);
     for (int i = 0; i < inliers.rows; ++i) {

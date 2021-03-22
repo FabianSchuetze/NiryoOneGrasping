@@ -7,13 +7,13 @@ class Match {
   public:
     typedef std::vector<cv::DMatch> matches;
     explicit Match(float _ratio) : ratio(_ratio){};
-    matches matchDescriptors(const cv::Mat &, const cv::Mat &);
+    matches matchDescriptors(const cv::Mat &, const cv::Mat &) const;
     static std::pair<cv::Mat, cv::Mat>
     corresponding3dPoints(const matches &, const cv::Mat &, const cv::Mat &);
     static void drawMatches(const cv::Mat &, const std::vector<cv::KeyPoint> &,
                             const cv::Mat &, const std::vector<cv::KeyPoint> &,
                             const std::vector<cv::DMatch> &);
-    static cv::Mat averagePosition(const cv::Mat&, const cv::Mat&);
+    static cv::Mat averagePosition(const cv::Mat &, const cv::Mat &);
 
   private:
     const float ratio;
