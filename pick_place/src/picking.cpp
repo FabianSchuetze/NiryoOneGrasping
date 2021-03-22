@@ -40,7 +40,9 @@ Picking::EndEffectorPosition Picking::Final() {
 }
 Picking::EndEffectorPosition Picking::computePreGrasp(geometry_msgs::Point p) {
     if (p.z < 0.135) {
-        throw std::runtime_error("Z values cannot be lower than 0.135");
+        const float z = p.z;
+        p.z = 0.15;
+        ROS_WARN_STREAM("Recveived z value of " << z << " modified to 0.15");
     }
     EndEffectorPosition pose1 = pose(p, true);
     return pose1;
