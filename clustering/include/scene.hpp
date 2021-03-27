@@ -4,11 +4,13 @@
 #include <ros/ros.h>
 #include <tf/transform_listener.h>
 #include <thread>
-static constexpr std::size_t INIT_TIME(10);
+static constexpr std::size_t INIT_TIME(5);
 class Scene {
   public:
-    Scene() : last_callback(std::chrono::system_clock::now()) {
-        //last_callback = std::chrono::system_clock::now();
+    Scene()
+        : cloud(new pcl::PointCloud<pcl::PointXYZRGB>),
+          last_callback(std::chrono::system_clock::now()) {
+        // last_callback = std::chrono::system_clock::now();
         std::this_thread::sleep_for(std::chrono::seconds(INIT_TIME));
     }
     ~Scene() = default;

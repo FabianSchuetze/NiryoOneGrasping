@@ -1,13 +1,13 @@
 #include "scene.hpp"
 #include <pcl_ros/transforms.h>
 
-static constexpr int TIME_THRESHOLD(10);
+static constexpr int TIME_THRESHOLD(5);
 
 void Scene::callback(const pcl::PointCloud<pcl::PointXYZRGB>::ConstPtr &input) {
     const std::string target("base_link");
     bool success = pcl_ros::transformPointCloud(target, *input, *cloud, listener);
     if (!success) {
-        throw std::runtime_error("Cannot transform pointcloud");
+        ROS_WARN_STREAM("Cannot transform pointcloud");
     }
     last_callback = std::chrono::system_clock::now();
 }

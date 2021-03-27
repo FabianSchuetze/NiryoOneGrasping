@@ -1,7 +1,10 @@
 #include "scene.hpp"
 #include <ros/ros.h>
+#include <pcl/io/pcd_io.h>
+
 static constexpr std::size_t QUEUE(10);
 static constexpr std::size_t RATE(1);
+
 int main(int argc, char **argv) {
     ros::init(argc, argv, "cluster");
     ros::NodeHandle nh;
@@ -17,9 +20,12 @@ int main(int argc, char **argv) {
         rate.sleep();
         ros::spinOnce();
         bool success = scene.pointCloud(cloud);
-        if (!success)
+        if (!success) {
             continue;
+        }
         ROS_INFO_STREAM("Got the data");
+        pcl::PCDWriter writer;
+        writer.write<pcl::PointXYZRGB>("transformed_cloud.pcd", *cloud, false);
     }
     sub.shutdown();
     return 0;
