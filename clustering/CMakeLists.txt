@@ -15,9 +15,9 @@ find_package(catkin REQUIRED
     actionlib_msgs
 )
 
-find_package(OpenCV REQUIRED PATHS /usr/local/lib/cmake/opencv4
-             NO_DEFAULT_PATH)
-include_directories(/usr/local/include/opencv4)
+#find_package(OpenCV REQUIRED PATHS /usr/local/lib/cmake/opencv4
+             #NO_DEFAULT_PATH)
+#include_directories(/usr/local/include/opencv4)
 find_package(Eigen3 REQUIRED)
 find_package(realsense2 REQUIRED)
 find_package(PCL REQUIRED)
@@ -54,13 +54,16 @@ catkin_package(
 set(${PROJECT_NAME}_SRC
     src/cluster.cpp
     src/segmentation.cpp
+    src/scene.cpp
 )
-include_directories(SYSTEM ${catkin_INCLUDE_DIRS} ${EIGEN3_INCLUDE_DIRS} ${OpenCV_INCLUDE_DIRS} 
+include_directories(SYSTEM ${catkin_INCLUDE_DIRS} ${EIGEN3_INCLUDE_DIRS}
                            ${PCL_INCLUDE_DIRS})
 include_directories(include)
 add_library(${PROJECT_NAME} SHARED ${${PROJECT_NAME}_SRC})
+target_link_libraries(${PROJECT_NAME} ${catkin_LIBRARIES} ${PCL_LIBRARIES})
 
 
-#add_executable(broadcast_pose_action_server src/broadcast_action_server.cpp )
-#target_link_libraries(broadcast_pose_action_server ${catkin_LIBRARIES})
+add_executable(cluster src/main.cpp )
+target_link_libraries(cluster ${catkin_LIBRARIES} ${PROJECT_NAME}
+    ${PCL_LIBRARIES})
 
