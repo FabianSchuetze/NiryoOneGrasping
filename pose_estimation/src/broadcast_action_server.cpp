@@ -50,7 +50,7 @@ void BroadcastPoseAction::executeCB(
 int main(int argc, char **argv) {
     ros::init(argc, argv, "poseaction");
     ros::NodeHandle nh;
-    BroadcastPoseAction poseaction("poseaction", &nh);
+    BroadcastPoseAction poseaction("poseaction", &nh); //NOLINT
     ros::spin();
     return 0;
 }
