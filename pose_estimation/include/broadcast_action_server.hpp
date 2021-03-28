@@ -10,7 +10,6 @@ class BroadcastPoseAction {
   public:
     explicit BroadcastPoseAction(const std::string &name, ros::NodeHandle*);
     void executeCB(const pose_detection::BroadcastPoseGoalConstPtr &);
-    //void receiveInfo(const geometry_msgs::Point &);
 
   private:
     ros::NodeHandle nh_;
@@ -21,9 +20,6 @@ class BroadcastPoseAction {
     pose_detection::BroadcastPoseFeedback feedback_;
     pose_detection::BroadcastPoseResult result_;
     geometry_msgs::TransformStamped pose;
-    //ros::Subscriber subscriber_;
-    //std::mutex g_pages_mutex;
     void initializeService();
-    //void initializeSubscriber();
 };
 #endif
