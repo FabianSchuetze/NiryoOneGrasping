@@ -24,11 +24,10 @@ void ClusterAlgorithm<T>::cluster(
     ec.extract(indices);
     for (const auto& index : indices) {
         typename pcl::PointCloud<T>::Ptr cluster(new pcl::PointCloud<T>);
+        cluster->reserve(index.indices.size());
         std::transform(index.indices.begin(), index.indices.end(),
                        std::back_inserter(*cluster),
                        [&](int idx) { return (*cloud)[idx]; });
-         //for (const auto& idx : index.indices)
-         //cluster->push_back((*cloud)[idx]);
         cluster->width = cluster->size();
         cluster->height = 1;
         cluster->is_dense = true;

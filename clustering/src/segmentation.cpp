@@ -3,24 +3,27 @@
 
 template <typename T>
 PlaneSegmentation<T>::PlaneSegmentation(
-    std::size_t max_iterations, float distance,
-    typename pcl::PointCloud<T>::ConstPtr cloud) {
+    std::size_t max_iterations, float distance) {
     seg.setOptimizeCoefficients(true);
     seg.setModelType(pcl::SACMODEL_PLANE);
     seg.setMethodType(pcl::SAC_RANSAC);
     seg.setMaxIterations(max_iterations);
     seg.setDistanceThreshold(distance);
-    seg.setInputCloud(cloud);
 }
 
 template class PlaneSegmentation<pcl::PointXYZ>;
 template class PlaneSegmentation<pcl::PointXYZRGB>;
 
 template <typename T>
-bool PlaneSegmentation<T>::segment(pcl::PointIndices::Ptr inliers) {
+void PlaneSegmentation<T>::setInputCloud(const typename pcl::PointCloud<T>::ConstPtr& cloud) {
+    seg.setInputCloud(cloud);
+}
+
+template <typename T>
+bool PlaneSegmentation<T>::segment(pcl::PointIndices::Ptr& inliers) {
     pcl::ModelCoefficients::Ptr coefficients(new pcl::ModelCoefficients());
     seg.segment(*inliers, *coefficients);
-    if (inliers->indices.size() == 0) {
+    if (inliers->indices.empty()) {
         std::cerr << "Could not estimate a planar model for the given dataset."
                   << std::endl;
         return false;
@@ -29,8 +32,8 @@ bool PlaneSegmentation<T>::segment(pcl::PointIndices::Ptr inliers) {
 }
 
 template <typename T>
-void extractPlane(typename pcl::PointCloud<T>::ConstPtr source,
-                  typename pcl::PointCloud<T>::Ptr target,
+void extractPlane(const typename pcl::PointCloud<T>::ConstPtr& source,
+                  typename pcl::PointCloud<T>::Ptr& target,
                   pcl::PointIndices::Ptr inliers, bool setNegative) {
     pcl::ExtractIndices<T> extract;
     extract.setInputCloud(source);
@@ -40,8 +43,8 @@ void extractPlane(typename pcl::PointCloud<T>::ConstPtr source,
 }
 
 template void extractPlane<pcl::PointXYZ>(
-    pcl::PointCloud<pcl::PointXYZ>::ConstPtr,
-    pcl::PointCloud<pcl::PointXYZ>::Ptr, pcl::PointIndices::Ptr, bool);
+    const pcl::PointCloud<pcl::PointXYZ>::ConstPtr&,
+    pcl::PointCloud<pcl::PointXYZ>::Ptr&, pcl::PointIndices::Ptr, bool);
 template void extractPlane<pcl::PointXYZRGB>(
-    pcl::PointCloud<pcl::PointXYZRGB>::ConstPtr,
-    pcl::PointCloud<pcl::PointXYZRGB>::Ptr, pcl::PointIndices::Ptr, bool);
+    const pcl::PointCloud<pcl::PointXYZRGB>::ConstPtr&,
+    pcl::PointCloud<pcl::PointXYZRGB>::Ptr&, pcl::PointIndices::Ptr, bool);

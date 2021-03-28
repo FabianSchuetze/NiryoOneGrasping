@@ -7,16 +7,16 @@
 template <typename T>
 class PlaneSegmentation {
    public:
-    PlaneSegmentation(std::size_t, float,
-                      typename pcl::PointCloud<T>::ConstPtr);
-    bool segment(pcl::PointIndices::Ptr);
+    PlaneSegmentation(std::size_t, float);
+    void setInputCloud(const typename pcl::PointCloud<T>::ConstPtr&);
+    bool segment(pcl::PointIndices::Ptr&);
 
    private:
     pcl::SACSegmentation<T> seg;
 };
 
 template <typename T>
-void extractPlane(typename pcl::PointCloud<T>::ConstPtr,
-                  typename pcl::PointCloud<T>::Ptr, pcl::PointIndices::Ptr,
+void extractPlane(const typename pcl::PointCloud<T>::ConstPtr&,
+                  typename pcl::PointCloud<T>::Ptr&, pcl::PointIndices::Ptr,
                   bool);
 #endif
