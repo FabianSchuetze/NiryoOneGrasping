@@ -1,13 +1,13 @@
 #include "cluster.hpp"
 #include "scene.hpp"
 #include "segmentation.hpp"
+#include <chrono>
 #include <pcl/common/centroid.h>
 #include <pcl/io/pcd_io.h>
 #include <pcl/search/search.h>
 #include <ros/ros.h>
 #include <tf2_ros/transform_broadcaster.h>
 #include <vector>
-#include <chrono>
 
 static constexpr std::size_t QUEUE(10);
 static constexpr std::size_t RATE(1);
@@ -24,10 +24,18 @@ void extractWorkspace(PointCloud::ConstPtr cloud, PointCloud::Ptr &cluster) {
     origin.z = 0;
     std::vector<float> distances;
     std::vector<int> indices;
-    cluster->reserve(indices.size());
     search.radiusSearch(origin, RADIUS, indices, distances);
-    std::transform(indices.begin(), indices.end(), cluster->begin(),
+    cluster->resize(indices.size());
+    // std::cout << "The size of the indices is: " << indices.size() <<
+    // std::endl; int j(0);
+    std::transform(indices.begin(), indices.end(), (*cluster).begin(),
                    [&](int idx) { return (*cloud)[idx]; });
+    // for (int idx : indices) {
+    //(*cluster)[j] = (*cloud)[idx];
+    // j++;
+    //}
+    // std::cout << "The size of the workspace is: " << cluster->size() <<
+    // std::endl;
 }
 
 void segmentFloor(PlaneSegmentation<pcl::PointXYZRGB> &segmentation,
@@ -80,6 +88,7 @@ int main(int argc, char **argv) {
     ros::init(argc, argv, "cluster");
     ros::NodeHandle nh;
     Scene scene;
+    ros::Rate rate(1);
     ros::Subscriber sub = nh.subscribe("/camera/depth_registered/points", QUEUE,
                                        &Scene::callback, &scene);
     PointCloud::Ptr cloud(new PointCloud), workspace(new PointCloud),
@@ -89,6 +98,7 @@ int main(int argc, char **argv) {
     pcl::PCDWriter writer;
     while (ros::ok()) {
         const auto t1 = std::chrono::high_resolution_clock::now();
+        rate.sleep();
         ros::spinOnce();
         if (!scene.pointCloud(cloud)) {
             continue;
@@ -97,11 +107,14 @@ int main(int argc, char **argv) {
             ROS_WARN_STREAM("Empty cloud");
             continue;
         }
+        std::cout << "begin work " << std::endl;
         extractWorkspace(cloud, workspace);
+        std::cout << "extracted workspace " << std::endl;
         writer.write<pcl::PointXYZRGB>("workspace.pcd", *workspace, false);
         segmentation.setInputCloud(workspace);
         segmentFloor(segmentation, workspace, segmented);
         writer.write<pcl::PointXYZRGB>("segmented.pcd", *segmented, false);
+        std::cout << "segmented " << std::endl;
         std::vector<PointCloud::Ptr> clusters;
         cluster_algo.cluster(segmented, clusters);
         if (clusters.empty()) {
@@ -121,7 +134,8 @@ int main(int argc, char **argv) {
             }
         }
         const auto t2 = std::chrono::high_resolution_clock::now();
-        const auto dur = std::chrono::duration_cast<std::chrono::seconds>(t2 - t1);
+        const auto dur =
+            std::chrono::duration_cast<std::chrono::seconds>(t2 - t1);
         std::cout << "The run took" << dur.count() << std::endl;
     }
     sub.shutdown();
