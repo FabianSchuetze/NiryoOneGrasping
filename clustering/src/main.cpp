@@ -12,10 +12,11 @@
 static constexpr std::size_t QUEUE(10);
 static constexpr std::size_t RATE(1);
 static constexpr float RADIUS(0.25);
+static constexpr float MIN_DISTANCE(0.1);
 
 typedef pcl::PointCloud<pcl::PointXYZRGB> PointCloud;
 
-void extractWorkspace(PointCloud::ConstPtr cloud, PointCloud::Ptr &cluster) {
+bool extractWorkspace(PointCloud::ConstPtr cloud, PointCloud::Ptr &cluster) {
     pcl::KdTreeFLANN<pcl::PointXYZRGB> search;
     search.setInputCloud(cloud);
     pcl::PointXYZRGB origin;
@@ -25,25 +26,24 @@ void extractWorkspace(PointCloud::ConstPtr cloud, PointCloud::Ptr &cluster) {
     std::vector<float> distances;
     std::vector<int> indices;
     search.radiusSearch(origin, RADIUS, indices, distances);
-    cluster->resize(indices.size());
-    // std::cout << "The size of the indices is: " << indices.size() <<
-    // std::endl; int j(0);
-    std::transform(indices.begin(), indices.end(), (*cluster).begin(),
-                   [&](int idx) { return (*cloud)[idx]; });
-    // for (int idx : indices) {
-    //(*cluster)[j] = (*cloud)[idx];
-    // j++;
-    //}
-    // std::cout << "The size of the workspace is: " << cluster->size() <<
-    // std::endl;
+    cluster->clear();
+    for (int idx : indices) {
+        auto pt = (*cloud)[idx];
+        if (std::abs(pt.x) > MIN_DISTANCE) {
+            (*cluster).push_back(pt);
+        }
+    }
+    return !(cluster->empty());
 }
 
-void segmentFloor(PlaneSegmentation<pcl::PointXYZRGB> &segmentation,
+bool segmentFloor(PlaneSegmentation<pcl::PointXYZRGB> &segmentation,
                   const PointCloud::ConstPtr &source, PointCloud::Ptr &target) {
     pcl::PointIndices::Ptr inliers(new pcl::PointIndices());
     segmentation.segment(inliers);
     bool setNegative = true;
+    target->clear();
     extractPlane<pcl::PointXYZRGB>(source, target, inliers, setNegative);
+    return !(target->empty());
 }
 
 pcl::PointXYZRGB centroid(const PointCloud::ConstPtr &input) {
@@ -57,10 +57,13 @@ pcl::PointXYZRGB centroid(const PointCloud::ConstPtr &input) {
     return out;
 }
 
+// TODO: I do not think this is needed anymore, as the  workspace function
+// restricts the size
 bool validCenter(const pcl::PointXYZRGB &point) {
     float squaredDist = std::pow(point.x, 2) + std::pow(point.y, 2);
     float dist = std::sqrt(squaredDist);
     if (dist < 0.12) {
+        std::cout << "Check is this a needed at all!" << std::endl;
         return false;
     }
     return true;
@@ -93,7 +96,7 @@ int main(int argc, char **argv) {
                                        &Scene::callback, &scene);
     PointCloud::Ptr cloud(new PointCloud), workspace(new PointCloud),
         segmented(new PointCloud);
-    ClusterAlgorithm<pcl::PointXYZRGB> cluster_algo(300, 25000, 0.02);
+    ClusterAlgorithm<pcl::PointXYZRGB> cluster_algo(300, 50000, 0.02);
     PlaneSegmentation<pcl::PointXYZRGB> segmentation(1000, 0.01);
     pcl::PCDWriter writer;
     while (ros::ok()) {
@@ -107,18 +110,22 @@ int main(int argc, char **argv) {
             ROS_WARN_STREAM("Empty cloud");
             continue;
         }
-        std::cout << "begin work " << std::endl;
-        extractWorkspace(cloud, workspace);
-        std::cout << "extracted workspace " << std::endl;
+        if (!extractWorkspace(cloud, workspace)) {
+            ROS_WARN_STREAM("The workspace has zero elements");
+            continue;
+        }
         writer.write<pcl::PointXYZRGB>("workspace.pcd", *workspace, false);
         segmentation.setInputCloud(workspace);
-        segmentFloor(segmentation, workspace, segmented);
+        if (!segmentFloor(segmentation, workspace, segmented)) {
+            ROS_WARN_STREAM("No points remain after segmentation");
+            continue;
+        }
         writer.write<pcl::PointXYZRGB>("segmented.pcd", *segmented, false);
-        std::cout << "segmented " << std::endl;
         std::vector<PointCloud::Ptr> clusters;
         cluster_algo.cluster(segmented, clusters);
         if (clusters.empty()) {
             ROS_WARN_STREAM("Could not find any clusters");
+            continue;
         }
         int j(0);
         for (const auto &cluster : clusters) {

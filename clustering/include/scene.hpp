@@ -4,6 +4,7 @@
 #include <ros/ros.h>
 #include <tf/transform_listener.h>
 #include <thread>
+#include <mutex>
 static constexpr std::size_t INIT_TIME(5);
 class Scene {
   public:
@@ -15,10 +16,11 @@ class Scene {
     }
     ~Scene() = default;
     void callback(const pcl::PointCloud<pcl::PointXYZRGB>::ConstPtr &);
-    bool pointCloud(pcl::PointCloud<pcl::PointXYZRGB>::Ptr &) const;
+    bool pointCloud(pcl::PointCloud<pcl::PointXYZRGB>::Ptr &);
 
   private:
     pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud;
     tf::TransformListener listener;
     std::chrono::time_point<std::chrono::system_clock> last_callback;
+    std::mutex mutex_;
 };
