@@ -72,3 +72,6 @@ target_link_libraries(pick_place_exe ${catkin_LIBRARIES} ${PROJECT_NAME})
 
 add_executable(simple_pick_place_exe src/simple_pick_place.cpp)
 target_link_libraries(simple_pick_place_exe ${catkin_LIBRARIES})
+
+add_executable(free_movement src/free_movement.cpp)
+target_link_libraries(free_movement ${catkin_LIBRARIES})
