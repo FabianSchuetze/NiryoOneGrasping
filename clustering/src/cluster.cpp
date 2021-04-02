@@ -25,9 +25,13 @@ void ClusterAlgorithm<T>::cluster(
     for (const auto& index : indices) {
         typename pcl::PointCloud<T>::Ptr cluster(new pcl::PointCloud<T>);
         cluster->reserve(index.indices.size());
-        std::transform(index.indices.begin(), index.indices.end(),
-                       std::back_inserter(*cluster),
-                       [&](int idx) { return (*cloud)[idx]; });
+        for (auto idx : index.indices) {
+            auto tmp = (*cloud)[idx];
+            (*cluster).push_back(tmp);
+        }
+        //std::transform(index.indices.begin(), index.indices.end(),
+                       //std::back_inserter(*cluster),
+                       //[&](int idx) { return (*cloud)[idx]; });
         cluster->width = cluster->size();
         cluster->height = 1;
         cluster->is_dense = true;
