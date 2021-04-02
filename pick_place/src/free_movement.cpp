@@ -22,25 +22,6 @@ struct EndEffectorPosition {
     bool open;
 };
 
-const EndEffectorPosition computePreGrasp(const std::vector<double>& goal) {
-    geometry_msgs::Point p;
-    p.x = goal[0];
-    p.y = goal[1];
-    p.z = goal[2] + 0.15;
-    if (p.z < 0.135) {
-        throw std::runtime_error("Z values cannot be lower than 0.135");
-    }
-    niryo_one_msgs::RPY rot;
-    rot.roll = goal[3];
-    rot.pitch = goal[4];
-    rot.yaw = goal[5];
-    NiryoPose pose1(p, rot);
-    EndEffectorPosition eef;
-    eef.pose = pose1;
-    eef.open = false;
-    return eef;
-}
-
 void establish_connection(NiryoClient& ac) {
     ROS_INFO("Connecting to robot  ========================");
     size_t attempts(0);
@@ -88,48 +69,28 @@ std::vector<double> parseInput(const std::string& input) {
     return variables;
 }
 
-bool GripperAperture(NiryoClient& ac, bool open) {
-    niryo_one_msgs::ToolCommand tcmd;
-    if (open) {
-        tcmd.cmd_type = 1;
-    } else {
-        tcmd.cmd_type = 2;
-    }
-    tcmd.gripper_open_speed = 200;
-    tcmd.tool_id = 13;
-    niryo_one_msgs::RobotMoveActionGoal action;
-    action.goal.cmd.cmd_type = 6;
-    action.goal.cmd.tool_cmd = tcmd;
-    ac.sendGoal(action.goal);
-    bool success = ac.waitForResult(ros::Duration(5.0));
-    return success;
-}
-
-bool MoveEEF(NiryoClient& ac, const NiryoPose& pose) {
+bool MoveJoints(NiryoClient& ac, const std::vector<double>& joints) {
     niryo_one_msgs::RobotMoveCommand cmd;
-    cmd.cmd_type = 2;
-    cmd.position = pose.first;
-    cmd.rpy = pose.second;
+    cmd.cmd_type = 1;
+    cmd.joints = joints;
+    //cmd.position = pose.first;
+    //cmd.rpy = pose.second;
     niryo_one_msgs::RobotMoveActionGoal action;
     action.goal.cmd = cmd;
     ROS_INFO("Sending command:");
-    ROS_INFO("position: %.2f, %.2f, %.2f", cmd.position.x, cmd.position.y,
-             cmd.position.z);
-    ROS_INFO("rpy (r,p,y):  %.2f, %.2f, %2f", cmd.rpy.roll, cmd.rpy.pitch,
-             cmd.rpy.yaw);
+    ROS_INFO("position: %.2f, %.2f, %.2f", cmd.joints[0], cmd.joints[1],
+            cmd.joints[2]);
+    ROS_INFO("rpy (r,p,y):  %.2f, %.2f, %2f", cmd.joints[3], cmd.joints[4],
+            cmd.joints[5]);
     ac.sendGoal(action.goal);
     bool success = ac.waitForResult(ros::Duration(5.0));
     return success;
 }
 
-void positionGoal(NiryoClient& ac, const EndEffectorPosition& eef) {
-    bool movement = MoveEEF(ac, eef.pose);
+void positionGoal(NiryoClient& ac, const std::vector<double>& joints) {
+    bool movement = MoveJoints(ac, joints);
     if (!movement) {
         ROS_WARN("Could not move the arm");
-    }
-    bool aperture = GripperAperture(ac, eef.open);
-    if (!aperture) {
-        ROS_WARN("Could not open the gripper");
     }
 }
 
@@ -154,11 +115,7 @@ int main(int argc, char** argv) {
         std::cout << x << ", ";
     }
     std::cout << "\n";
-    const EndEffectorPosition pre_grasp = computePreGrasp(goal);
-    std::vector<EndEffectorPosition> movements = {pre_grasp};
-    for (const auto& movement : movements) {
-        positionGoal(ac, movement);
-    }
+    positionGoal(ac, goal);
     return 0;
 }
 
