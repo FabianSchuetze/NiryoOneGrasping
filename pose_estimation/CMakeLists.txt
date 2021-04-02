@@ -13,6 +13,7 @@ find_package(catkin REQUIRED
     pcl_ros
     cv_bridge
     actionlib_msgs
+    cv_bridge
 )
 
 find_package(OpenCV REQUIRED PATHS /usr/local/lib/cmake/opencv4
@@ -42,6 +43,7 @@ catkin_package(
     tf2_eigen
     tf2_geometry_msgs
     actionlib_msgs
+    cv_bridge
   DEPENDS
     EIGEN3
     OpenCV

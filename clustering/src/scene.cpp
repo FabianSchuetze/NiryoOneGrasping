@@ -2,6 +2,7 @@
 #include <pcl_ros/transforms.h>
 
 static constexpr int TIME_THRESHOLD(5);
+using namespace Clustering;
 
 void Scene::callback(const pcl::PointCloud<pcl::PointXYZRGB>::ConstPtr &input) {
     const std::string target("base_link");

@@ -11,6 +11,7 @@ Checks: 'llvm,
          -cppcoreguidelines-pro-type-vararg,
          -readability-isolate-declaration,
          -cppcoreguidelines-pro-bounds-array-to-pointer-decay,
-         -cppcoreguidelines-pro-type-union-access'
+         -cppcoreguidelines-pro-type-union-access,
+         -bugprone-exception-escape'
 
 HeaderFilterRegex: ''

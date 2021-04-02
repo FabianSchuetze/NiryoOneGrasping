@@ -31,6 +31,7 @@ class Picking {
     void setGripper();
     bool obtainPose(geometry_msgs::Point&);
     void moveToPosition(const EndEffectorPosition &);
+    void moveJoints(const std::vector<double>&);
 
   private:
     NiryoClient robot;

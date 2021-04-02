@@ -20,6 +20,7 @@ find_package(catkin REQUIRED COMPONENTS
   genmsg
   #tf2_eigen
   tf2_geometry_msgs
+  clustering
 )
 
 ###################################
@@ -44,6 +45,7 @@ catkin_package(
       tf2_geometry_msgs
       tf2_ros
       genmsg
+      clustering
   #DEPENDS 
 )
 
@@ -53,6 +55,8 @@ catkin_package(
 set(${PROJECT_NAME}_SRC
     src/picking.cpp
 )
+include_directories("../clustering/include")
+## Not pretty: Two classes have identical name, same header name
 include_directories(SYSTEM ${catkin_INCLUDE_DIRS} ${EIGEN3_INCLUDE_DIRS})
 include_directories(include)
 add_library(${PROJECT_NAME} SHARED ${${PROJECT_NAME}_SRC})
@@ -73,5 +77,5 @@ target_link_libraries(pick_place_exe ${catkin_LIBRARIES} ${PROJECT_NAME})
 add_executable(simple_pick_place_exe src/simple_pick_place.cpp)
 target_link_libraries(simple_pick_place_exe ${catkin_LIBRARIES})
 
-add_executable(move_joints src/move_joints.cpp)
-target_link_libraries(move_joints ${catkin_LIBRARIES})
+#add_executable(move_joints src/move_joints.cpp)
+#target_link_libraries(move_joints ${catkin_LIBRARIES} ${PROJECT_NAME})

@@ -7,6 +7,8 @@
 #include "scene.hpp"
 #include "target.hpp"
 
+using namespace PoseEstimation;
+
 static constexpr uint QUEUE = 50;
 static constexpr uint RATE = 10;
 static constexpr float RATIO = 0.7;

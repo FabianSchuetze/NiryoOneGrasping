@@ -9,6 +9,8 @@
 #include <tf2_ros/transform_broadcaster.h>
 #include <vector>
 
+using namespace Clustering;
+
 static constexpr std::size_t QUEUE(10);
 static constexpr std::size_t RATE(1);
 static constexpr float RADIUS(0.25);

@@ -48,7 +48,6 @@ Picking::EndEffectorPosition Picking::computePreGrasp(geometry_msgs::Point p) {
     return pose1;
 }
 
-
 Picking::EndEffectorPosition Picking::computeGrasp(geometry_msgs::Point p) {
     if (p.z < 0.135) {
         p.z = 0.135;
@@ -135,8 +134,8 @@ template void
 Picking::establish_connection<Picking::PoseClient>(const PoseClient &,
                                                    const std::string &);
 
-bool Picking::obtainPose(geometry_msgs::Point& pose){
-    //geometry_msgs::Point pose;
+bool Picking::obtainPose(geometry_msgs::Point &pose) {
+    // geometry_msgs::Point pose;
     pose_detection::BroadcastPoseGoal goal;
     target.sendGoal(goal);
     geometry_msgs::TransformStamped result;
@@ -148,7 +147,7 @@ bool Picking::obtainPose(geometry_msgs::Point& pose){
     } else {
         ROS_INFO_STREAM("Could not obtain pose before timeout.");
         return false;
-        //throw std::runtime_error("Could not obtain pose before timeout");
+        // throw std::runtime_error("Could not obtain pose before timeout");
     }
     const auto &translation = result.transform.translation;
     pose.x = static_cast<float>(translation.x);
@@ -199,5 +198,17 @@ void Picking::moveToPosition(const EndEffectorPosition &eef) {
     const bool aperture = Picking::GripperAperture(eef.open);
     if (!aperture) {
         ROS_WARN("Could not open the gripper");
+    }
+}
+
+void Picking::moveJoints(const std::vector<double> &position) {
+    niryo_one_msgs::RobotMoveCommand cmd;
+    cmd.cmd_type = 1;
+    cmd.joints = position;
+    niryo_one_msgs::RobotMoveActionGoal action;
+    action.goal.cmd = cmd;
+    robot.sendGoal(action.goal);
+    if (!robot.waitForResult(ros::Duration(MAX_DURATION))) {
+        ROS_WARN("Joints cloud not be moved");
     }
 }

@@ -1,11 +1,14 @@
+#ifndef clustering_scene_hpp
+#define clustering_scene_hpp
 #include <chrono>
+#include <mutex>
 #include <pcl/point_types.h>
 #include <pcl_ros/point_cloud.h>
 #include <ros/ros.h>
 #include <tf/transform_listener.h>
 #include <thread>
-#include <mutex>
 static constexpr std::size_t INIT_TIME(5);
+namespace Clustering {
 class Scene {
   public:
     Scene()
@@ -24,3 +27,5 @@ class Scene {
     std::chrono::time_point<std::chrono::system_clock> last_callback;
     std::mutex mutex_;
 };
+} // namespace Clustering
+#endif

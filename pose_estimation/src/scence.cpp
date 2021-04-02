@@ -14,6 +14,8 @@
 
 #include "scene.hpp"
 
+using namespace PoseEstimation;
+
 
 // constexpr int TO_DEPTH = 100;
 constexpr int TOMM = 1000;

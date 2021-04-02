@@ -1,3 +1,5 @@
+#ifndef pose_estimation_scene_hpp
+#define pose_estimation_scene_hpp
 #include "model.hpp"
 #include <cv_bridge/cv_bridge.h>
 #include <filesystem>
@@ -8,9 +10,10 @@
 #include <pcl_ros/point_cloud.h>
 #include <ros/ros.h>
 
-#include <string>
 #include <opencv2/imgproc/imgproc.hpp>
+#include <string>
 namespace fs = std::filesystem;
+namespace PoseEstimation {
 typedef pcl::PointCloud<pcl::PointXYZRGB> PointCloud;
 
 struct Camera {
@@ -22,19 +25,20 @@ struct Camera {
 
 class Scene : public Model {
   public:
-    Scene() = default;
-    ~Scene() override = default;
-    void deserialize(const fs::path &,
-                     const fs::path &);
+    void deserialize(const fs::path &, const fs::path &);
     void callback(const PointCloud::Ptr &);
     void decipherImage(const PointCloud::Ptr &);
     void decipherDepth(const PointCloud::Ptr &);
     void estimateFeatures(const cv::Ptr<cv::SIFT> &);
-    const cv::Mat& depth() { return depth_;}
+    const cv::Mat &depth() { return depth_; }
 
   private:
     cv::Mat depth_;
     Camera camera;
-    std::tuple<float, float, float, int16_t> deprojectPoint(size_t, size_t) const;
+    std::tuple<float, float, float, int16_t> deprojectPoint(size_t,
+                                                            size_t) const;
     void create_points();
 };
+} // namespace PoseEstimation
+#endif
+
