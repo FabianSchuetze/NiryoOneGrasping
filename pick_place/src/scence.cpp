@@ -1,4 +1,3 @@
-#include <opencv2/features2d.hpp>
 #include <cv_bridge/cv_bridge.h>
 
 #include <pcl_conversions/pcl_conversions.h>
