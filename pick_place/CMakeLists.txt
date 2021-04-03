@@ -21,7 +21,7 @@ find_package(catkin REQUIRED COMPONENTS
   genmsg
   #tf2_eigen
   tf2_geometry_msgs
-  pose_detection
+  pcl_ros
 )
 
 ###################################
@@ -47,8 +47,10 @@ catkin_package(
       tf_conversions
       tf2_ros
       genmsg
-      pose_detection
-  #DEPENDS 
+      pcl_ros
+  DEPENDS 
+    OpenCV
+    PCL
 )
 
 ###########
@@ -57,7 +59,11 @@ catkin_package(
 set(${PROJECT_NAME}_SRC
     src/picking.cpp
 )
-include_directories(SYSTEM ${catkin_INCLUDE_DIRS} ${EIGEN3_INCLUDE_DIRS})
+find_package(OpenCV REQUIRED PATHS /usr/local/lib/cmake/opencv4
+             NO_DEFAULT_PATH)
+include_directories(/usr/local/include/opencv4)
+include_directories(SYSTEM ${catkin_INCLUDE_DIRS} ${EIGEN3_INCLUDE_DIRS}
+    ${PCL_INCLUDE_DIRS})
 include_directories(include)
 add_library(${PROJECT_NAME} SHARED ${${PROJECT_NAME}_SRC})
 target_link_libraries(${PROJECT_NAME} ${catkin_LIBRARIES})
@@ -77,5 +83,6 @@ target_link_libraries(pick_place_exe ${catkin_LIBRARIES} ${PROJECT_NAME})
 add_executable(simple_pick_place_exe src/simple_pick_place.cpp)
 target_link_libraries(simple_pick_place_exe ${catkin_LIBRARIES})
 
-add_executable(move_joints src/move_joints.cpp)
-target_link_libraries(move_joints ${catkin_LIBRARIES} ${PROJECT_NAME})
+add_executable(move_joints src/move_joints.cpp src/scence.cpp)
+target_link_libraries(move_joints ${catkin_LIBRARIES} ${PROJECT_NAME}
+    ${PCL_LIBRARIES} ${PCL_LIBRARIES})

@@ -4,14 +4,12 @@ project(pose_detection)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
-find_package(catkin REQUIRED
-  COMPONENTS
+find_package(catkin REQUIRED COMPONENTS
     moveit_core
     tf2_ros
     tf2_eigen
     tf2_geometry_msgs
     pcl_ros
-    cv_bridge
     actionlib_msgs
     cv_bridge
 )
