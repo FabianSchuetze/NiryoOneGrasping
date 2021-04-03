@@ -111,7 +111,7 @@ Paths open_folder() {
     return paths;
 }
 
-bool depth_and_color(PoseEstimation::Scene &scene, cv::Mat &depth,
+bool depth_and_color(Scene &scene, cv::Mat &depth,
                      cv::Mat &img) {
     img = scene.img();
     if (img.empty()) {
@@ -142,10 +142,10 @@ int main(int argc, char **argv) {
         return 1;
     }
     // ros::Rate rate(1);
-    PoseEstimation::Scene scene;
+    Scene scene;
     ros::Subscriber sub =
         nh.subscribe("/camera/depth_registered/points", QUEUE,
-                     &PoseEstimation::Scene::callback, &scene);
+                     &Scene::callback, &scene);
     Paths paths = open_folder();
     PointCloud::Ptr cloud(new PointCloud);
     int i(0);
