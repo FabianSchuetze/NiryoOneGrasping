@@ -28,23 +28,28 @@ std::string return_current_time_and_date() {
 }
 
 std::vector<std::vector<double>> readJointPositions() {
-  std::filesystem::path fn("/home/fabian/Documents/work/transforms/src/"
-                           "pick_place/data/positions.txt");
+  std::filesystem::path fn("/root/generate_samples/src/generate_samples/"
+          "pick_place/data/joint_positions.txt");
   std::ifstream myFile(fn);
+  if (!myFile.is_open()) {
+      std::stringstream ss;
+      ss << "Clould not open file " << fn << std::endl;
+      throw std::runtime_error(ss.str());
+  }
   std::string line;
   std::vector<std::vector<double>> positions;
   while (std::getline(myFile, line)) {
     std::stringstream ss(line);
     std::vector<double> tmp;
-    double val(0.0);
-    while (ss >> val) {
-      tmp.push_back(val);
+    std::string val;
+    const char* separator = ",";
+    while (std::getline(ss, val, *separator)) {
+        tmp.push_back(std::stod(val));
     }
-    if (!(tmp.size() == N_JOINTS)) {
-      ROS_WARN_STREAM("Did not load 6 joint elments");
-      throw std::runtime_error("Did not load 6 joint elements");
+    std::cout << "end line, vector size: " << tmp.size() << std::endl;
+    if (tmp.size() == 6) {
+        positions.push_back(std::move(tmp));
     }
-    positions.push_back(std::move(tmp));
   }
   return positions;
 }
@@ -99,7 +104,8 @@ struct Paths {
 Paths open_folder() {
   std::string current_date = return_current_time_and_date();
   std::filesystem::path second_root(current_date);
-  auto root("/home/fabian/Documents/work/transforms/src/pick_place/data");
+  // TODO: Turn this into a parameter
+  auto root("/root/generate_samples/src/generate_samples/pick_place/data");
   Paths paths;
   paths.depth_pth = root / second_root / fs::path("depth_pth");
   paths.color_pth = root / second_root / fs::path("color_pth");
@@ -136,9 +142,11 @@ int main(int argc, char **argv) {
   try {
     joint_positions = readJointPositions();
   } catch (std::runtime_error &e) {
+      std::cout << "Could not read joints" << std::endl;
     std::cerr << e.what() << std::endl;
     return 1;
   }
+  std::cout << "inside here, with " << joint_positions.size() << std::endl;
   // ros::Rate rate(1);
   Scene scene;
   ros::Subscriber sub = nh.subscribe("/camera/depth_registered/points", QUEUE,
@@ -149,12 +157,14 @@ int main(int argc, char **argv) {
   cv::Mat depth, img;
   tf::TransformListener listener;
   tf::StampedTransform transform;
+  std::cout << "beginning with iteration" << std::endl;
   for (const auto &joint_position : joint_positions) {
     std::this_thread::sleep_for(std::chrono::seconds(1));
     std::cout << "received value:\n";
     for (const auto x : joint_position) {
       std::cout << x << ", ";
     }
+    std::cout << "Moving joints " << std::endl;
     picker.moveJoints(joint_position);
     std::this_thread::sleep_for(std::chrono::seconds(1));
     try {
