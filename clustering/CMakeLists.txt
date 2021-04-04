@@ -15,10 +15,10 @@ find_package(catkin REQUIRED
     actionlib_msgs
 )
 
-#find_package(OpenCV REQUIRED PATHS /usr/local/lib/cmake/opencv4
-             #NO_DEFAULT_PATH)
-#include_directories(/usr/local/include/opencv4)
-include_directories("/root/Downloads/pcl/")
+find_package(OpenCV REQUIRED PATHS /usr/local/lib/cmake/opencv4
+             NO_DEFAULT_PATH)
+include_directories(/usr/local/include/opencv4)
+#include_directories("/root/Downloads/pcl/")
 find_package(Eigen3 REQUIRED)
 find_package(realsense2 REQUIRED)
 find_package(PCL 1.11.1.99 EXACT REQUIRED)

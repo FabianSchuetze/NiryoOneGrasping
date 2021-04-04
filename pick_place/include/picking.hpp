@@ -5,9 +5,9 @@
 #include <niryo_one_msgs/RobotMoveAction.h>
 #include <niryo_one_msgs/SetInt.h>
 //#include "/root/generate_samples/devel/include/pose_detection/BroadcastPose.h"
-#include "/root/generate_samples/devel/include/pose_detection/BroadcastPoseActionGoal.h"
-#include "/root/generate_samples/devel/include/pose_detection/BroadcastPoseAction.h"
-//#include <pose_detection/BroadcastPoseAction.h>
+//#include "/root/generate_samples/devel/include/pose_detection/BroadcastPoseActionGoal.h"
+//#include "/root/generate_samples/devel/include/pose_detection/BroadcastPoseAction.h"
+#include <pose_detection/BroadcastPoseAction.h>
 #include <vector>
 
 class Picking {

@@ -22,6 +22,7 @@ find_package(catkin REQUIRED COMPONENTS
   tf2_geometry_msgs
   pcl_ros
   cv_bridge
+  pose_detection
 )
 
 ###################################
@@ -48,6 +49,7 @@ catkin_package(
       genmsg
       pcl_ros
       cv_bridge
+      pose_detection
   DEPENDS 
     EIGEN3
     OpenCV
@@ -65,7 +67,7 @@ find_package(OpenCV REQUIRED PATHS /usr/local/lib/cmake/opencv4
 include_directories(/usr/local/include/opencv4)
 include_directories(SYSTEM ${catkin_INCLUDE_DIRS} ${EIGEN3_INCLUDE_DIRS}
     ${PCL_INCLUDE_DIRS} ${OpenCV_INCLUDE_DIRS})
-include_directories("/root/generate_samples/devel/include/")
+#include_directories("/root/generate_samples/devel/include/")
 include_directories(include)
 find_package(PCL REQUIRED)
 find_package(realsense2 REQUIRED)
