@@ -15,13 +15,13 @@ find_package(catkin REQUIRED COMPONENTS
   actionlib
   actionlib_msgs
   niryo_one_msgs
-  pose_detection
   tf2_ros
   tf_conversions
   genmsg
-  #tf2_eigen
+  tf2_eigen
   tf2_geometry_msgs
   pcl_ros
+  cv_bridge
 )
 
 ###################################
@@ -42,13 +42,14 @@ catkin_package(
       actionlib
       actionlib_msgs
       niryo_one_msgs
-      pose_detection
       tf2_geometry_msgs
       tf_conversions
       tf2_ros
       genmsg
       pcl_ros
+      cv_bridge
   DEPENDS 
+    EIGEN3
     OpenCV
     PCL
 )
@@ -63,8 +64,13 @@ find_package(OpenCV REQUIRED PATHS /usr/local/lib/cmake/opencv4
              NO_DEFAULT_PATH)
 include_directories(/usr/local/include/opencv4)
 include_directories(SYSTEM ${catkin_INCLUDE_DIRS} ${EIGEN3_INCLUDE_DIRS}
-    ${PCL_INCLUDE_DIRS})
+    ${PCL_INCLUDE_DIRS} ${OpenCV_INCLUDE_DIRS})
+include_directories("/root/generate_samples/devel/include/")
 include_directories(include)
+find_package(PCL REQUIRED)
+find_package(realsense2 REQUIRED)
+
+
 add_library(${PROJECT_NAME} SHARED ${${PROJECT_NAME}_SRC})
 target_link_libraries(${PROJECT_NAME} ${catkin_LIBRARIES})
 
@@ -85,4 +91,4 @@ target_link_libraries(simple_pick_place_exe ${catkin_LIBRARIES})
 
 add_executable(move_joints src/move_joints.cpp src/scence.cpp)
 target_link_libraries(move_joints ${catkin_LIBRARIES} ${PROJECT_NAME}
-    ${PCL_LIBRARIES} ${PCL_LIBRARIES})
+    ${PCL_LIBRARIES} ${OpenCV_LIBS} realsense2)
