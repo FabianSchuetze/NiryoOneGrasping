@@ -1,0 +1,5 @@
+<launch>
+    <arg name="topic"/>
+  <node pkg="clustering" type="cluster" name="cluster" output="screen">
+</node>
+</launch>

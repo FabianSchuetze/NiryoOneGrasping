@@ -94,8 +94,15 @@ int main(int argc, char **argv) {
     ros::NodeHandle nh;
     Scene scene;
     ros::Rate rate(1);
-    ros::Subscriber sub = nh.subscribe("/camera/depth_registered/points", QUEUE,
-                                       &Scene::callback, &scene);
+    std::string topic;
+    ros::param::get("topic", topic);
+    if (topic.empty()) {
+        ROS_WARN_STREAM("Could not read topic name from launch file");
+        return 1;
+    } else {
+        ROS_INFO_STREAM("The name for the topic is" << topic);
+    }
+    ros::Subscriber sub = nh.subscribe(topic, QUEUE, &Scene::callback, &scene);
     PointCloud::Ptr cloud(new PointCloud), workspace(new PointCloud),
         segmented(new PointCloud);
     ClusterAlgorithm<pcl::PointXYZRGB> cluster_algo(300, 50000, 0.02);
