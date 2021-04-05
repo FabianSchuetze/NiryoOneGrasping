@@ -2,14 +2,21 @@
 #include <pcl_ros/transforms.h>
 
 static constexpr int TIME_THRESHOLD(5);
+static std::string BASE_LINK("base_link");
 using namespace Clustering;
 
 void Scene::callback(const pcl::PointCloud<pcl::PointXYZRGB>::ConstPtr &input) {
-    const std::string target("base_link");
+    std::string frame = input->header.frame_id;
+    // ROS_WARN_STREAM("The frame is " << frame);
     const std::lock_guard<std::mutex> lock(mutex_);
-    if (!pcl_ros::transformPointCloud(target, *input, *cloud, listener)) {
-        ROS_WARN_STREAM("Cannot transform pointcloud");
-        return;
+    if (!(frame == BASE_LINK)) {
+        const std::string target("base_link");
+        if (!pcl_ros::transformPointCloud(target, *input, *cloud, listener)) {
+            ROS_WARN_STREAM("Cannot transform pointcloud");
+            return;
+        }
+    } else {
+        *cloud = *input;
     }
     last_callback = std::chrono::system_clock::now();
 }

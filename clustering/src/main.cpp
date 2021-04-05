@@ -13,12 +13,13 @@ using namespace Clustering;
 
 static constexpr std::size_t QUEUE(10);
 static constexpr std::size_t RATE(1);
-static constexpr float RADIUS(0.25);
+//TODO: For testing experiments larger than I think is actually possible
+static constexpr float RADIUS(0.45);
 static constexpr float MIN_DISTANCE(0.1);
 
 typedef pcl::PointCloud<pcl::PointXYZRGB> PointCloud;
 
-bool extractWorkspace(PointCloud::ConstPtr cloud, PointCloud::Ptr &cluster) {
+bool extractWorkspace(const PointCloud::ConstPtr& cloud, PointCloud::Ptr &cluster) {
     pcl::KdTreeFLANN<pcl::PointXYZRGB> search;
     search.setInputCloud(cloud);
     pcl::PointXYZRGB origin;
@@ -28,6 +29,7 @@ bool extractWorkspace(PointCloud::ConstPtr cloud, PointCloud::Ptr &cluster) {
     std::vector<float> distances;
     std::vector<int> indices;
     search.radiusSearch(origin, RADIUS, indices, distances);
+    ROS_WARN_STREAM("The number of remaining points: " << indices.size());
     cluster->clear();
     for (int idx : indices) {
         auto pt = (*cloud)[idx];
@@ -62,7 +64,7 @@ pcl::PointXYZRGB centroid(const PointCloud::ConstPtr &input) {
 // TODO: I do not think this is needed anymore, as the  workspace function
 // restricts the size
 bool validCenter(const pcl::PointXYZRGB &point) {
-    float squaredDist = std::pow(point.x, 2) + std::pow(point.y, 2);
+    float squaredDist = static_cast<float>(std::pow(point.x, 2) + std::pow(point.y, 2));
     float dist = std::sqrt(squaredDist);
     if (dist < 0.12) {
         std::cout << "Check is this a needed at all!" << std::endl;
@@ -97,10 +99,10 @@ int main(int argc, char **argv) {
     std::string _topic;
     nh.getParam("/cluster/topic", _topic);
     if (_topic.empty()) {
-        ROS_WARN_STREAM("Received " << _topic << " as rosparam, empty");
+        ROS_WARN_STREAM("Rosparam /cluster/topic not defined");
         return 1;
     }
-    ROS_INFO_STREAM("The name for the topic is " << _topic);
+    ROS_WARN_STREAM("The name for the topic is " << _topic);
     ros::Subscriber sub = nh.subscribe(_topic, QUEUE, &Scene::callback, &scene);
     PointCloud::Ptr cloud(new PointCloud), workspace(new PointCloud),
         segmented(new PointCloud);
@@ -118,6 +120,7 @@ int main(int argc, char **argv) {
             ROS_WARN_STREAM("Empty cloud");
             continue;
         }
+        writer.write<pcl::PointXYZRGB>("input_cloud.pcd", *cloud, false);
         if (!extractWorkspace(cloud, workspace)) {
             ROS_WARN_STREAM("The workspace has zero elements");
             continue;
