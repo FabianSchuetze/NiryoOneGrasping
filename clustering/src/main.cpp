@@ -94,15 +94,14 @@ int main(int argc, char **argv) {
     ros::NodeHandle nh;
     Scene scene;
     ros::Rate rate(1);
-    std::string topic;
-    ros::param::get("topic", topic);
-    if (topic.empty()) {
-        ROS_WARN_STREAM("Could not read topic name from launch file");
+    std::string _topic;
+    nh.getParam("/cluster/topic", _topic);
+    if (_topic.empty()) {
+        ROS_WARN_STREAM("Received " << _topic << " as rosparam, empty");
         return 1;
-    } else {
-        ROS_INFO_STREAM("The name for the topic is" << topic);
     }
-    ros::Subscriber sub = nh.subscribe(topic, QUEUE, &Scene::callback, &scene);
+    ROS_INFO_STREAM("The name for the topic is " << _topic);
+    ros::Subscriber sub = nh.subscribe(_topic, QUEUE, &Scene::callback, &scene);
     PointCloud::Ptr cloud(new PointCloud), workspace(new PointCloud),
         segmented(new PointCloud);
     ClusterAlgorithm<pcl::PointXYZRGB> cluster_algo(300, 50000, 0.02);

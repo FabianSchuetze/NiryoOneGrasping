@@ -1,5 +1,5 @@
 <launch>
-    <arg name="topic"/>
-  <node pkg="clustering" type="cluster" name="cluster" output="screen">
+    <node pkg="clustering" type="cluster" name="cluster">
+        <param name="topic" value="reconstructed_scene"/>
 </node>
 </launch>
