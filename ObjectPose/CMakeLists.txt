@@ -60,8 +60,11 @@ catkin_package(
 #set(${PROJECT_NAME}_SRC
     #src/picking.cpp
 #)
+find_package(Open3D REQUIRED)
+list(APPEND Open3D_LIBRARIES dl)
 find_package(OpenCV REQUIRED PATHS /usr/local/lib/cmake/opencv4
              NO_DEFAULT_PATH)
+include_directories(${Open3D_LIBRARIES})
 include_directories(/usr/local/include/opencv4)
 include_directories(SYSTEM ${catkin_INCLUDE_DIRS} ${EIGEN3_INCLUDE_DIRS}
     ${PCL_INCLUDE_DIRS} ${OpenCV_INCLUDE_DIRS})
@@ -85,3 +88,7 @@ include_directories(
 
 add_executable(publish_reconstruction src/reconstruction.cpp)
 target_link_libraries(publish_reconstruction ${catkin_LIBRARIES} ${PCL_LIBRARIES})
+
+add_executable(pose_estimation src/poses.cpp src/pose_estimation.cpp)
+target_link_libraries(pose_estimation ${catkin_LIBRARIES} ${PCL_LIBRARIES}
+    ${Open3D_LIBRARIES})
