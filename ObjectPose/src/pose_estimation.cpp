@@ -9,6 +9,8 @@
 static constexpr std::size_t N_POINTS(1000);
 static constexpr std::size_t MAX_UINT(255);
 using o3d::pipelines::registration::RegistrationResult;
+// using namespace o3d::pipelines::registration;
+namespace registration = o3d::pipelines::registration;
 
 void VisualizeRegistration(const open3d::geometry::PointCloud &source,
                            const open3d::geometry::PointCloud &target,
@@ -20,8 +22,8 @@ void VisualizeRegistration(const open3d::geometry::PointCloud &source,
     *source_transformed_ptr = source;
     *target_ptr = target;
     source_transformed_ptr->Transform(Transformation);
-    o3d::visualization::DrawGeometries({source_transformed_ptr, target_ptr},
-                                       "Registration result");
+     o3d::visualization::DrawGeometries({source_transformed_ptr, target_ptr},
+    "Registration result");
 }
 
 Eigen::Vector3d inline convert_color(const pcl::PointXYZRGB &point) {
@@ -73,16 +75,8 @@ std::shared_ptr<o3d::geometry::PointCloud> PoseEstimation::toOpen3DPointCloud(
     return o3d_cloud;
 }
 
-//void PoseEstimation::converToOpen3d(
-    //std::vector<pcl::PointCloud<pcl::PointXYZRGB>::Ptr> tmp_clusters) {
-    //for (const auto &cluster : tmp_clusters) {
-        //auto o3d_cluster = toOpen3DPointCloud(cluster);
-        //clusters.push_back(o3d_cluster);
-    //}
-//}
-
 void PoseEstimation::findCluster(const Ptr &source) {
-    o3d::visualization::DrawGeometries({source}, "Begin Cluster");
+    // o3d::visualization::DrawGeometries({source}, "Begin Cluster");
     std::vector<int> indices = source->ClusterDBSCAN(0.02, 100, false);
     std::vector<std::size_t> points(indices.size());
     std::iota(points.begin(), points.end(), 0);
@@ -101,53 +95,46 @@ void PoseEstimation::findCluster(const Ptr &source) {
         cloud->EstimateNormals();
         clusters.push_back(cloud);
     }
-    for (auto &cluster : clusters) {
-        o3d::visualization::DrawGeometries({cluster}, "Cluster");
-    }
+    // for (auto &cluster : clusters) {
+    // o3d::visualization::DrawGeometries({cluster}, "Cluster");
+    //}
 }
 
-RegistrationResult PoseEstimation::globalRegistration(
-    const Ptr &source, const Ptr &target,
-    const std::shared_ptr<o3d::pipelines::registration::Feature> &source_fpfh,
-    const std::shared_ptr<o3d::pipelines::registration::Feature> &target_fpfh) {
-    std::vector<std::reference_wrapper<
-        const o3d::pipelines::registration::CorrespondenceChecker>>
+RegistrationResult PoseEstimation::globalRegistration(const Ptr &source,
+                                                      const Ptr &target) {
+    const auto source_fpfh = registration::ComputeFPFHFeature(
+        *source, o3d::geometry::KDTreeSearchParamHybrid(0.05, 100));
+    const auto target_fpfh = registration::ComputeFPFHFeature(
+        *target, o3d::geometry::KDTreeSearchParamHybrid(0.05, 100));
+    std::vector<
+        std::reference_wrapper<const registration::CorrespondenceChecker>>
         correspondence_checker;
     auto correspondence_checker_edge_length =
-        o3d::pipelines::registration::CorrespondenceCheckerBasedOnEdgeLength(
-            0.9);
+        registration::CorrespondenceCheckerBasedOnEdgeLength(0.9);
     auto correspondence_checker_distance =
-        o3d::pipelines::registration::CorrespondenceCheckerBasedOnDistance(
-            1.5 * 0.75);
-    // auto correspondence_checker_normal =
-    // pipelines::registration::CorrespondenceCheckerBasedOnNormal(
-    // 0.52359878);
-    correspondence_checker.emplace_back(correspondence_checker_edge_length);
-    correspondence_checker.emplace_back(correspondence_checker_distance);
-    bool mutual_filter(true);
-    auto result =
-        o3d::pipelines::registration::RegistrationRANSACBasedOnFeatureMatching(
+        registration::CorrespondenceCheckerBasedOnDistance(1.5 * 0.05);
+    correspondence_checker.push_back(correspondence_checker_edge_length);
+    correspondence_checker.push_back(correspondence_checker_distance);
+    bool mutual_filter(false);
+    //ROS_WARN_STREAM("Sizes source, target " << source->points_.size() << ", "
+                                            //<< target->points_.size());
+    //ROS_WARN_STREAM("Features source, target " << source_fpfh->Num() << ", "
+                                               //<< target_fpfh->Num());
+    registration::RegistrationResult registration_result;
+    //for (int i = 0; i < source_fpfh->data_.size(); ++i) {
+    //ROS_WARN_STREAM(source_fpfh->data_);
+    //}
+    //ROS_WARN_STREAM("At the end");
+    registration_result =
+        registration::RegistrationRANSACBasedOnFeatureMatching(
             *source, *target, *source_fpfh, *target_fpfh, mutual_filter,
-            1.5 * 0.75,
-            o3d::pipelines::registration::TransformationEstimationPointToPoint(
-                false),
-            4, correspondence_checker,
-            o3d::pipelines::registration::RANSACConvergenceCriteria(5000000,
-                                                                    0.9999));
-    return result;
-}
-
-RegistrationResult PoseEstimation::estimateTransformation(const Ptr &source,
-                                                          const Ptr &target) {
-    const auto source_features =
-        o3d::pipelines::registration::ComputeFPFHFeature(
-            *source, o3d::geometry::KDTreeSearchParamHybrid(0.05, 100));
-    const auto target_features =
-        o3d::pipelines::registration::ComputeFPFHFeature(
-            *target, o3d::geometry::KDTreeSearchParamHybrid(0.05, 100));
-    auto result =
-        globalRegistration(source, target, source_features, target_features);
-    return result;
+            1.5 * 0.05,
+            registration::TransformationEstimationPointToPoint(false), 4,
+            correspondence_checker,
+            registration::RANSACConvergenceCriteria(5000000, 0.9999));
+    VisualizeRegistration(*source, *target,
+                          registration_result.transformation_);
+    return registration_result;
 }
 
 PoseEstimation::BestResult
@@ -155,20 +142,22 @@ PoseEstimation::estimateTransformations(std::vector<Ptr> &sources,
                                         std::vector<Ptr> &targets) {
     double best(0.3);
     BestResult best_result;
-    for (std::size_t target_idx = 0; target_idx < meshes.size(); ++target_idx) {
-        const auto potential_target = targets[target_idx];
-        for (std::size_t source_idx = 0; source_idx < clusters.size();
-             ++source_idx) {
-            const auto source = sources[source_idx];
-            auto result = estimateTransformation(source, potential_target);
+    ROS_WARN_STREAM("Target and Source size: " << targets.size() << ", " <<
+            sources.size());
+    for (size_t t_idx = 0; t_idx < targets.size(); ++t_idx) {
+        ROS_WARN_STREAM("Doing Target " << t_idx);
+        const Ptr &potential_target = targets[t_idx];
+        for (size_t s_idx = 0; s_idx < sources.size(); ++s_idx) {
+            ROS_WARN_STREAM("Doing Source " << t_idx);
+            const Ptr &source = sources[s_idx];
+            auto result = globalRegistration(source, potential_target);
+            //ROS_WARN_STREAM("IT DID RETURN");
             if (result.fitness_ > best) {
-                best_result.source_idx = source_idx;
-                best_result.target_idx = target_idx;
+                best_result.source_idx = s_idx;
+                best_result.target_idx = t_idx;
                 best_result.result = result;
                 best_result.source = source;
                 best_result.target = potential_target;
-                sources.erase(sources.begin() + source_idx);
-                targets.erase(targets.begin() + target_idx);
                 best = result.fitness_;
             }
         }
@@ -186,6 +175,8 @@ void PoseEstimation::estimateTransformations() {
         if (found) {
             VisualizeRegistration(*result.source, *result.target,
                                   result.result.transformation_);
+            //sources.erase(sources.begin() + s_idx);
+            //targets.erase(targets.begin() + t_idx);
         }
         // visualize the result
     } while (found);

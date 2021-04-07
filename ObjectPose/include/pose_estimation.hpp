@@ -33,11 +33,9 @@ class PoseEstimation {
     void findCluster(const Ptr &);
     void readMeshes(const std::filesystem::path &);
     static o3d::pipelines::registration::RegistrationResult globalRegistration(
-        const Ptr &, const Ptr &,
-        const std::shared_ptr<o3d::pipelines::registration::Feature> &,
-        const std::shared_ptr<o3d::pipelines::registration::Feature> &);
-    o3d::pipelines::registration::RegistrationResult
-    estimateTransformation(const Ptr &, const Ptr &);
+        const Ptr &, const Ptr &);
+    //o3d::pipelines::registration::RegistrationResult
+    //estimateTransformation(const Ptr &, const Ptr &);
     BestResult estimateTransformations(std::vector<Ptr> &, std::vector<Ptr> &);
     void estimateTransformations();
 };
