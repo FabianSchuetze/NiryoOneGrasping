@@ -1,23 +1,14 @@
 #include "pose_estimation.hpp"
 #include <Eigen/Dense>
 #include <algorithm>
+#include <pcl/search/kdtree.h>
+#include <pcl/segmentation/extract_clusters.h>
+#include <ros/ros.h>
 #include <sstream>
 
-// typedef o3d::geometry::PointCloud Pointcloud;
-////typedef std::shared_ptr<o3d::geometry::PointCloud> PointCloud::Ptr;
-// using Ptr = std::shared_ptr<o3d::geometry::PointCloud>;
-//
 static constexpr std::size_t N_POINTS(1000);
 static constexpr std::size_t MAX_UINT(255);
 using o3d::pipelines::registration::RegistrationResult;
-
-// struct BestResult {
-// int source_idx = -1;
-// int target_idx = -1;
-// RegistrationResult result;
-// ObjectPose::Ptr source;
-// ObjectPose::Ptr target;
-//};
 
 void VisualizeRegistration(const open3d::geometry::PointCloud &source,
                            const open3d::geometry::PointCloud &target,
@@ -44,6 +35,7 @@ namespace ObjectPose {
 
 void PoseEstimation::readMeshes(const std::filesystem::path &path) {
     std::string line;
+    ROS_WARN_STREAM("Trying to open file " << path);
     std::ifstream file(path);
     if (!file.is_open()) {
         throw std::runtime_error("Files can't be opened");
@@ -66,38 +58,52 @@ PoseEstimation::PoseEstimation(const std::filesystem::path &path) {
 
 std::shared_ptr<o3d::geometry::PointCloud> PoseEstimation::toOpen3DPointCloud(
     const pcl::PointCloud<pcl::PointXYZRGB>::ConstPtr &pcl_cloud) {
+    ROS_WARN_STREAM("The input point cloud has size " << pcl_cloud->size());
     std::shared_ptr<o3d::geometry::PointCloud> o3d_cloud =
         std::make_shared<o3d::geometry::PointCloud>();
     std::vector<Eigen::Vector3d> points, colors;
     points.reserve(pcl_cloud->size()), colors.reserve(pcl_cloud->size());
     for (const auto &point : *pcl_cloud) {
-        points.emplace_back(point.x, point.x, point.x);
+        points.emplace_back(point.x, point.y, point.z);
         colors.push_back(convert_color(point));
     }
+    ROS_WARN_STREAM("The number of copied points " << points.size());
     o3d_cloud->points_ = points;
     o3d_cloud->colors_ = colors;
     return o3d_cloud;
 }
 
+//void PoseEstimation::converToOpen3d(
+    //std::vector<pcl::PointCloud<pcl::PointXYZRGB>::Ptr> tmp_clusters) {
+    //for (const auto &cluster : tmp_clusters) {
+        //auto o3d_cluster = toOpen3DPointCloud(cluster);
+        //clusters.push_back(o3d_cluster);
+    //}
+//}
+
 void PoseEstimation::findCluster(const Ptr &source) {
+    o3d::visualization::DrawGeometries({source}, "Begin Cluster");
     std::vector<int> indices = source->ClusterDBSCAN(0.02, 100, false);
+    std::vector<std::size_t> points(indices.size());
+    std::iota(points.begin(), points.end(), 0);
+    ROS_WARN_STREAM("Found number of indices : " << indices.size());
     auto it = std::max_element(indices.begin(), indices.end());
-    if (*it == 0) {
+    ROS_WARN_STREAM("The number of clusters is : " << *it);
+    if (*it == -1) {
         throw std::runtime_error("not possible");
     }
-    clusters.resize(*it);
-    for (std::size_t idx = 0; idx < clusters.size(); ++idx) {
-        std::size_t cluster = indices[idx];
-        Eigen::Vector3d point = source->points_[idx];
-        Eigen::Vector3d color = source->points_[idx];
-        clusters[cluster]->points_.push_back(point);
-        clusters[cluster]->colors_.push_back(color);
+    ROS_WARN_STREAM("The size of the cluster vector is : " << clusters.size());
+    for (int cluster_idx = 0; cluster_idx <= *it; ++cluster_idx) {
+        std::vector<std::size_t> cluster;
+        std::copy_if(points.begin(), points.end(), std::back_inserter(cluster),
+                     [&](std::size_t i) { return indices[i] == cluster_idx; });
+        auto cloud = source->SelectByIndex(cluster);
+        cloud->EstimateNormals();
+        clusters.push_back(cloud);
     }
-    std::for_each(clusters.begin(), clusters.end(),
-                  [](auto &x) { x->EstimateNormals(); });
-    // for (auto& cluster : clusters) {
-    // cluster->EstimateNormals();
-    //}
+    for (auto &cluster : clusters) {
+        o3d::visualization::DrawGeometries({cluster}, "Cluster");
+    }
 }
 
 RegistrationResult PoseEstimation::globalRegistration(
@@ -190,6 +196,5 @@ void PoseEstimation::callback(
     auto pcl = toOpen3DPointCloud(input);
     findCluster(pcl);
     estimateTransformations();
-    // ROS_WARN_STREAM("The frame is " << frame);
 }
 } // namespace ObjectPose
