@@ -9,11 +9,10 @@
 namespace o3d = open3d;
 namespace ObjectPose {
 typedef o3d::geometry::PointCloud Pointcloud;
-// typedef std::shared_ptr<o3d::geometry::PointCloud> PointCloud::Ptr;
 using Ptr = std::shared_ptr<o3d::geometry::PointCloud>;
 class PoseEstimation {
   public:
-    PoseEstimation(const std::filesystem::path &);
+    explicit PoseEstimation(const std::filesystem::path &);
     void callback(const pcl::PointCloud<pcl::PointXYZRGB>::ConstPtr &);
 
   private:
@@ -34,8 +33,6 @@ class PoseEstimation {
     void readMeshes(const std::filesystem::path &);
     static o3d::pipelines::registration::RegistrationResult
     globalRegistration(const Ptr &, const Ptr &);
-    // o3d::pipelines::registration::RegistrationResult
-    // estimateTransformation(const Ptr &, const Ptr &);
     BestResult
     estimateTransformations(std::vector<o3d::geometry::TriangleMesh> &,
                             std::vector<Ptr> &);
