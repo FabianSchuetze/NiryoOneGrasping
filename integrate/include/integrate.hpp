@@ -11,17 +11,20 @@ class Integration {
     typedef std::tuple<bool, Eigen::Matrix4d, Eigen::Matrix6d> RGBDRegistration;
     explicit Integration(const std::filesystem::path &);
     void initializePoseGraph();
-    o3d::geometry::PointCloud integrate();
-    RGBDRegistration registerImmediateRGBDPair(std::size_t, std::size_t);
+    std::shared_ptr<o3d::geometry::PointCloud> integrate();
+    RGBDRegistration registerImmediateRGBDPair(std::size_t);
 
   private:
-    std::vector<o3d::geometry::Image> color;
-    std::vector<o3d::geometry::Image> depth;
-    o3d::camera::PinholeCameraIntrinsic intrinic;
+    std::vector<o3d::geometry::Image> colors;
+    std::vector<o3d::geometry::Image> depths;
+    o3d::camera::PinholeCameraIntrinsic intrinsic;
     o3d::pipelines::registration::PoseGraph pose_graph;
     void readImages(const std::filesystem::path &);
     static o3d::geometry::PointCloud
         meshToPointCloud(o3d::geometry::TriangleMesh);
+    static std::shared_ptr<o3d::geometry::RGBDImage>
+    convertTORGBD(const o3d::geometry::Image &, const o3d::geometry::Image &,
+                  bool);
 };
 } // namespace integration
 #endif
