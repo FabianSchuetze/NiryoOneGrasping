@@ -14,16 +14,18 @@ namespace registration = o3d::pipelines::registration;
 
 void VisualizeRegistration(const open3d::geometry::PointCloud &source,
                            const open3d::geometry::PointCloud &target,
-                           const Eigen::Matrix4d &Transformation) {
+                           const registration::RegistrationResult &result) {
     std::shared_ptr<o3d::geometry::PointCloud> source_transformed_ptr(
         new o3d::geometry::PointCloud);
     std::shared_ptr<o3d::geometry::PointCloud> target_ptr(
         new o3d::geometry::PointCloud);
     *source_transformed_ptr = source;
     *target_ptr = target;
-    source_transformed_ptr->Transform(Transformation);
-     o3d::visualization::DrawGeometries({source_transformed_ptr, target_ptr},
-    "Registration result");
+    source_transformed_ptr->Transform(result.transformation_);
+    std::stringstream ss;
+    ss << "Registration Result, fitness: " << result.fitness_;
+    o3d::visualization::DrawGeometries({source_transformed_ptr, target_ptr},
+                                       ss.str());
 }
 
 Eigen::Vector3d inline convert_color(const pcl::PointXYZRGB &point) {
@@ -48,9 +50,10 @@ void PoseEstimation::readMeshes(const std::filesystem::path &path) {
         if (!success) {
             throw std::runtime_error("Could not read mesh file");
         }
-        auto pcl = mesh.SamplePointsUniformly(N_POINTS);
-        pcl->EstimateNormals();
-        meshes.push_back(pcl);
+        meshes.push_back(mesh);
+        // auto pcl = mesh.SamplePointsUniformly(N_POINTS);
+        // pcl->EstimateNormals();
+        // meshes.push_back(pcl);
     }
 }
 
@@ -76,7 +79,6 @@ std::shared_ptr<o3d::geometry::PointCloud> PoseEstimation::toOpen3DPointCloud(
 }
 
 void PoseEstimation::findCluster(const Ptr &source) {
-    // o3d::visualization::DrawGeometries({source}, "Begin Cluster");
     std::vector<int> indices = source->ClusterDBSCAN(0.02, 100, false);
     std::vector<std::size_t> points(indices.size());
     std::iota(points.begin(), points.end(), 0);
@@ -110,53 +112,49 @@ RegistrationResult PoseEstimation::globalRegistration(const Ptr &source,
         std::reference_wrapper<const registration::CorrespondenceChecker>>
         correspondence_checker;
     auto correspondence_checker_edge_length =
-        registration::CorrespondenceCheckerBasedOnEdgeLength(0.9);
+        registration::CorrespondenceCheckerBasedOnEdgeLength(0.92);
     auto correspondence_checker_distance =
-        registration::CorrespondenceCheckerBasedOnDistance(1.5 * 0.05);
+        registration::CorrespondenceCheckerBasedOnDistance(1.5 * 0.01);
+    auto correspondence_checker_normal =
+        registration::CorrespondenceCheckerBasedOnNormal(0.52359878);
     correspondence_checker.push_back(correspondence_checker_edge_length);
     correspondence_checker.push_back(correspondence_checker_distance);
-    bool mutual_filter(false);
-    //ROS_WARN_STREAM("Sizes source, target " << source->points_.size() << ", "
-                                            //<< target->points_.size());
-    //ROS_WARN_STREAM("Features source, target " << source_fpfh->Num() << ", "
-                                               //<< target_fpfh->Num());
-    registration::RegistrationResult registration_result;
-    //for (int i = 0; i < source_fpfh->data_.size(); ++i) {
-    //ROS_WARN_STREAM(source_fpfh->data_);
-    //}
-    //ROS_WARN_STREAM("At the end");
-    registration_result =
-        registration::RegistrationRANSACBasedOnFeatureMatching(
-            *source, *target, *source_fpfh, *target_fpfh, mutual_filter,
-            1.5 * 0.05,
-            registration::TransformationEstimationPointToPoint(false), 4,
-            correspondence_checker,
-            registration::RANSACConvergenceCriteria(5000000, 0.9999));
-    VisualizeRegistration(*source, *target,
-                          registration_result.transformation_);
+    correspondence_checker.push_back(correspondence_checker_normal);
+    bool mutual_filter(true);
+    auto preliminary = registration::RegistrationRANSACBasedOnFeatureMatching(
+        *source, *target, *source_fpfh, *target_fpfh, mutual_filter, 1.5 * 0.05,
+        registration::TransformationEstimationPointToPoint(false), 4,
+        correspondence_checker,
+        registration::RANSACConvergenceCriteria(5000000, 0.9999));
+    auto registration_result = registration::RegistrationICP(
+        *source, *target, 0.01, preliminary.transformation_);
+    //VisualizeRegistration(*source, *target, registration_result);
     return registration_result;
 }
 
-PoseEstimation::BestResult
-PoseEstimation::estimateTransformations(std::vector<Ptr> &sources,
-                                        std::vector<Ptr> &targets) {
+PoseEstimation::BestResult PoseEstimation::estimateTransformations(
+    std::vector<o3d::geometry::TriangleMesh> &sources,
+    std::vector<Ptr> &targets) {
     double best(0.3);
     BestResult best_result;
-    ROS_WARN_STREAM("Target and Source size: " << targets.size() << ", " <<
-            sources.size());
+    ROS_WARN_STREAM("Target and Source size: " << targets.size() << ", "
+                                               << sources.size());
     for (size_t t_idx = 0; t_idx < targets.size(); ++t_idx) {
         ROS_WARN_STREAM("Doing Target " << t_idx);
         const Ptr &potential_target = targets[t_idx];
+        std::size_t n_points = potential_target->points_.size();
         for (size_t s_idx = 0; s_idx < sources.size(); ++s_idx) {
             ROS_WARN_STREAM("Doing Source " << t_idx);
-            const Ptr &source = sources[s_idx];
-            auto result = globalRegistration(source, potential_target);
-            //ROS_WARN_STREAM("IT DID RETURN");
+            o3d::geometry::TriangleMesh &mesh = sources[s_idx];
+            auto pcd = mesh.SamplePointsUniformly(n_points);
+            pcd->EstimateNormals();
+            auto result = globalRegistration(pcd, potential_target);
+            ROS_WARN_STREAM("Fittness of the result is:" << result.fitness_);
             if (result.fitness_ > best) {
                 best_result.source_idx = s_idx;
                 best_result.target_idx = t_idx;
                 best_result.result = result;
-                best_result.source = source;
+                best_result.source = pcd;
                 best_result.target = potential_target;
                 best = result.fitness_;
             }
@@ -165,27 +163,30 @@ PoseEstimation::estimateTransformations(std::vector<Ptr> &sources,
     return best_result;
 }
 
-void PoseEstimation::estimateTransformations() {
-    std::vector<Ptr> sources(meshes.begin(), meshes.end());
+std::vector<PoseEstimation::BestResult> PoseEstimation::estimateTransformations() {
+    std::vector<o3d::geometry::TriangleMesh> sources(meshes.begin(),
+                                                     meshes.end());
     std::vector<Ptr> targets(clusters.begin(), clusters.end());
+    std::vector<BestResult> results;
     bool found(false);
     do {
         BestResult result = estimateTransformations(sources, targets);
-        found = (result.source_idx != -1) & (result.target_idx != -1);
+        found = (result.source_idx != -1) and (result.target_idx != -1);
         if (found) {
-            VisualizeRegistration(*result.source, *result.target,
-                                  result.result.transformation_);
-            //sources.erase(sources.begin() + s_idx);
-            //targets.erase(targets.begin() + t_idx);
+            //VisualizeRegistration(*result.source, *result.target,
+                                  //result.result);
+            results.push_back(result);
+             sources.erase(sources.begin() + result.source_idx);
+             targets.erase(targets.begin() + result.target_idx);
         }
-        // visualize the result
     } while (found);
+    return results;
 }
 
 void PoseEstimation::callback(
     const pcl::PointCloud<pcl::PointXYZRGB>::ConstPtr &input) {
     auto pcl = toOpen3DPointCloud(input);
     findCluster(pcl);
-    estimateTransformations();
+    std::vector<BestResult> estimateTransformations();
 }
 } // namespace ObjectPose

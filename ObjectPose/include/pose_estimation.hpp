@@ -27,17 +27,19 @@ class PoseEstimation {
     void cluster();
     void poses();
     std::vector<Ptr> clusters;
-    std::vector<Ptr> meshes;
+    std::vector<o3d::geometry::TriangleMesh> meshes;
     static std::shared_ptr<o3d::geometry::PointCloud>
     toOpen3DPointCloud(const pcl::PointCloud<pcl::PointXYZRGB>::ConstPtr &);
     void findCluster(const Ptr &);
     void readMeshes(const std::filesystem::path &);
-    static o3d::pipelines::registration::RegistrationResult globalRegistration(
-        const Ptr &, const Ptr &);
-    //o3d::pipelines::registration::RegistrationResult
-    //estimateTransformation(const Ptr &, const Ptr &);
-    BestResult estimateTransformations(std::vector<Ptr> &, std::vector<Ptr> &);
-    void estimateTransformations();
+    static o3d::pipelines::registration::RegistrationResult
+    globalRegistration(const Ptr &, const Ptr &);
+    // o3d::pipelines::registration::RegistrationResult
+    // estimateTransformation(const Ptr &, const Ptr &);
+    BestResult
+    estimateTransformations(std::vector<o3d::geometry::TriangleMesh> &,
+                            std::vector<Ptr> &);
+    std::vector<BestResult> estimateTransformations();
 };
 } // namespace ObjectPose
 #endif
