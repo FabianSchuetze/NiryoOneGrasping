@@ -75,7 +75,7 @@ find_package(realsense2 REQUIRED)
 
 
 add_library(${PROJECT_NAME} SHARED ${${PROJECT_NAME}_SRC})
-target_link_libraries(${PROJECT_NAME} ${catkin_LIBRARIES})
+target_link_libraries(${PROJECT_NAME} ${catkin_LIBRARIES} ${Open3D_LIBRARIES})
 
 
 ## Specify additional locations of header files
@@ -86,6 +86,6 @@ include_directories(
 )
 
 
-#add_executable(pose_estimation src/poses.cpp src/pose_estimation.cpp)
-#target_link_libraries(pose_estimation ${catkin_LIBRARIES} ${PCL_LIBRARIES}
-    #${Open3D_LIBRARIES})
+add_executable(integrate src/main.cpp)
+target_link_libraries(integrate ${catkin_LIBRARIES} ${PCL_LIBRARIES}
+    ${Open3D_LIBRARIES} ${PROJECT_NAME})

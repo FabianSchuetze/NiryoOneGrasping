@@ -19,7 +19,10 @@ class Integration {
     std::vector<o3d::geometry::Image> depths;
     o3d::camera::PinholeCameraIntrinsic intrinsic;
     o3d::pipelines::registration::PoseGraph pose_graph;
-    void readImages(const std::filesystem::path &);
+    static void readImages(const std::filesystem::path &,
+                    std::vector<o3d::geometry::Image> &);
+    void readImages(const std::filesystem::path &, std::string,
+                    std::vector<o3d::geometry::Image> &);
     static o3d::geometry::PointCloud
         meshToPointCloud(o3d::geometry::TriangleMesh);
     static std::shared_ptr<o3d::geometry::RGBDImage>
