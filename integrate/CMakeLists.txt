@@ -22,6 +22,7 @@ find_package(catkin REQUIRED COMPONENTS
   tf2_geometry_msgs
   pcl_ros
   cv_bridge
+  pick_place
 )
 
 ###################################
@@ -48,6 +49,7 @@ catkin_package(
       genmsg
       pcl_ros
       cv_bridge
+      pick_place
   DEPENDS 
     EIGEN3
     OpenCV
@@ -88,4 +90,8 @@ include_directories(
 
 add_executable(integrate src/main.cpp)
 target_link_libraries(integrate ${catkin_LIBRARIES} ${PCL_LIBRARIES}
+    ${Open3D_LIBRARIES} ${PROJECT_NAME})
+
+add_executable(move_joints_client src/move_joints_client.cpp)
+target_link_libraries(move_joints_client ${catkin_LIBRARIES} ${PCL_LIBRARIES}
     ${Open3D_LIBRARIES} ${PROJECT_NAME})
