@@ -36,16 +36,17 @@ void MoveJointsAction::readJointPositions(const std::string &loc) {
 
 MoveJointsAction::MoveJointsAction()
     : as(nh, "move_joints", [this](auto&& x) { callback(x); } , false) {
+    as.start();
+    ROS_WARN_STREAM("The current path is " << fs::current_path());
     std::pair<std::string, std::string> location("move_joints/joint_position_file", "");
     readParameters(location);
-    as.start();
-    picker.connectToRobot();
-    if (fs::exists(location.second)) {
-        readJointPositions(location.second);
-    } else {
+    if (!fs::exists(location.second)) {
         ROS_WARN_STREAM("The path " << location.second << "does not exists");
         throw std::runtime_error("The path does not exists");
     }
+    picker.connectToRobot();
+    readJointPositions(location.second);
+    ROS_WARN_STREAM("ActionSerice waiting for input");
 }
 
 void MoveJointsAction::callback(const pick_place::MoveJointsGoalConstPtr &) {
