@@ -35,7 +35,7 @@ void MoveJointsAction::readJointPositions(const std::string &loc) {
 }
 
 MoveJointsAction::MoveJointsAction()
-    : as(nh, "move_joints", [this](auto&& x) { callback(x); } , false) {
+    : as(nh, "pick_place/move_joints", [this](auto&& x) { callback(x); } , false) {
     as.start();
     ROS_WARN_STREAM("The current path is " << fs::current_path());
     std::pair<std::string, std::string> location("move_joints/joint_position_file", "");

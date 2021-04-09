@@ -7,10 +7,11 @@ int main(int argc, char **argv) {
 
     // create the action client
     // true causes the client to spin its own thread
-    actionlib::SimpleActionClient<pick_place::MoveJointsAction> ac("fibonacci", true);
+    std::string server_name("pick_place/move_joints");
+    actionlib::SimpleActionClient<pick_place::MoveJointsAction> ac(server_name, true);
     ros::NodeHandle nh;
 
-    ROS_INFO("Waiting for action server to start.");
+    ROS_WARN_STREAM("Waiting for action server " << server_name << "to start");
     // wait for the action server to start
     ac.waitForServer();  // will wait for infinite time
 
