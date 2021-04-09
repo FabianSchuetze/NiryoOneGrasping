@@ -2,7 +2,7 @@
 #include <filesystem>
 #include <ros/ros.h>
 
-using namespace integration;
+//using namespace integration;
 
 template <typename... T> void fold(const ros::NodeHandle &nh, T &... args) {
     auto read_parameters = [&](auto &t) {
@@ -20,8 +20,9 @@ int main(int argc, char **argv) {
     ros::init(argc, argv, "cluster");
     ros::NodeHandle nh;
     std::pair<std::string, std::string> root("integrate/root", "");
-    fold(nh, root);
-    Integration integrate(root.second);
-    auto scene = integrate.integrate();
+    std::pair<std::string, std::string> camera("integrate/camera", "");
+    fold(nh, root, camera);
+    integration::Integration integrate(root.second, camera.second);
+    auto scene = integrate.createScene();
     o3d::visualization::DrawGeometries({scene}, "Cluster");
 }

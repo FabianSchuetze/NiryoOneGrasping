@@ -9,10 +9,11 @@ namespace integration {
 class Integration {
   public:
     typedef std::tuple<bool, Eigen::Matrix4d, Eigen::Matrix6d> RGBDRegistration;
-    explicit Integration(const std::filesystem::path &);
+    explicit Integration(const std::filesystem::path &, const std::filesystem::path&);
     void initializePoseGraph();
     std::shared_ptr<o3d::geometry::PointCloud> integrate();
     RGBDRegistration registerImmediateRGBDPair(std::size_t);
+    std::shared_ptr<o3d::geometry::PointCloud> createScene();
 
   private:
     std::vector<o3d::geometry::Image> colors;
@@ -28,6 +29,7 @@ class Integration {
     static std::shared_ptr<o3d::geometry::RGBDImage>
     convertTORGBD(const o3d::geometry::Image &, const o3d::geometry::Image &,
                   bool);
+    void readCameraIntrinsics(const std::filesystem::path& path);
 };
 } // namespace integration
 #endif
