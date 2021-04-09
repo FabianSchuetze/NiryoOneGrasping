@@ -2,8 +2,6 @@
 #include <filesystem>
 #include <ros/ros.h>
 
-//using namespace integration;
-
 template <typename... T> void fold(const ros::NodeHandle &nh, T &... args) {
     auto read_parameters = [&](auto &t) {
         nh.getParam(t.first, t.second);

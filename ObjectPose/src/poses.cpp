@@ -4,24 +4,16 @@
 #include <string>
 static constexpr std::size_t QUEUE(10);
 
-template <typename T> void readParameters(const ros::NodeHandle &nh, T &t) {
-    nh.getParam(t.first, t.second);
-    if (t.second.empty()) {
-        ROS_WARN_STREAM("Rosparam " << t.first << " not identified");
-        throw std::runtime_error("Could not read all parameters");
-    }
-    ROS_WARN_STREAM("THe parameters for " << t.first << " is " << t.second);
-}
-
-template <typename T, typename... Args>
-void readParameters(const ros::NodeHandle &nh, T &t, Args &... args) {
-    nh.getParam(t.first, t.second);
-    if (t.second.empty()) {
-        ROS_WARN_STREAM("Rosparam " << t.first << " not identified");
-        throw std::runtime_error("Could not read all parameters");
-    }
-    ROS_WARN_STREAM("THe parameters for " << t.first << " is " << t.second);
-    readParameters(nh, args...);
+template <typename... T> void readParameters(const ros::NodeHandle &nh, T &... args) {
+    auto read_parameters = [&](auto &t) {
+        nh.getParam(t.first, t.second);
+        if (t.second.empty()) {
+            ROS_WARN_STREAM("Rosparam " << t.first << " not identified");
+            throw std::runtime_error("Could not read all parameters");
+        }
+        ROS_WARN_STREAM("The parameters for " << t.first << " is " << t.second);
+    };
+    (..., read_parameters(args));
 }
 
 int main(int argc, char **argv) {

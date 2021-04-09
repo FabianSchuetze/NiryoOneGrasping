@@ -1,4 +1,3 @@
-
 cmake_minimum_required(VERSION 3.1.3)
 project(pick_place)
 
@@ -20,9 +19,17 @@ find_package(catkin REQUIRED COMPONENTS
   genmsg
   tf2_eigen
   tf2_geometry_msgs
-  pcl_ros
   cv_bridge
   pose_detection
+)
+
+add_action_files(
+  DIRECTORY action
+  FILES MoveJoints.action
+)
+
+generate_messages(
+  DEPENDENCIES actionlib_msgs std_msgs
 )
 
 ###################################
@@ -53,8 +60,8 @@ catkin_package(
   DEPENDS 
     EIGEN3
     OpenCV
-    PCL
 )
+
 
 ###########
 ## Build ##
@@ -91,6 +98,5 @@ target_link_libraries(pick_place_exe ${catkin_LIBRARIES} ${PROJECT_NAME})
 add_executable(simple_pick_place_exe src/simple_pick_place.cpp)
 target_link_libraries(simple_pick_place_exe ${catkin_LIBRARIES})
 
-add_executable(move_joints src/move_joints.cpp src/scence.cpp)
-target_link_libraries(move_joints ${catkin_LIBRARIES} ${PROJECT_NAME}
-    ${PCL_LIBRARIES} ${OpenCV_LIBS} realsense2)
+add_executable(move_joints src/move_joints.cpp)
+target_link_libraries(move_joints ${catkin_LIBRARIES} ${PROJECT_NAME})

@@ -10,6 +10,7 @@ static constexpr float DEPTH_TRUNC(0.4);
 static constexpr float MAX_DEPTH_DIFF(0.01);
 static constexpr float VOXEL_LENGHT(1.0 / 512.0);
 static constexpr float SDF_TRUNC(0.04);
+static constexpr int LOG_FREQUENCY(10);
 
 void Integration::readImages(const fs::path &path,
                              std::vector<o3d::geometry::Image> &imgs) {
@@ -75,14 +76,14 @@ std::shared_ptr<o3d::geometry::PointCloud> Integration::integrate() {
         o3d::pipelines::integration::TSDFVolumeColorType::RGB8);
     const std::size_t sz = pose_graph.nodes_.size();
     for (std::size_t i = 0; i < sz; ++i) {
-        if ((i % 10) == 0) {
+        if ((i % LOG_FREQUENCY) == 0) {
             ROS_WARN_STREAM("Integrating image " << i << "/" << sz);
         }
         auto rgbd = convertTORGBD(colors[i], depths[i], false);
         auto pose = pose_graph.nodes_[i].pose_;
         volume.Integrate(*rgbd, intrinsic, pose.inverse());
     }
-    return volume.ExtractPointCloud(); // Does that work
+    return volume.ExtractPointCloud();
 }
 
 Integration::RGBDRegistration
@@ -105,7 +106,7 @@ void Integration::initializePoseGraph() {
     fs::path pose_pth("/home/fabian/Documents/work/transforms/src/integrate/"
                       "data/pose_graph.json");
     for (std::size_t source = 0; source < sz - 1; ++source) {
-        if ((source % 10) == 0) {
+        if ((source % LOG_FREQUENCY) == 0) {
             ROS_WARN_STREAM("Registering image " << source << "/" << sz);
         }
         auto [success, trans, info] = registerImmediateRGBDPair(source);

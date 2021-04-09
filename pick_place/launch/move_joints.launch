@@ -1,0 +1,5 @@
+<launch>
+  <node pkg="pick_place" type="move_joints" name="move_joints" output="screen">
+    <param name="joint_position_file" type="string" value="/data/joint_positions.txt"/>
+</node>
+</launch>
