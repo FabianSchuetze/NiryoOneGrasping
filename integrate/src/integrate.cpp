@@ -12,8 +12,9 @@ static constexpr float VOXEL_LENGHT(1.0 / 512.0);
 static constexpr float SDF_TRUNC(0.04);
 static constexpr int LOG_FREQUENCY(10);
 
-void Integration::readImages(const fs::path &path,
-                             std::vector<o3d::geometry::Image> &imgs) {
+void Integration::readImages(
+    const fs::path &path,
+    std::vector<std::shared_ptr<o3d::geometry::Image>> &imgs) {
     std::vector<fs::path> paths;
     auto it = fs::directory_iterator(path);
     std::copy(fs::begin(it), fs::end(it), std::back_inserter(paths));
@@ -22,13 +23,14 @@ void Integration::readImages(const fs::path &path,
     std::size_t i(0);
     for (const auto &pth : paths) {
         auto &img = imgs[i];
-        o3d::io::ReadImage(pth, img);
+        o3d::io::ReadImage(pth, *img);
         ++i;
     }
 }
 
-void Integration::readImages(const fs::path &path, std::string s, // NOLINT
-                             std::vector<o3d::geometry::Image> &imgs) {
+void Integration::readImages(
+    const fs::path &path, std::string s, // NOLINT
+    std::vector<std::shared_ptr<o3d::geometry::Image>> &imgs) {
     fs::path extended = path / s;
     if (fs::exists(extended)) {
         readImages(extended, imgs);
@@ -61,6 +63,10 @@ Integration::Integration(const fs::path &path, const fs::path &camera) {
     readImages(path, "depth", depths);
 }
 
+Integration::Integration(const fs::path &camera) {
+    readCameraIntrinsics(camera);
+}
+
 std::shared_ptr<o3d::geometry::RGBDImage>
 Integration::convertTORGBD(const o3d::geometry::Image &color,
                            const o3d::geometry::Image &depth,
@@ -79,7 +85,7 @@ std::shared_ptr<o3d::geometry::PointCloud> Integration::integrate() {
         if ((i % LOG_FREQUENCY) == 0) {
             ROS_WARN_STREAM("Integrating image " << i << "/" << sz);
         }
-        auto rgbd = convertTORGBD(colors[i], depths[i], false);
+        auto rgbd = convertTORGBD(*colors[i], *depths[i], false);
         auto pose = pose_graph.nodes_[i].pose_;
         volume.Integrate(*rgbd, intrinsic, pose.inverse());
     }
@@ -88,9 +94,9 @@ std::shared_ptr<o3d::geometry::PointCloud> Integration::integrate() {
 
 Integration::RGBDRegistration
 Integration::registerImmediateRGBDPair(std::size_t source) {
-    auto source_rgbd = convertTORGBD(colors[source], depths[source], true);
+    auto source_rgbd = convertTORGBD(*colors[source], *depths[source], true);
     auto target_rgbd =
-        convertTORGBD(colors[source + 1], depths[source + 1], true);
+        convertTORGBD(*colors[source + 1], *depths[source + 1], true);
     auto option = o3d::pipelines::odometry::OdometryOption();
     option.max_depth_diff_ = MAX_DEPTH_DIFF;
     auto [success, trans, info] = o3d::pipelines::odometry::ComputeRGBDOdometry(
