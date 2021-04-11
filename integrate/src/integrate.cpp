@@ -57,14 +57,15 @@ void Integration::readCameraIntrinsics(const fs::path &path) {
     }
 }
 
-Integration::Integration(const fs::path &path, const fs::path &camera) {
+Integration::Integration(const fs::path &path, const fs::path &camera): i(0) {
     readCameraIntrinsics(camera);
     readImages(path, "color", colors);
     readImages(path, "depth", depths);
 }
 
-Integration::Integration(const fs::path &camera) {
+Integration::Integration(const fs::path &camera): i(0) {
     readCameraIntrinsics(camera);
+    paths = open_folder("/home/fabian/Documents/work/transforms/src/integrate/data");
 }
 
 std::shared_ptr<o3d::geometry::RGBDImage>
@@ -131,7 +132,8 @@ void Integration::initializePoseGraph() {
 std::shared_ptr<o3d::geometry::PointCloud> Integration::createScene() {
     std::cout << "inside create scence " << std::endl;
     initializePoseGraph();
-    return integrate();
+    auto pcd = integrate();
+    return pcd;
 }
 
 } // namespace integration

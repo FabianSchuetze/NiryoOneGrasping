@@ -1,0 +1,7 @@
+<launch>
+    <node pkg="integration" type="integrate" name="integrate">
+        <param name="/root" value="/home/fabian/2021-04-03-16-39"/>
+        <param name="/camera" value="/home/fabian/2021-04-03-16-39/camera_intrinsic.json"/>
+        <param name="/move_joints_server" value="/pick_place/move_joints"/>
+</node>
+</launch>

@@ -5,6 +5,9 @@
 #include <pick_place/MoveJointsAction.h>
 #include <ros/ros.h>
 
+static constexpr std::size_t FREQUENCY(30);
+static constexpr std::size_t QUEUE(20);
+
 template <typename... T>
 void readParameters(const ros::NodeHandle &nh, T &... args) {
     auto read_parameters = [&](auto &t) {
@@ -35,12 +38,12 @@ int main(int argc, char **argv) {
     ROS_INFO("Action server started, sending goal.");
     std::string STATE("SUCCEEDED");
     ros::Subscriber sub =
-        nh.subscribe("/camera/depth_registered/points", 10,
+        nh.subscribe("/camera/depth_registered/points", QUEUE,
                      &integration::Integration::callback, &integrate);
     // send a goal to the action
     pick_place::MoveJointsGoal goal;
     ac.sendGoal(goal);
-    ros::Rate rate(10);
+    ros::Rate rate(FREQUENCY);
     while (ros::ok() && STATE != ac.getState().toString()) {
         auto state = ac.getState();
         ROS_WARN_STREAM("The state is: " << state.toString());
