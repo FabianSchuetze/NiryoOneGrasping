@@ -28,7 +28,7 @@ int main(int argc, char **argv) {
     std::pair<std::string, std::string> camera("integrate/camera", "");
     std::pair<std::string, std::string> mover("integrate/move_joints_server",
                                               "");
-    std::pair<std::string, std::string> cameraFrame("integrate/camerFrame",
+    std::pair<std::string, std::string> cameraFrame("integrate/cameraFrame",
                                               "");
     std::pair<std::string, std::string> publishTopic("integrate/publishTopic",
                                               "");
@@ -57,6 +57,6 @@ int main(int argc, char **argv) {
     }
     sub.shutdown();
     auto scene = integrate.createScene();
+    o3d::visualization::DrawGeometries({scene}, "Cluster");
     integrate.publishCloud(nh, scene);
-    //o3d::visualization::DrawGeometries({scene}, "Cluster");
 }

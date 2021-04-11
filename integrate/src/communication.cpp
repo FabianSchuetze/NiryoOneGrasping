@@ -6,6 +6,7 @@
 #include <sstream>
 #include <tf/transform_listener.h>
 #include <tf_conversions/tf_eigen.h>
+#include <pcl_ros/transforms.h>
 using o3d::geometry::Image;
 namespace fs = std::filesystem;
 namespace integration {
@@ -98,6 +99,10 @@ Integration::decipherImage(const PointCloud::Ptr &cloud) {
 }
 
 void Integration::callback(const PointCloud::Ptr &cloud) {
+    pcl::PointCloud<pcl::PointXYZRGB>::Ptr out (new
+            pcl::PointCloud<pcl::PointXYZRGB>);
+    tf::TransformListener listener;
+    pcl_ros::transformPointCloud("base_link", cloud, out, listener);
     auto color = decipherImage(cloud);
     auto depth = decipherDepth(cloud);
     colors.push_back(color);
@@ -113,7 +118,7 @@ void Integration::startingPose(ros::NodeHandle &nh) {
     while (nh.ok()) {
         tf::StampedTransform transform;
         try {
-            listener.lookupTransform("/base_link", "/turtle1", ros::Time(0),
+            listener.lookupTransform("/base_link", cameraFrame, ros::Time(0),
                                      transform);
             Eigen::Affine3d tmp;
             tf::transformTFToEigen(transform, tmp);
@@ -148,20 +153,24 @@ pcl::PointCloud<pcl::PointXYZRGB>::Ptr Integration::toPclPointCloud(
         auto point = toPointXYZRGB(points[idx], colors[idx]);
         pcl_cloud->push_back(point);
     }
+    pcl_cloud->height = 1;
+    pcl_cloud->width = points.size();
     return pcl_cloud;
 }
 
 void Integration::publishCloud(
     ros::NodeHandle &nh,
     const std::shared_ptr<o3d::geometry::PointCloud> &cloud) {
+    // o3d::visualization::DrawGeometries({cloud}, "Cluster");
     auto pcl_cloud = toPclPointCloud(cloud);
+    pcl::io::savePCDFileASCII("initial_cloud.pcd", *pcl_cloud);
     pcl::transformPointCloud(*pcl_cloud, *pcl_cloud, starting_pose.inverse());
     ros::Publisher pub =
         nh.advertise<PointCloud>("integrate/integratedCloud", 1);
-    // PointCloud::Ptr msg(new PointCloud);
     pcl_cloud->header.frame_id = "base_link";
-    pcl_cloud->height = pcl_cloud->width = 1;
+    // pcl_cloud->height = 1;
     ros::Rate loop_rate(4);
+    pcl::io::savePCDFileASCII("final_cloud.pcd", *pcl_cloud);
     while (nh.ok()) {
         pcl_conversions::toPCL(ros::Time::now(), pcl_cloud->header.stamp);
         pub.publish(pcl_cloud);
