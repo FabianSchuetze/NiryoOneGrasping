@@ -61,7 +61,7 @@ catkin_package(
 ###########
 set(${PROJECT_NAME}_SRC
     src/integrate.cpp
-    src/callbacks.cpp
+    src/communication.cpp
 )
 find_package(Open3D REQUIRED)
 list(APPEND Open3D_LIBRARIES dl)

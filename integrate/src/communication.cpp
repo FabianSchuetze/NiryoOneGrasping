@@ -2,13 +2,18 @@
 #include <chrono>
 #include <cv_bridge/cv_bridge.h>
 #include <opencv2/highgui.hpp>
+#include <pcl/common/transforms.h>
 #include <sstream>
+#include <tf/transform_listener.h>
+#include <tf_conversions/tf_eigen.h>
 using o3d::geometry::Image;
 namespace fs = std::filesystem;
 namespace integration {
-constexpr int TOMM = 1000;
-constexpr uint HEIGHT = 480;
-constexpr uint WIDTH = 640;
+static constexpr int TOMM = 1000;
+static constexpr uint HEIGHT = 480;
+static constexpr uint WIDTH = 640;
+static constexpr std::size_t MAX_UINT(255);
+static constexpr std::size_t RATE(10);
 
 std::string Integration::return_current_time_and_date() {
     auto now = std::chrono::system_clock::now();
@@ -54,6 +59,7 @@ void Integration::save_img(const std::shared_ptr<o3d::geometry::Image> &img,
         throw std::runtime_error(ss.str());
     }
 }
+
 std::shared_ptr<Image>
 Integration::decipherDepth(const PointCloud::Ptr &cloud) {
     if (cloud->height != HEIGHT) {
@@ -75,6 +81,7 @@ Integration::decipherDepth(const PointCloud::Ptr &cloud) {
     std::memcpy(o3d_img->data_.data(), img.data, o3d_img->data_.size());
     return o3d_img;
 }
+
 std::shared_ptr<Image>
 Integration::decipherImage(const PointCloud::Ptr &cloud) {
     sensor_msgs::Image ros_img;
@@ -99,4 +106,68 @@ void Integration::callback(const PointCloud::Ptr &cloud) {
     save_img(depth, paths.depth, i);
     ++i;
 }
+
+void Integration::startingPose(ros::NodeHandle &nh) {
+    tf::TransformListener listener;
+    ros::Rate rate(RATE);
+    while (nh.ok()) {
+        tf::StampedTransform transform;
+        try {
+            listener.lookupTransform("/base_link", "/turtle1", ros::Time(0),
+                                     transform);
+            Eigen::Affine3d tmp;
+            tf::transformTFToEigen(transform, tmp);
+            starting_pose = tmp.cast<float>();
+            break;
+        } catch (const tf::TransformException &ex) {
+            ROS_ERROR("%s", ex.what());
+            ros::Duration(1.0).sleep();
+        }
+    }
+}
+
+pcl::PointXYZRGB inline toPointXYZRGB(const Eigen::Vector3d &point,
+                                      const Eigen::Vector3d &color) {
+    pcl::PointXYZRGB pcl_point;
+    pcl_point.x = static_cast<float>(point(0));
+    pcl_point.y = static_cast<float>(point(1));
+    pcl_point.z = static_cast<float>(point(2));
+    pcl_point.r = static_cast<uint8_t>(std::round(color(0) * MAX_UINT));
+    pcl_point.g = static_cast<uint8_t>(std::round(color(1) * MAX_UINT));
+    pcl_point.b = static_cast<uint8_t>(std::round(color(2) * MAX_UINT));
+    return pcl_point;
+}
+
+pcl::PointCloud<pcl::PointXYZRGB>::Ptr Integration::toPclPointCloud(
+    std::shared_ptr<o3d::geometry::PointCloud> const &cloud) {
+    pcl::PointCloud<pcl::PointXYZRGB>::Ptr pcl_cloud(
+        new pcl::PointCloud<pcl::PointXYZRGB>);
+    const std::vector<Eigen::Vector3d> &points = cloud->points_;
+    const std::vector<Eigen::Vector3d> &colors = cloud->colors_;
+    for (std::size_t idx = 0; idx < points.size(); ++idx) {
+        auto point = toPointXYZRGB(points[idx], colors[idx]);
+        pcl_cloud->push_back(point);
+    }
+    return pcl_cloud;
+}
+
+void Integration::publishCloud(
+    ros::NodeHandle &nh,
+    const std::shared_ptr<o3d::geometry::PointCloud> &cloud) {
+    auto pcl_cloud = toPclPointCloud(cloud);
+    pcl::transformPointCloud(*pcl_cloud, *pcl_cloud, starting_pose.inverse());
+    ros::Publisher pub =
+        nh.advertise<PointCloud>("integrate/integratedCloud", 1);
+    // PointCloud::Ptr msg(new PointCloud);
+    pcl_cloud->header.frame_id = "base_link";
+    pcl_cloud->height = pcl_cloud->width = 1;
+    ros::Rate loop_rate(4);
+    while (nh.ok()) {
+        pcl_conversions::toPCL(ros::Time::now(), pcl_cloud->header.stamp);
+        pub.publish(pcl_cloud);
+        ros::spinOnce();
+        loop_rate.sleep();
+    }
+}
+
 } // namespace integration

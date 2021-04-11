@@ -19,22 +19,29 @@ class Integration {
     };
     using PointCloud = pcl::PointCloud<pcl::PointXYZRGB>;
     using RGBDRegistration = std::tuple<bool, Eigen::Matrix4d, Eigen::Matrix6d>;
+    //explicit Integration(const std::filesystem::path &,
+                         //const std::filesystem::path &);
     explicit Integration(const std::filesystem::path &,
-                         const std::filesystem::path &);
-    explicit Integration(const std::filesystem::path &);
+                         const std::string& cameraFrame,
+                         const std::string& publishTopic);
     void initializePoseGraph();
     std::shared_ptr<o3d::geometry::PointCloud> integrate();
     RGBDRegistration registerImmediateRGBDPair(std::size_t);
     std::shared_ptr<o3d::geometry::PointCloud> createScene();
     void callback(const PointCloud::Ptr &);
+    void startingPose(ros::NodeHandle &);
+    void publishCloud(ros::NodeHandle &,
+                     const std::shared_ptr<o3d::geometry::PointCloud> &);
 
   private:
     std::vector<std::shared_ptr<o3d::geometry::Image>> colors;
     std::vector<std::shared_ptr<o3d::geometry::Image>> depths;
     o3d::camera::PinholeCameraIntrinsic intrinsic;
     o3d::pipelines::registration::PoseGraph pose_graph;
+    Eigen::Affine3f starting_pose;
     Paths paths;
     std::size_t i;
+    const std::string cameraFrame, publishTopic;
     static void
     readImages(const std::filesystem::path &,
                std::vector<std::shared_ptr<o3d::geometry::Image>> &);
@@ -54,6 +61,8 @@ class Integration {
     Paths open_folder(const std::string &);
     void save_img(const std::shared_ptr<o3d::geometry::Image> &,
                   const std::filesystem::path &, int);
+    static pcl::PointCloud<pcl::PointXYZRGB>::Ptr
+    toPclPointCloud(std::shared_ptr<o3d::geometry::PointCloud> const &cloud);
 };
 } // namespace integration
 #endif

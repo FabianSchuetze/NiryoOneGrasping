@@ -7,6 +7,7 @@
 
 static constexpr std::size_t FREQUENCY(30);
 static constexpr std::size_t QUEUE(20);
+static std::string SUCCEEDED("SUCCEEDED");
 
 template <typename... T>
 void readParameters(const ros::NodeHandle &nh, T &... args) {
@@ -24,27 +25,31 @@ void readParameters(const ros::NodeHandle &nh, T &... args) {
 int main(int argc, char **argv) {
     ros::init(argc, argv, "cluster");
     ros::NodeHandle nh;
-    // std::pair<std::string, std::string> root("integrate/root", "");
     std::pair<std::string, std::string> camera("integrate/camera", "");
     std::pair<std::string, std::string> mover("integrate/move_joints_server",
                                               "");
-    readParameters(nh, camera, mover);
+    std::pair<std::string, std::string> cameraFrame("integrate/camerFrame",
+                                              "");
+    std::pair<std::string, std::string> publishTopic("integrate/publishTopic",
+                                              "");
+    readParameters(nh, camera, mover, cameraFrame, publishTopic);
     actionlib::SimpleActionClient<pick_place::MoveJointsAction> ac(mover.second,
                                                                    true);
     ROS_WARN_STREAM("Waiting for server " << mover.second << "to start");
     // wait for the action server to start
     ac.waitForServer(); // will wait for infinite time
-    integration::Integration integrate(camera.second);
+    integration::Integration integrate(camera.second, cameraFrame.second,
+            publishTopic.second);
     ROS_INFO("Action server started, sending goal.");
-    std::string STATE("SUCCEEDED");
     ros::Subscriber sub =
         nh.subscribe("/camera/depth_registered/points", QUEUE,
                      &integration::Integration::callback, &integrate);
+    integrate.startingPose(nh);
     // send a goal to the action
     pick_place::MoveJointsGoal goal;
     ac.sendGoal(goal);
     ros::Rate rate(FREQUENCY);
-    while (ros::ok() && STATE != ac.getState().toString()) {
+    while (ros::ok() && SUCCEEDED != ac.getState().toString()) {
         auto state = ac.getState();
         ROS_WARN_STREAM("The state is: " << state.toString());
         ros::spinOnce();
@@ -52,5 +57,6 @@ int main(int argc, char **argv) {
     }
     sub.shutdown();
     auto scene = integrate.createScene();
-    o3d::visualization::DrawGeometries({scene}, "Cluster");
+    integrate.publishCloud(nh, scene);
+    //o3d::visualization::DrawGeometries({scene}, "Cluster");
 }

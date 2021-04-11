@@ -29,9 +29,6 @@ void ClusterAlgorithm<T>::cluster(
             auto tmp = (*cloud)[idx];
             (*cluster).push_back(tmp);
         }
-        //std::transform(index.indices.begin(), index.indices.end(),
-                       //std::back_inserter(*cluster),
-                       //[&](int idx) { return (*cloud)[idx]; });
         cluster->width = cluster->size();
         cluster->height = 1;
         cluster->is_dense = true;
