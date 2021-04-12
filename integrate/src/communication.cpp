@@ -9,7 +9,9 @@
 #include <tf/LinearMath/Transform.h>
 #include <tf/transform_listener.h>
 #include <tf_conversions/tf_eigen.h>
+
 using o3d::geometry::Image;
+using PointCloud = pcl::PointCloud<pcl::PointXYZRGB>;
 namespace fs = std::filesystem;
 namespace integration {
 static constexpr int TOMM = 1000;
@@ -43,9 +45,7 @@ fs::path generatePath(const fs::path &root, int iter,
 Integration::Paths Integration::open_folder(const std::string &dest) {
     std::string current_date = return_current_time_and_date();
     std::filesystem::path second_root(current_date);
-    // TODO: Turn this into a parameter
     std::filesystem::path root(dest);
-    // auto root("/root/generate_samples/src/generate_samples/pick_place/data");
     Paths paths;
     paths.depth = root / second_root / fs::path("depth");
     paths.color = root / second_root / fs::path("color");
@@ -58,14 +58,13 @@ Integration::Paths Integration::open_folder(const std::string &dest) {
     return paths;
 }
 
-void Integration::save_pointcloud(
-    const pcl::PointCloud<pcl::PointXYZRGB>::Ptr &cloud, const fs::path &path,
-    int iter) {
+void Integration::save_pointcloud(const PointCloud::Ptr &cloud,
+                                  const fs::path &path, int iter) {
     fs::path fn = generatePath(path, iter, ".pcd");
     pcl::io::savePCDFile(fn, *cloud);
 }
 
-void Integration::save_img(const std::shared_ptr<o3d::geometry::Image> &img,
+void Integration::save_img(const std::shared_ptr<Image> &img,
                            const fs::path &path, int iter) {
     fs::path fn = generatePath(path, iter, ".png");
     ROS_DEBUG_STREAM("location: " << fn);
@@ -133,30 +132,15 @@ Integration::decipherImage(const PointCloud::Ptr &cloud) {
 }
 
 void Integration::callback(const PointCloud::Ptr &cloud) {
-    // pcl::PointCloud<pcl::PointXYZRGB>::Ptr out(
-    // new pcl::PointCloud<pcl::PointXYZRGB>);
-    // try {
-    // pcl_ros::transformPointCloud("base_link", *cloud, *out, listener);
-    //} catch (const tf::TransformException &ex) {
-    // ROS_WARN_STREAM(ex.what());
-    // ros::Duration(1.0).sleep();
-    //}
     tf::StampedTransform transform;
     try {
         listener.lookupTransform("/camera_depth_optical_frame", "/base_link",
                                  ros::Time(0), transform);
         transforms.push_back(transform);
-        // Eigen::Affine3d tmp;
-        // tf::transformTFToEigen (transform, tmp);
-
-        // ROS_WARN_STREAM("PointCloud stamp: " << cloud->header.stamp);
-        // ROS_WARN_STREAM("Transfrom stamp" << transform.stamp_);
-        // ROS_WARN_STREAM(tmp.matrix() << "\n\n");
     } catch (const tf::TransformException &ex) {
         ROS_ERROR("%s", ex.what());
         return;
     }
-    // ROS_WARN_STREAM("Prior: " << out->size());
     pointclouds.push_back(cloud);
 }
 
@@ -175,26 +159,6 @@ void Integration::convertPointCloudsToRGBD() {
     }
 }
 
-// void Integration::startingPose(ros::NodeHandle &nh) {
-//// tf::TransformListener listener;
-// ros::Rate rate(RATE);
-// while (nh.ok()) {
-// tf::StampedTransform transform;
-// try {
-// listener.lookupTransform("/base_link", cameraFrame, ros::Time(0),
-// transform);
-// Eigen::Affine3d tmp;
-// tf::transformTFToEigen(transform, tmp);
-// starting_pose = tmp.cast<float>();
-// ROS_WARN_STREAM("The transform is\n:" << starting_pose.matrix());
-// break;
-//} catch (const tf::TransformException &ex) {
-// ROS_ERROR("%s", ex.what());
-// ros::Duration(1.0).sleep();
-//}
-//}
-//}
-
 pcl::PointXYZRGB inline toPointXYZRGB(const Eigen::Vector3d &point,
                                       const Eigen::Vector3d &color) {
     pcl::PointXYZRGB pcl_point;
@@ -207,10 +171,9 @@ pcl::PointXYZRGB inline toPointXYZRGB(const Eigen::Vector3d &point,
     return pcl_point;
 }
 
-pcl::PointCloud<pcl::PointXYZRGB>::Ptr Integration::toPclPointCloud(
+PointCloud::Ptr Integration::toPclPointCloud(
     std::shared_ptr<o3d::geometry::PointCloud> const &cloud) {
-    pcl::PointCloud<pcl::PointXYZRGB>::Ptr pcl_cloud(
-        new pcl::PointCloud<pcl::PointXYZRGB>);
+    PointCloud::Ptr pcl_cloud(new PointCloud);
     const std::vector<Eigen::Vector3d> &points = cloud->points_;
     const std::vector<Eigen::Vector3d> &colors = cloud->colors_;
     for (std::size_t idx = 0; idx < points.size(); ++idx) {
@@ -226,7 +189,6 @@ void Integration::publishCloud(
     ros::NodeHandle &nh,
     const std::shared_ptr<o3d::geometry::PointCloud> &cloud) {
     auto pcl_cloud = toPclPointCloud(cloud);
-    //pcl::io::savePCDFileASCII("initial_cloud.pcd", *pcl_cloud);
     pcl_ros::transformPointCloud(*pcl_cloud, *pcl_cloud,
                                  transforms[0].inverse());
     ros::Publisher pub =
