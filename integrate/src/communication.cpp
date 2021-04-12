@@ -1,12 +1,14 @@
 #include "integrate.hpp"
 #include <chrono>
 #include <cv_bridge/cv_bridge.h>
+#include <fstream>
 #include <opencv2/highgui.hpp>
 #include <pcl/common/transforms.h>
+#include <pcl_ros/transforms.h>
 #include <sstream>
+#include <tf/LinearMath/Transform.h>
 #include <tf/transform_listener.h>
 #include <tf_conversions/tf_eigen.h>
-#include <pcl_ros/transforms.h>
 using o3d::geometry::Image;
 namespace fs = std::filesystem;
 namespace integration {
@@ -16,12 +18,26 @@ static constexpr uint WIDTH = 640;
 static constexpr std::size_t MAX_UINT(255);
 static constexpr std::size_t RATE(10);
 
-std::string Integration::return_current_time_and_date() {
+std::string return_current_time_and_date() {
     auto now = std::chrono::system_clock::now();
     auto in_time_t = std::chrono::system_clock::to_time_t(now);
     std::stringstream ss;
     ss << std::put_time(std::localtime(&in_time_t), "%Y-%m-%d-%H-%M");
     return ss.str();
+}
+
+fs::path generatePath(const fs::path &root, int iter,
+                      std::string ending) { // NOLINT
+    fs::path name;
+    if (iter < 10) {
+        name = "00" + std::to_string(iter) + ending;
+    } else if (iter < 100) {
+        name = "0" + std::to_string(iter) + ending;
+    } else {
+        name = std::to_string(iter) + ending;
+    }
+    fs::path fn = root / name;
+    return fn;
 }
 
 Integration::Paths Integration::open_folder(const std::string &dest) {
@@ -34,24 +50,25 @@ Integration::Paths Integration::open_folder(const std::string &dest) {
     paths.depth = root / second_root / fs::path("depth");
     paths.color = root / second_root / fs::path("color");
     paths.transform = root / second_root / fs::path("transform");
+    paths.pointcloud = root / second_root / fs::path("pointcloud");
     fs::create_directories(paths.color);
     fs::create_directories(paths.depth);
     fs::create_directories(paths.transform);
+    fs::create_directories(paths.pointcloud);
     return paths;
+}
+
+void Integration::save_pointcloud(
+    const pcl::PointCloud<pcl::PointXYZRGB>::Ptr &cloud, const fs::path &path,
+    int iter) {
+    fs::path fn = generatePath(path, iter, ".pcd");
+    pcl::io::savePCDFile(fn, *cloud);
 }
 
 void Integration::save_img(const std::shared_ptr<o3d::geometry::Image> &img,
                            const fs::path &path, int iter) {
-    fs::path name;
-    if (iter < 10) {
-        name = "00" + std::to_string(iter) + ".png";
-    } else if (iter < 100) {
-        name = "0" + std::to_string(iter) + ".png";
-    } else {
-        name = std::to_string(iter) + ".png";
-    }
-    const fs::path fn = path / name;
-    std::cout << "location: " << fn << std::endl;
+    fs::path fn = generatePath(path, iter, ".png");
+    ROS_DEBUG_STREAM("location: " << fn);
     bool success = o3d::io::WriteImage(fn, *img);
     if (!success) {
         std::stringstream ss;
@@ -59,6 +76,23 @@ void Integration::save_img(const std::shared_ptr<o3d::geometry::Image> &img,
         ROS_WARN_STREAM(ss.str());
         throw std::runtime_error(ss.str());
     }
+}
+
+void Integration::save_transform(const tf::StampedTransform &transform,
+                                 const fs::path &path, int iter) {
+    fs::path fn = generatePath(path, iter, ".txt");
+    std::ofstream file;
+    file.open(fn);
+    if (!file.is_open()) {
+        std::stringstream ss;
+        ss << "Could not save transform at " << fn;
+        ROS_WARN_STREAM(ss.str());
+        throw std::runtime_error(ss.str());
+    }
+    Eigen::Affine3d tmp;
+    tf::transformTFToEigen(transform, tmp);
+    file << tmp.matrix() << std::endl;
+    file.close();
 }
 
 std::shared_ptr<Image>
@@ -99,37 +133,67 @@ Integration::decipherImage(const PointCloud::Ptr &cloud) {
 }
 
 void Integration::callback(const PointCloud::Ptr &cloud) {
-    pcl::PointCloud<pcl::PointXYZRGB>::Ptr out (new
-            pcl::PointCloud<pcl::PointXYZRGB>);
-    tf::TransformListener listener;
-    pcl_ros::transformPointCloud("base_link", cloud, out, listener);
-    auto color = decipherImage(cloud);
-    auto depth = decipherDepth(cloud);
-    colors.push_back(color);
-    depths.push_back(depth);
-    save_img(color, paths.color, i);
-    save_img(depth, paths.depth, i);
-    ++i;
+    // pcl::PointCloud<pcl::PointXYZRGB>::Ptr out(
+    // new pcl::PointCloud<pcl::PointXYZRGB>);
+    // try {
+    // pcl_ros::transformPointCloud("base_link", *cloud, *out, listener);
+    //} catch (const tf::TransformException &ex) {
+    // ROS_WARN_STREAM(ex.what());
+    // ros::Duration(1.0).sleep();
+    //}
+    tf::StampedTransform transform;
+    try {
+        listener.lookupTransform("/camera_depth_optical_frame", "/base_link",
+                                 ros::Time(0), transform);
+        transforms.push_back(transform);
+        // Eigen::Affine3d tmp;
+        // tf::transformTFToEigen (transform, tmp);
+
+        // ROS_WARN_STREAM("PointCloud stamp: " << cloud->header.stamp);
+        // ROS_WARN_STREAM("Transfrom stamp" << transform.stamp_);
+        // ROS_WARN_STREAM(tmp.matrix() << "\n\n");
+    } catch (const tf::TransformException &ex) {
+        ROS_ERROR("%s", ex.what());
+        return;
+    }
+    // ROS_WARN_STREAM("Prior: " << out->size());
+    pointclouds.push_back(cloud);
 }
 
-void Integration::startingPose(ros::NodeHandle &nh) {
-    tf::TransformListener listener;
-    ros::Rate rate(RATE);
-    while (nh.ok()) {
-        tf::StampedTransform transform;
-        try {
-            listener.lookupTransform("/base_link", cameraFrame, ros::Time(0),
-                                     transform);
-            Eigen::Affine3d tmp;
-            tf::transformTFToEigen(transform, tmp);
-            starting_pose = tmp.cast<float>();
-            break;
-        } catch (const tf::TransformException &ex) {
-            ROS_ERROR("%s", ex.what());
-            ros::Duration(1.0).sleep();
-        }
+void Integration::convertPointCloudsToRGBD() {
+    std::size_t i(0);
+    for (const auto &cloud : pointclouds) {
+        save_pointcloud(cloud, paths.pointcloud, i);
+        auto color = decipherImage(cloud);
+        auto depth = decipherDepth(cloud);
+        colors.push_back(color);
+        depths.push_back(depth);
+        save_img(color, paths.color, i);
+        save_img(depth, paths.depth, i);
+        save_transform(transforms[i], paths.transform, i);
+        ++i;
     }
 }
+
+// void Integration::startingPose(ros::NodeHandle &nh) {
+//// tf::TransformListener listener;
+// ros::Rate rate(RATE);
+// while (nh.ok()) {
+// tf::StampedTransform transform;
+// try {
+// listener.lookupTransform("/base_link", cameraFrame, ros::Time(0),
+// transform);
+// Eigen::Affine3d tmp;
+// tf::transformTFToEigen(transform, tmp);
+// starting_pose = tmp.cast<float>();
+// ROS_WARN_STREAM("The transform is\n:" << starting_pose.matrix());
+// break;
+//} catch (const tf::TransformException &ex) {
+// ROS_ERROR("%s", ex.what());
+// ros::Duration(1.0).sleep();
+//}
+//}
+//}
 
 pcl::PointXYZRGB inline toPointXYZRGB(const Eigen::Vector3d &point,
                                       const Eigen::Vector3d &color) {
@@ -161,14 +225,13 @@ pcl::PointCloud<pcl::PointXYZRGB>::Ptr Integration::toPclPointCloud(
 void Integration::publishCloud(
     ros::NodeHandle &nh,
     const std::shared_ptr<o3d::geometry::PointCloud> &cloud) {
-    // o3d::visualization::DrawGeometries({cloud}, "Cluster");
     auto pcl_cloud = toPclPointCloud(cloud);
-    pcl::io::savePCDFileASCII("initial_cloud.pcd", *pcl_cloud);
-    pcl::transformPointCloud(*pcl_cloud, *pcl_cloud, starting_pose.inverse());
+    //pcl::io::savePCDFileASCII("initial_cloud.pcd", *pcl_cloud);
+    pcl_ros::transformPointCloud(*pcl_cloud, *pcl_cloud,
+                                 transforms[0].inverse());
     ros::Publisher pub =
         nh.advertise<PointCloud>("integrate/integratedCloud", 1);
     pcl_cloud->header.frame_id = "base_link";
-    // pcl_cloud->height = 1;
     ros::Rate loop_rate(4);
     pcl::io::savePCDFileASCII("final_cloud.pcd", *pcl_cloud);
     while (nh.ok()) {

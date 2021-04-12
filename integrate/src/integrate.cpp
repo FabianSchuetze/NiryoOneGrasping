@@ -57,15 +57,10 @@ void Integration::readCameraIntrinsics(const fs::path &path) {
     }
 }
 
-// Integration::Integration(const fs::path &path, const fs::path &camera) : i(0)
-// { readCameraIntrinsics(camera); readImages(path, "color", colors);
-// readImages(path, "depth", depths);
-//}
-
 Integration::Integration(const fs::path &camera,
                          const std::string &_cameraFrame,
                          const std::string &_publishTopic)
-    : i(0), cameraFrame(_cameraFrame), publishTopic(_publishTopic) {
+    : cameraFrame(_cameraFrame), publishTopic(_publishTopic) {
     readCameraIntrinsics(camera);
     paths = open_folder(
         "/home/fabian/Documents/work/transforms/src/integrate/data");

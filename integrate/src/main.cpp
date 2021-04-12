@@ -36,7 +36,6 @@ int main(int argc, char **argv) {
     actionlib::SimpleActionClient<pick_place::MoveJointsAction> ac(mover.second,
                                                                    true);
     ROS_WARN_STREAM("Waiting for server " << mover.second << "to start");
-    // wait for the action server to start
     ac.waitForServer(); // will wait for infinite time
     integration::Integration integrate(camera.second, cameraFrame.second,
             publishTopic.second);
@@ -44,18 +43,16 @@ int main(int argc, char **argv) {
     ros::Subscriber sub =
         nh.subscribe("/camera/depth_registered/points", QUEUE,
                      &integration::Integration::callback, &integrate);
-    integrate.startingPose(nh);
-    // send a goal to the action
     pick_place::MoveJointsGoal goal;
     ac.sendGoal(goal);
     ros::Rate rate(FREQUENCY);
     while (ros::ok() && SUCCEEDED != ac.getState().toString()) {
         auto state = ac.getState();
-        ROS_WARN_STREAM("The state is: " << state.toString());
         ros::spinOnce();
         rate.sleep();
     }
     sub.shutdown();
+    integrate.convertPointCloudsToRGBD();
     auto scene = integrate.createScene();
     o3d::visualization::DrawGeometries({scene}, "Cluster");
     integrate.publishCloud(nh, scene);
