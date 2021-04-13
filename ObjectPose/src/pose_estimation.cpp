@@ -210,6 +210,9 @@ void PoseEstimation::publishTransforms(const std::vector<BestResult> &results) {
     ros::spinOnce();
 }
 
+//void PoseEstimation::publishMeshes(const std::vector<BestResult>& results) {
+//}
+
 void PoseEstimation::callback(
     const pcl::PointCloud<pcl::PointXYZRGB>::ConstPtr &input) {
     auto pcl = toOpen3DPointCloud(input);

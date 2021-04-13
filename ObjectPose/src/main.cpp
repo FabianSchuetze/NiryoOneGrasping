@@ -10,7 +10,7 @@ void readParameters(const ros::NodeHandle &nh, T &... args) {
     auto read_parameters = [&](auto &t) {
         nh.getParam(t.first, t.second);
         if (t.second.empty()) {
-            ROS_WARN_STREAM("Rosparam " << t.first << " not identified");
+            ROS_ERROR_STREAM("Rosparam " << t.first << " not identified");
             throw std::runtime_error("Could not read all parameters");
         }
         ROS_WARN_STREAM("The parameters for " << t.first << " is " << t.second);
@@ -32,19 +32,11 @@ int main(int argc, char **argv) {
         pcl::console::print_error(stdout, "[failed]\n");
         return 1;
     }
-    // nh.getParam("/location_meshes", meshes);
     ObjectPose::PoseEstimation pose_estimation(mesh.second,
                                                estimated_poses.second, nh);
     pose_estimation.callback(cloud);
-    // ros::Rate rate(1);
-    ////nh.getParam("/cluster/topic", _topic);
-    ////if (_topic.empty()) {
-    ////ROS_WARN_STREAM("Rosparam /cluster/topic not defined");
-    ////return 1;
-    ////}
-    ////ROS_WARN_STREAM("The name for the topic is " << _topic);
-    ros::Subscriber sub =
-        nh.subscribe(incoming_clusters.first, QUEUE,
-                     &ObjectPose::PoseEstimation::callback, &pose_estimation);
+    // ros::Subscriber sub =
+    nh.subscribe(incoming_clusters.first, QUEUE,
+                 &ObjectPose::PoseEstimation::callback, &pose_estimation);
     ros::spin();
 }
