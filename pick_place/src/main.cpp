@@ -26,7 +26,7 @@ int main(int argc, char **argv) {
     picker.connectToRobot();
     picker.connectToPositionServer();
     geometry_msgs::Point goal;
-    std::chrono::seconds sec(1);
+    std::chrono::milliseconds sec(500);
     while (picker.obtainPose(goal)) {
         ROS_INFO_STREAM("received value:\n"
                         << goal.x << ", " << goal.y << ", " << goal.z);
