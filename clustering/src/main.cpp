@@ -13,13 +13,27 @@ using namespace Clustering;
 
 static constexpr std::size_t QUEUE(10);
 static constexpr std::size_t RATE(1);
-//TODO: For testing experiments larger than I think is actually possible
+// TODO: For testing experiments larger than I think is actually possible
 static constexpr float RADIUS(0.45);
 static constexpr float MIN_DISTANCE(0.1);
 
 typedef pcl::PointCloud<pcl::PointXYZRGB> PointCloud;
 
-bool extractWorkspace(const PointCloud::ConstPtr& cloud, PointCloud::Ptr &cluster) {
+template <typename... T>
+void readParameters(const ros::NodeHandle &nh, T &... args) {
+    auto read_parameters = [&](auto &t) {
+        nh.getParam(t.first, t.second);
+        if (t.second.empty()) {
+            ROS_WARN_STREAM("Rosparam " << t.first << " not identified");
+            throw std::runtime_error("Could not read all parameters");
+        }
+        ROS_WARN_STREAM("The parameters for " << t.first << " is " << t.second);
+    };
+    (..., read_parameters(args));
+}
+
+bool extractWorkspace(const PointCloud::ConstPtr &cloud,
+                      PointCloud::Ptr &cluster) {
     pcl::KdTreeFLANN<pcl::PointXYZRGB> search;
     search.setInputCloud(cloud);
     pcl::PointXYZRGB origin;
@@ -64,7 +78,8 @@ pcl::PointXYZRGB centroid(const PointCloud::ConstPtr &input) {
 // TODO: I do not think this is needed anymore, as the  workspace function
 // restricts the size
 bool validCenter(const pcl::PointXYZRGB &point) {
-    float squaredDist = static_cast<float>(std::pow(point.x, 2) + std::pow(point.y, 2));
+    float squaredDist =
+        static_cast<float>(std::pow(point.x, 2) + std::pow(point.y, 2));
     float dist = std::sqrt(squaredDist);
     if (dist < 0.12) {
         std::cout << "Check is this a needed at all!" << std::endl;
@@ -96,14 +111,22 @@ int main(int argc, char **argv) {
     ros::NodeHandle nh;
     Scene scene;
     ros::Rate rate(1);
-    std::string _topic;
-    nh.getParam("/cluster/topic", _topic);
-    if (_topic.empty()) {
-        ROS_WARN_STREAM("Rosparam /cluster/topic not defined");
-        return 1;
-    }
-    ROS_WARN_STREAM("The name for the topic is " << _topic);
-    ros::Subscriber sub = nh.subscribe(_topic, QUEUE, &Scene::callback, &scene);
+    std::pair<std::string, std::string> _topic("/cluster/topic", "");
+    std::pair<std::string, std::string> segmentedTopic("/cluster/segmented",
+                                                       "");
+    readParameters(nh, _topic, segmentedTopic);
+    // std::string _topic;
+    // nh.getParam("/cluster/topic", _topic);
+    // if (_topic.empty()) {
+    // ROS_WARN_STREAM("Rosparam /cluster/topic not defined");
+    // return 1;
+    //}
+    // ROS_WARN_STREAM("The name for the topic is " << _topic);
+    ros::Subscriber sub =
+        nh.subscribe(_topic.second, QUEUE, &Scene::callback, &scene);
+    ros::Publisher publishSegmentation =
+        nh.advertise<pcl::PointCloud<pcl::PointXYZRGB>>(segmentedTopic.second,
+                                                        QUEUE, true);
     PointCloud::Ptr cloud(new PointCloud), workspace(new PointCloud),
         segmented(new PointCloud);
     ClusterAlgorithm<pcl::PointXYZRGB> cluster_algo(300, 50000, 0.02);
@@ -113,11 +136,8 @@ int main(int argc, char **argv) {
         const auto t1 = std::chrono::high_resolution_clock::now();
         rate.sleep();
         ros::spinOnce();
-        if (!scene.pointCloud(cloud)) {
-            continue;
-        }
-        if (cloud->empty()) {
-            ROS_WARN_STREAM("Empty cloud");
+        if ((!scene.pointCloud(cloud)) or (cloud->empty())) {
+            ROS_WARN_STREAM("No valid data arrived");
             continue;
         }
         writer.write<pcl::PointXYZRGB>("input_cloud.pcd", *cloud, false);
@@ -134,6 +154,9 @@ int main(int argc, char **argv) {
         writer.write<pcl::PointXYZRGB>("segmented.pcd", *segmented, false);
         std::vector<PointCloud::Ptr> clusters;
         cluster_algo.cluster(segmented, clusters);
+        segmented->header.frame_id = "base_link";
+        publishSegmentation.publish(*segmented);
+        ros::spinOnce();
         if (clusters.empty()) {
             ROS_WARN_STREAM("Could not find any clusters");
             continue;

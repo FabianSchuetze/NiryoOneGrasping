@@ -128,7 +128,7 @@ RegistrationResult PoseEstimation::globalRegistration(const Ptr &source,
         registration::RANSACConvergenceCriteria(5000000, 0.9999));
     auto registration_result = registration::RegistrationICP(
         *source, *target, 0.01, preliminary.transformation_);
-    //VisualizeRegistration(*source, *target, registration_result);
+    // VisualizeRegistration(*source, *target, registration_result);
     return registration_result;
 }
 
@@ -163,7 +163,8 @@ PoseEstimation::BestResult PoseEstimation::estimateTransformations(
     return best_result;
 }
 
-std::vector<PoseEstimation::BestResult> PoseEstimation::estimateTransformations() {
+std::vector<PoseEstimation::BestResult>
+PoseEstimation::estimateTransformations() {
     std::vector<o3d::geometry::TriangleMesh> sources(meshes.begin(),
                                                      meshes.end());
     std::vector<Ptr> targets(clusters.begin(), clusters.end());
@@ -173,11 +174,11 @@ std::vector<PoseEstimation::BestResult> PoseEstimation::estimateTransformations(
         BestResult result = estimateTransformations(sources, targets);
         found = (result.source_idx != -1) and (result.target_idx != -1);
         if (found) {
-            //VisualizeRegistration(*result.source, *result.target,
-                                  //result.result);
+            // VisualizeRegistration(*result.source, *result.target,
+            // result.result);
             results.push_back(result);
-             sources.erase(sources.begin() + result.source_idx);
-             targets.erase(targets.begin() + result.target_idx);
+            sources.erase(sources.begin() + result.source_idx);
+            targets.erase(targets.begin() + result.target_idx);
         }
     } while (found);
     return results;
@@ -187,6 +188,6 @@ void PoseEstimation::callback(
     const pcl::PointCloud<pcl::PointXYZRGB>::ConstPtr &input) {
     auto pcl = toOpen3DPointCloud(input);
     findCluster(pcl);
-    std::vector<BestResult> estimateTransformations();
+    std::vector<BestResult> result = estimateTransformations();
 }
 } // namespace ObjectPose

@@ -1,5 +1,6 @@
 <launch>
     <node pkg="clustering" type="cluster" name="cluster">
         <param name="topic" value="reconstructed_scene"/>
+        <param name="segmented" value="segmented"/>
 </node>
 </launch>
