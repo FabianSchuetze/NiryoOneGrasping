@@ -200,14 +200,18 @@ void PoseEstimation::publishTransforms(const std::vector<BestResult> &results) {
     header.frame_id = "base_link";
     poses.header = header;
     for (auto const &result : results) {
+        ROS_WARN_STREAM("The transform is\n" << 
+                result.result.transformation_);
         geometry_msgs::Pose pose;
         Eigen::Affine3d transform;
         transform = result.result.transformation_;
         tf::poseEigenToMsg(transform, pose);
         poses.poses.push_back(pose);
     }
-    publisher.publish(poses);
-    ros::spinOnce();
+    while (ros::ok()) {
+        publisher.publish(poses);
+        ros::spinOnce();
+    }
 }
 
 //void PoseEstimation::publishMeshes(const std::vector<BestResult>& results) {

@@ -33,7 +33,8 @@ void readParameters(const ros::NodeHandle &nh, T &... args) {
 
 
 int main(int argc, char **argv) {
-    ros::init(argc, argv, "pick_place");
+    ROS_WARN_STREAM("Starting the node");
+    ros::init(argc, argv, "new_pick_place");
     ros::NodeHandle nh;
     //ros::AsyncSpinner spinner(3);
     //spinner.start();
@@ -41,27 +42,8 @@ int main(int argc, char **argv) {
     readParameters(nh, _topic);
     Picking picker;
     picker.connectToRobot(nh);
-    //ros::Subscriber sub =
+    ROS_WARN_STREAM("Connected to robot");
     nh.subscribe(_topic.second, 1, &Picking::callback, &picker);
     ros::spin();
-    //while (picker.obtainPose(goal)) {
-        //ROS_INFO_STREAM("received value:\n"
-                        //<< goal.x << ", " << goal.y << ", " << goal.z);
-        //const Picking::EndEffectorPosition pre_grasp =
-            //Picking::computePreGrasp(goal);
-        //const Picking::EndEffectorPosition grasp = Picking::computeGrasp(goal);
-        //const Picking::EndEffectorPosition close = Picking::Close(goal);
-        //const Picking::EndEffectorPosition post_grasp = Picking::PostGrasp(goal);
-        //const Picking::EndEffectorPosition pre_final = Picking::PreFinal();
-        //const Picking::EndEffectorPosition open = Picking::Final();
-        //const Picking::EndEffectorPosition rest_position = Picking::Rest();
-        //std::vector<Picking::EndEffectorPosition> movements = {
-            //pre_grasp, grasp, close, post_grasp, pre_final, open, rest_position};
-        //for (const auto &movement : movements) {
-            //picker.moveToPosition(movement);
-            //std::this_thread::sleep_for(sec);
-        //}
-        //std::this_thread::sleep_for(sec);
-    //}
     return 0;
 }

@@ -235,6 +235,7 @@ Picking::convertToNiryo(const geometry_msgs::PoseArray &poses) {
 }
 
 void Picking::callback(geometry_msgs::PoseArray poses) {
+    ROS_WARN_STREAM("Inside the callback");
     // if poses > exceeds the previous pose
     std::vector<NiryoPose> niryo_poses = convertToNiryo(poses);
     for (const auto &pose : niryo_poses) {
