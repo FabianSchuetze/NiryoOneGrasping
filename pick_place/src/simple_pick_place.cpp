@@ -33,7 +33,7 @@ const EndEffectorPosition computePreGrasp(const std::vector<double>& goal) {
     niryo_one_msgs::RPY rot;
     rot.roll = 0;
     rot.pitch = 1.5;
-    rot.yaw = 0;
+    rot.yaw = goal[5];
     NiryoPose pose1(p, rot);
     EndEffectorPosition eef;
     eef.pose = pose1;
@@ -52,7 +52,7 @@ const EndEffectorPosition computeGrasp(const std::vector<double>& goal) {
     niryo_one_msgs::RPY rot;
     rot.roll = 0;
     rot.pitch = 1.5;
-    rot.yaw = 0;
+    rot.yaw = goal[5];
     NiryoPose pose1(p, rot);
     EndEffectorPosition eef;
     eef.pose = pose1;
