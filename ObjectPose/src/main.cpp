@@ -3,8 +3,10 @@
 #include <ros/ros.h>
 #include <string>
 static constexpr std::size_t QUEUE(10);
+using param = std::pair<std::string, std::string>;
 
-template <typename... T> void readParameters(const ros::NodeHandle &nh, T &... args) {
+template <typename... T>
+void readParameters(const ros::NodeHandle &nh, T &... args) {
     auto read_parameters = [&](auto &t) {
         nh.getParam(t.first, t.second);
         if (t.second.empty()) {
@@ -19,11 +21,10 @@ template <typename... T> void readParameters(const ros::NodeHandle &nh, T &... a
 int main(int argc, char **argv) {
     ros::init(argc, argv, "cluster");
     ros::NodeHandle nh;
-    std::pair<std::string, std::string> mesh("pose_estimation/location_meshes",
-                                             "");
-    std::pair<std::string, std::string> topic("pose_estimation/cluster_topic",
-                                              "");
-    readParameters(nh, mesh, topic);
+    param mesh("pose_estimation/location_meshes", "");
+    param incoming_clusters("pose_estimation/segmented", "");
+    param estimated_poses("pose_estimation/estimated_poses", "");
+    readParameters(nh, mesh, incoming_clusters, estimated_poses);
     std::filesystem::path path("/home/fabian/.ros/segmented.pcd");
     pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud(
         new pcl::PointCloud<pcl::PointXYZRGB>);
@@ -32,7 +33,8 @@ int main(int argc, char **argv) {
         return 1;
     }
     // nh.getParam("/location_meshes", meshes);
-    ObjectPose::PoseEstimation pose_estimation(mesh.second);
+    ObjectPose::PoseEstimation pose_estimation(mesh.second,
+                                               estimated_poses.second, nh);
     pose_estimation.callback(cloud);
     // ros::Rate rate(1);
     ////nh.getParam("/cluster/topic", _topic);
@@ -41,8 +43,8 @@ int main(int argc, char **argv) {
     ////return 1;
     ////}
     ////ROS_WARN_STREAM("The name for the topic is " << _topic);
-    // ros::Subscriber sub =
-    // nh.subscribe(topic.first, QUEUE, &ObjectPose::PoseEstimation::callback,
-    // &pose_estimation);
-    // ros::spin();
+    ros::Subscriber sub =
+        nh.subscribe(incoming_clusters.first, QUEUE,
+                     &ObjectPose::PoseEstimation::callback, &pose_estimation);
+    ros::spin();
 }

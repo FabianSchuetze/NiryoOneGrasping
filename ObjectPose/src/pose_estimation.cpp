@@ -1,10 +1,13 @@
 #include "pose_estimation.hpp"
 #include <Eigen/Dense>
 #include <algorithm>
+#include <eigen_conversions/eigen_msg.h>
+#include <geometry_msgs/PoseArray.h>
 #include <pcl/search/kdtree.h>
 #include <pcl/segmentation/extract_clusters.h>
 #include <ros/ros.h>
 #include <sstream>
+#include <std_msgs/Header.h>
 
 static constexpr std::size_t N_POINTS(1000);
 static constexpr std::size_t MAX_UINT(255);
@@ -57,8 +60,15 @@ void PoseEstimation::readMeshes(const std::filesystem::path &path) {
     }
 }
 
-PoseEstimation::PoseEstimation(const std::filesystem::path &path) {
+PoseEstimation::PoseEstimation(const std::filesystem::path &path,
+                               const std::string &topic,
+                               ros::NodeHandle &node) {
     readMeshes(path);
+    if (topic.empty()) {
+        ROS_ERROR_STREAM("The topic for publishing poses is empty");
+        throw std::runtime_error("Empty topic for publishing poses");
+    }
+    publisher = node.advertise<geometry_msgs::PoseArray>(topic, 1, true);
 }
 
 std::shared_ptr<o3d::geometry::PointCloud> PoseEstimation::toOpen3DPointCloud(
@@ -117,9 +127,9 @@ RegistrationResult PoseEstimation::globalRegistration(const Ptr &source,
         registration::CorrespondenceCheckerBasedOnDistance(1.5 * 0.01);
     auto correspondence_checker_normal =
         registration::CorrespondenceCheckerBasedOnNormal(0.52359878);
-    correspondence_checker.push_back(correspondence_checker_edge_length);
-    correspondence_checker.push_back(correspondence_checker_distance);
-    correspondence_checker.push_back(correspondence_checker_normal);
+    correspondence_checker.emplace_back(correspondence_checker_edge_length);
+    correspondence_checker.emplace_back(correspondence_checker_distance);
+    correspondence_checker.emplace_back(correspondence_checker_normal);
     bool mutual_filter(true);
     auto preliminary = registration::RegistrationRANSACBasedOnFeatureMatching(
         *source, *target, *source_fpfh, *target_fpfh, mutual_filter, 1.5 * 0.05,
@@ -184,10 +194,27 @@ PoseEstimation::estimateTransformations() {
     return results;
 }
 
+void PoseEstimation::publishTransforms(const std::vector<BestResult> &results) {
+    geometry_msgs::PoseArray poses;
+    std_msgs::Header header;
+    header.frame_id = "base_link";
+    poses.header = header;
+    for (auto const &result : results) {
+        geometry_msgs::Pose pose;
+        Eigen::Affine3d transform;
+        transform = result.result.transformation_;
+        tf::poseEigenToMsg(transform, pose);
+        poses.poses.push_back(pose);
+    }
+    publisher.publish(poses);
+    ros::spinOnce();
+}
+
 void PoseEstimation::callback(
     const pcl::PointCloud<pcl::PointXYZRGB>::ConstPtr &input) {
     auto pcl = toOpen3DPointCloud(input);
     findCluster(pcl);
-    std::vector<BestResult> result = estimateTransformations();
+    std::vector<BestResult> results = estimateTransformations();
+    publishTransforms(results);
 }
 } // namespace ObjectPose

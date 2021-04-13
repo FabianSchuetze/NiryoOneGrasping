@@ -12,7 +12,8 @@ typedef o3d::geometry::PointCloud Pointcloud;
 using Ptr = std::shared_ptr<o3d::geometry::PointCloud>;
 class PoseEstimation {
   public:
-    explicit PoseEstimation(const std::filesystem::path &);
+    explicit PoseEstimation(const std::filesystem::path &,
+                            const std::string &, ros::NodeHandle&);
     void callback(const pcl::PointCloud<pcl::PointXYZRGB>::ConstPtr &);
 
   private:
@@ -27,6 +28,7 @@ class PoseEstimation {
     void poses();
     std::vector<Ptr> clusters;
     std::vector<o3d::geometry::TriangleMesh> meshes;
+    ros::Publisher publisher;
     static std::shared_ptr<o3d::geometry::PointCloud>
     toOpen3DPointCloud(const pcl::PointCloud<pcl::PointXYZRGB>::ConstPtr &);
     void findCluster(const Ptr &);
@@ -37,6 +39,7 @@ class PoseEstimation {
     estimateTransformations(std::vector<o3d::geometry::TriangleMesh> &,
                             std::vector<Ptr> &);
     std::vector<BestResult> estimateTransformations();
+    void publishTransforms(const std::vector<BestResult> &);
 };
 } // namespace ObjectPose
 #endif

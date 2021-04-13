@@ -22,6 +22,7 @@ find_package(catkin REQUIRED COMPONENTS
   tf2_geometry_msgs
   pcl_ros
   cv_bridge
+  eigen_conversions
 )
 
 ###################################
@@ -48,6 +49,7 @@ catkin_package(
       genmsg
       pcl_ros
       cv_bridge
+      eigen_conversions
   DEPENDS 
     EIGEN3
     OpenCV
@@ -89,6 +91,6 @@ include_directories(
 add_executable(publish_reconstruction src/reconstruction.cpp)
 target_link_libraries(publish_reconstruction ${catkin_LIBRARIES} ${PCL_LIBRARIES})
 
-add_executable(pose_estimation src/poses.cpp src/pose_estimation.cpp)
+add_executable(pose_estimation src/main.cpp src/pose_estimation.cpp)
 target_link_libraries(pose_estimation ${catkin_LIBRARIES} ${PCL_LIBRARIES}
     ${Open3D_LIBRARIES})
