@@ -2,7 +2,7 @@
     <node pkg="object_pose" type="pose_estimation" name="pose_estimation">
         <param name="/location_meshes"
 value="/home/fabian/Documents/work/transforms/src/ObjectPose/data/meshes.txt"/>
-        <param name="/segmented" value="segmented"/>
+        <param name="/segmented" value="/segmented"/>
         <param name="/estimated_poses" value="estimated_poses"/>
 </node>
 </launch>

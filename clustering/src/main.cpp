@@ -115,13 +115,6 @@ int main(int argc, char **argv) {
     std::pair<std::string, std::string> segmentedTopic("/cluster/segmented",
                                                        "");
     readParameters(nh, _topic, segmentedTopic);
-    // std::string _topic;
-    // nh.getParam("/cluster/topic", _topic);
-    // if (_topic.empty()) {
-    // ROS_WARN_STREAM("Rosparam /cluster/topic not defined");
-    // return 1;
-    //}
-    // ROS_WARN_STREAM("The name for the topic is " << _topic);
     ros::Subscriber sub =
         nh.subscribe(_topic.second, QUEUE, &Scene::callback, &scene);
     ros::Publisher publishSegmentation =

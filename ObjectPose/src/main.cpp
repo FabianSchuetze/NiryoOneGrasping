@@ -25,13 +25,13 @@ int main(int argc, char **argv) {
     param incoming_clusters("pose_estimation/segmented", "");
     param estimated_poses("pose_estimation/estimated_poses", "");
     readParameters(nh, mesh, incoming_clusters, estimated_poses);
-    // std::filesystem::path path("/home/fabian/.ros/segmented.pcd");
-    // pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud(
-    // new pcl::PointCloud<pcl::PointXYZRGB>);
-    // if (pcl::io::loadPCDFile(path, *cloud) == -1) {
-    // pcl::console::print_error(stdout, "[failed]\n");
-    // return 1;
-    //}
+    std::filesystem::path path("/home/fabian/.ros/segmented.pcd");
+    pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud(
+        new pcl::PointCloud<pcl::PointXYZRGB>);
+    if (pcl::io::loadPCDFile(path, *cloud) == -1) {
+        pcl::console::print_error(stdout, "[failed]\n");
+        return 1;
+    }
     ObjectPose::PoseEstimation pose_estimation(mesh.second,
                                                estimated_poses.second, nh);
     // pose_estimation.callback(cloud);
