@@ -87,10 +87,6 @@ include_directories(
   ${catkin_INCLUDE_DIRS}
 )
 
-
-add_executable(publish_reconstruction src/reconstruction.cpp)
-target_link_libraries(publish_reconstruction ${catkin_LIBRARIES} ${PCL_LIBRARIES})
-
 add_executable(pose_estimation src/main.cpp src/pose_estimation.cpp)
 target_link_libraries(pose_estimation ${catkin_LIBRARIES} ${PCL_LIBRARIES}
     ${Open3D_LIBRARIES})

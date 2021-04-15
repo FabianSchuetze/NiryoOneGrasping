@@ -201,6 +201,7 @@ void PoseEstimation::publishTransforms(const std::vector<BestResult> &results) {
     geometry_msgs::PoseArray poses;
     std_msgs::Header header;
     header.frame_id = "base_link";
+    header.seq = callback_received;
     poses.header = header;
     for (auto const &result : results) {
         ROS_WARN_STREAM("The transform of: " << result.source_name << " is\n"

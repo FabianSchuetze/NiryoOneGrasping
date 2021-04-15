@@ -1,0 +1,24 @@
+<?xml version="1.0"?> 
+<package>
+  <name>grasp_pose_broadcast</name>
+  <version>0.0.0</version>
+  <description>The niryo_one_tester package</description>
+  <buildtool_depend>catkin</buildtool_depend>
+  <maintainer email="fschutze0@gmail.com">Fabian Schuetze</maintainer>
+
+  <license>MIT</license>
+	
+  <build_depend>geometry_msgs</build_depend>
+  <build_depend>roscpp</build_depend>
+  <build_depend>std_msgs</build_depend>
+  <build_depend>tf2</build_depend>
+  <build_depend>tf2_ros</build_depend>	
+  <build_depend>tf2_geometry_msgs</build_depend>	
+  <run_depend>geometry_msgs</run_depend>
+  <run_depend>roscpp</run_depend>
+  <run_depend>std_msgs</run_depend>
+  <run_depend>tf2</run_depend>
+  <run_depend>tf2_ros</run_depend>
+  <run_depend>tf2_geometry_msgs</run_depend>
+
+</package>
