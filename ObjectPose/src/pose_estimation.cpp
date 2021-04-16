@@ -213,7 +213,7 @@ void PoseEstimation::publishTransforms(const std::vector<BestResult> &results) {
         poses.poses.push_back(pose);
     }
     publisher.publish(poses);
-    ros::spinOnce();
+    //ros::spinOnce();
 }
 
 

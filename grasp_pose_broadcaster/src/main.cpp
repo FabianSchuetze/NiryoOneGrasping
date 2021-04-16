@@ -9,7 +9,6 @@
 using param = std::pair<std::string, std::string>;
 constexpr std::size_t QUEUE(10);
 constexpr double PI(3.14);
-ros::Publisher publisher;
 
 template <typename... T>
 void readParameters(const ros::NodeHandle &nh, T &... args) {
@@ -63,36 +62,56 @@ geometry_msgs::Pose generateGraspPose(const geometry_msgs::Pose &pose,
     return grasp_pose;
 }
 
-void Callback(const geometry_msgs::PoseArray &msg) {
-    tf2_ros::StaticTransformBroadcaster br;
-    int i(0);
-    std::vector<geometry_msgs::TransformStamped> transforms;
-    geometry_msgs::PoseArray poses;
-    const auto now = ros::Time::now();
-    for (auto const &pose : msg.poses) {
-        double yaw = obtain_yaw(pose.orientation);
-        auto transformStamped = generateTransformation(pose, yaw);
-        auto grasp_pose = generateGraspPose(pose, yaw);
-        transformStamped.header.stamp = now;
-        transformStamped.header.frame_id = msg.header.frame_id;
-        transformStamped.child_frame_id = "object_" + std::to_string(i);
-        poses.poses.push_back(grasp_pose);
-        transforms.push_back(transformStamped);
-        ++i;
+class SubscribeAndPublish {
+  public:
+    SubscribeAndPublish(ros::NodeHandle &n_, const std::string &publication)
+        {
+        ROS_WARN_STREAM("The publication is" << publication);
+        pub_ = n_.advertise<geometry_msgs::PoseArray>(publication, 1, true);
     }
-    publisher.publish(poses);
-    br.sendTransform(transforms);
-}
+    void callback(const geometry_msgs::PoseArray &msg) {
+        ROS_WARN_STREAM("Inside the callback");
+        int i(0);
+        const auto now = ros::Time::now();
+        std::vector<geometry_msgs::TransformStamped> transforms;
+        geometry_msgs::PoseArray poses;
+        poses.header.frame_id = msg.header.frame_id;
+        poses.header.stamp = now;
+        for (auto const &pose : msg.poses) {
+            double yaw = obtain_yaw(pose.orientation);
+            auto transformStamped = generateTransformation(pose, yaw);
+            auto grasp_pose = generateGraspPose(pose, yaw);
+            transformStamped.header.stamp = now;
+            transformStamped.header.frame_id = msg.header.frame_id;
+            transformStamped.child_frame_id = "/object_" + std::to_string(i);
+            ROS_WARN_STREAM("The child_frame_id is: " << transformStamped.child_frame_id);
+            poses.poses.push_back(grasp_pose);
+            transforms.push_back(transformStamped);
+            ++i;
+        }
+        ROS_WARN_STREAM("Transfroms size: " << transforms.size());
+        pub_.publish(poses);
+        br.sendTransform(transforms);
+        ROS_WARN_STREAM("At the end");
+    }
+
+  private:
+    ros::Publisher pub_;
+    tf2_ros::StaticTransformBroadcaster br;
+
+}; // End of class SubscribeAndPublisL
 
 int main(int argc, char **argv) {
+    // ros::Publisher publisher;
     ros::init(argc, argv, "grasp_broadcaster");
     ros::NodeHandle nh;
     param incoming_poses("grasp_pose_broadcaster/estimated_poses", "");
-    param outgoing_poses("grasp_pose_broadcaster/estimated_poses", "");
-    readParameters(nh, incoming_poses);
-    ros::Subscriber sub = nh.subscribe(incoming_poses.second, QUEUE, &Callback);
-    publisher =
-        nh.advertise<geometry_msgs::PoseArray>(outgoing_poses.second, 1, true);
+    param outgoing_poses("grasp_pose_broadcaster/outgoing_poses", "");
+    readParameters(nh, incoming_poses, outgoing_poses);
+    SubscribeAndPublish interaction(nh, outgoing_poses.second);
+    ros::Subscriber sub =
+        nh.subscribe(incoming_poses.second, QUEUE,
+                     &SubscribeAndPublish::callback, &interaction);
     ros::spin();
     return 0;
 };
