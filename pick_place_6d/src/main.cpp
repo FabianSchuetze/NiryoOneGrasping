@@ -36,13 +36,12 @@ int main(int argc, char **argv) {
     ROS_WARN_STREAM("Starting the node");
     ros::init(argc, argv, "new_pick_place");
     ros::NodeHandle nh;
-    //ros::AsyncSpinner spinner(3);
-    //spinner.start();
     std::pair<std::string, std::string> _topic("/new_pick_place_exe/grasp_pose", "");
     readParameters(nh, _topic);
     Picking picker;
     picker.connectToRobot(nh);
     ROS_WARN_STREAM("Connected to robot");
+    ROS_WARN_STREAM("waiting for topic" << _topic.second);
     nh.subscribe(_topic.second, 1, &Picking::callback, &picker);
     ros::spin();
     return 0;

@@ -1,5 +1,5 @@
 <launch>
     <node pkg="new_pick_place" type="new_pick_place_exe" name="new_pick_place_exe">
-        <param name="/grasp_pose" value="grasp_pose"/>
+        <param name="/grasp_pose" value="/grasp_pose"/>
 </node>
 </launch>
