@@ -28,7 +28,7 @@ class Picking {
     void setGripper(ros::NodeHandle&);
     void moveToPosition(const EndEffectorPosition &);
     void moveJoints(const std::vector<double> &);
-    void callback(geometry_msgs::PoseArray);
+    void callback(const geometry_msgs::PoseArray&);
     void moveArm(const NiryoPose&);
 
   private:

@@ -230,7 +230,7 @@ Picking::convertToNiryo(const geometry_msgs::PoseArray &poses) {
         niryo_pose.first.y = pose.position.y;
         niryo_pose.first.z = pose.position.z;
         niryo_poses.push_back(niryo_pose);
-        ROS_WARN_STREAM("The pose is x,y,z" << niryo_pose.first.x << ", " <<
+        ROS_WARN_STREAM("The graping pose is x,y,z" << niryo_pose.first.x << ", " <<
                 niryo_pose.first.y << ", " << niryo_pose.first.z << ", " <<
                 "and roll, pitch, yaw" << niryo_pose.second.roll << ", " <<
                 niryo_pose.second.pitch << ", " <<
@@ -239,7 +239,7 @@ Picking::convertToNiryo(const geometry_msgs::PoseArray &poses) {
     return niryo_poses;
 }
 
-void Picking::callback(geometry_msgs::PoseArray poses) {
+void Picking::callback(const geometry_msgs::PoseArray& poses) {
     ROS_WARN_STREAM("Inside the callback");
     // if poses > exceeds the previous pose
     std::vector<NiryoPose> niryo_poses = convertToNiryo(poses);

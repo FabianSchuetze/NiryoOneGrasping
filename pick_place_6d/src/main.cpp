@@ -38,7 +38,7 @@ int main(int argc, char **argv) {
     ros::NodeHandle nh;
     //ros::AsyncSpinner spinner(3);
     //spinner.start();
-    std::pair<std::string, std::string> _topic("/new_pick_place_exe/estimated_poses", "");
+    std::pair<std::string, std::string> _topic("/new_pick_place_exe/grasp_pose", "");
     readParameters(nh, _topic);
     Picking picker;
     picker.connectToRobot(nh);
