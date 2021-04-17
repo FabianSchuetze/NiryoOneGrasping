@@ -1,11 +1,13 @@
 #include <geometry_msgs/PoseArray.h>
 #include <geometry_msgs/TransformStamped.h>
+#include <object_pose/positions.h>
+#include <open3d/Open3D.h>
 #include <ros/ros.h>
 #include <string>
 #include <tf2/LinearMath/Quaternion.h>
+#include <tf2_eigen/tf2_eigen.h>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 #include <tf2_ros/static_transform_broadcaster.h>
-#include <object_pose/positions.h>
 
 using param = std::pair<std::string, std::string>;
 constexpr std::size_t QUEUE(10);
@@ -28,9 +30,10 @@ double obtain_yaw(const geometry_msgs::Quaternion &quat) {
     double first = 2 * (quat.w * quat.z + quat.x * quat.y);
     double second = 1 - 2 * (quat.x * quat.x + quat.z * quat.z);
     double yaw = std::atan2(first, second);
-    if (yaw > PI) {
+    ROS_WARN_STREAM("Incomin yaw: " << yaw);
+    if (yaw > PI / 2.0) {
         yaw = yaw - PI;
-    } else if (yaw < -PI) {
+    } else if (yaw < -PI / 2.0) {
         yaw = yaw + PI;
     } // angles are close to zero;
     return yaw;
@@ -49,46 +52,66 @@ generateTransformation(const geometry_msgs::Pose &pose, double yaw) {
     transformStamped.transform.rotation.y = q.y();
     transformStamped.transform.rotation.z = q.z();
     transformStamped.transform.rotation.w = q.w();
+    ROS_WARN_STREAM("The transformed pose is: x, y, z "
+                    << transformStamped.transform.translation.x << ", "
+                    << transformStamped.transform.translation.y << ", "
+                    << transformStamped.transform.translation.z << ", "
+                    << " and yaw: " << yaw);
     return transformStamped;
 }
 
-geometry_msgs::Pose generateGraspPose(const geometry_msgs::Pose &pose,
-                                      double yaw) {
+geometry_msgs::Pose
+generateGraspPose(const geometry_msgs::TransformStamped &ros_transform,
+                  const std::string &name, double yaw) {
+    open3d::geometry::TriangleMesh mesh;
+    bool success = open3d::io::ReadTriangleMesh(name, mesh);
+    if (!success) {
+        ROS_ERROR_STREAM("Could not read mesh file " << name);
+        throw std::runtime_error("Couldd not read mesh file");
+    }
+    Eigen::Isometry3d transform = tf2::transformToEigen(ros_transform);
+    mesh.Transform(transform.matrix());
+    Eigen::Vector3d center = mesh.GetCenter();
     geometry_msgs::Pose grasp_pose;
-    grasp_pose.position = pose.position;
+    grasp_pose.position.x = center(0);
+    grasp_pose.position.y = center(1);
     grasp_pose.position.z = 0;
     tf2::Quaternion q;
     q.setRPY(0, 0, yaw);
     grasp_pose.orientation = tf2::toMsg(q);
+    ROS_WARN_STREAM("The grasp pose is: x, y, z "
+                    << grasp_pose.position.x << ", " << grasp_pose.position.y
+                    << ", " << grasp_pose.position.z << ", "
+                    << " and yaw: " << yaw);
     return grasp_pose;
 }
 
 class SubscribeAndPublish {
   public:
-    SubscribeAndPublish(ros::NodeHandle &n_, const std::string &publication)
-        {
+    SubscribeAndPublish(ros::NodeHandle &n_, const std::string &publication) {
         ROS_WARN_STREAM("The publication is" << publication);
         pub_ = n_.advertise<geometry_msgs::PoseArray>(publication, 1, true);
     }
-    void callback(const geometry_msgs::PoseArray &msg) {
+    void callback(const object_pose::positions &msg) {
         ROS_WARN_STREAM("Inside the callback");
-        int i(0);
         const auto now = ros::Time::now();
         std::vector<geometry_msgs::TransformStamped> transforms;
         geometry_msgs::PoseArray poses;
-        poses.header.frame_id = msg.header.frame_id;
+        poses.header.frame_id = msg.poses.header.frame_id;
         poses.header.stamp = now;
-        for (auto const &pose : msg.poses) {
+        for (std::size_t i = 0; i < msg.objects.size(); ++i) {
+            geometry_msgs::Pose pose = msg.poses.poses[i];
+            const std::string &name = msg.objects[i];
             double yaw = obtain_yaw(pose.orientation);
             auto transformStamped = generateTransformation(pose, yaw);
-            auto grasp_pose = generateGraspPose(pose, yaw);
+            auto grasp_pose = generateGraspPose(transformStamped, name, yaw);
             transformStamped.header.stamp = now;
-            transformStamped.header.frame_id = msg.header.frame_id;
-            transformStamped.child_frame_id = "/object_" + std::to_string(i);
-            ROS_WARN_STREAM("The child_frame_id is: " << transformStamped.child_frame_id);
+            transformStamped.header.frame_id = msg.poses.header.frame_id;
+            transformStamped.child_frame_id = name;
+            ROS_WARN_STREAM(
+                "The child_frame_id is: " << transformStamped.child_frame_id);
             poses.poses.push_back(grasp_pose);
             transforms.push_back(transformStamped);
-            ++i;
         }
         ROS_WARN_STREAM("Transfroms size: " << transforms.size());
         pub_.publish(poses);

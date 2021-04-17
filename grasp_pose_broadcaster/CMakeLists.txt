@@ -28,11 +28,13 @@ catkin_package(
 ## Build ##
 ###########
 
+find_package(Open3D REQUIRED)
 include_directories(
-  ${catkin_INCLUDE_DIRS}
+  ${catkin_INCLUDE_DIRS} ${Open3D_LIBRARIES}
 )
 
 ## C++ examples
 add_executable(grasp_pose_broadcaster src/main.cpp)
 add_dependencies(grasp_pose_broadcaster ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
-target_link_libraries(grasp_pose_broadcaster ${catkin_LIBRARIES})
+target_link_libraries(grasp_pose_broadcaster ${catkin_LIBRARIES}
+    ${Open3D_LIBRARIES})
