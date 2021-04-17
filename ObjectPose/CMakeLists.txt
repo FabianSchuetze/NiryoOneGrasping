@@ -23,7 +23,20 @@ find_package(catkin REQUIRED COMPONENTS
   pcl_ros
   cv_bridge
   eigen_conversions
+  message_generation
 )
+
+add_message_files(
+  DIRECTORY msg
+  FILES positions.msg
+)
+
+generate_messages(
+  DEPENDENCIES
+  std_msgs
+  geometry_msgs
+)
+
 
 ###################################
 ## catkin specific configuration ##
@@ -50,6 +63,7 @@ catkin_package(
       pcl_ros
       cv_bridge
       eigen_conversions
+      message_runtime
   DEPENDS 
     EIGEN3
     OpenCV
@@ -59,9 +73,8 @@ catkin_package(
 ###########
 ## Build ##
 ###########
-#set(${PROJECT_NAME}_SRC
-    #src/picking.cpp
-#)
+set(${PROJECT_NAME}_SRC
+)
 find_package(Open3D REQUIRED)
 list(APPEND Open3D_LIBRARIES dl)
 find_package(OpenCV REQUIRED PATHS /usr/local/lib/cmake/opencv4
@@ -78,6 +91,7 @@ find_package(realsense2 REQUIRED)
 
 #add_library(${PROJECT_NAME} SHARED ${${PROJECT_NAME}_SRC})
 #target_link_libraries(${PROJECT_NAME} ${catkin_LIBRARIES})
+
 
 
 ## Specify additional locations of header files

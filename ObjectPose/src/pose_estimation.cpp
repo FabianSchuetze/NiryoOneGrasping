@@ -125,7 +125,7 @@ RegistrationResult PoseEstimation::globalRegistration(const Ptr &source,
     auto correspondence_checker_edge_length =
         registration::CorrespondenceCheckerBasedOnEdgeLength(0.92);
     auto correspondence_checker_distance =
-        registration::CorrespondenceCheckerBasedOnDistance(1.5 * 0.01);
+        registration::CorrespondenceCheckerBasedOnDistance(1.5 * 0.05);
     auto correspondence_checker_normal =
         registration::CorrespondenceCheckerBasedOnNormal(0.52359878);
     correspondence_checker.emplace_back(correspondence_checker_edge_length);
@@ -139,9 +139,15 @@ RegistrationResult PoseEstimation::globalRegistration(const Ptr &source,
             correspondence_checker,
             registration::RANSACConvergenceCriteria(5000000, 0.999999));
         auto registration_result = registration::RegistrationICP(
-            *source, *target, 0.02, preliminary.transformation_);
-        if (registration_result.fitness_ > max_fitness) {
-            max_fitness = registration_result.fitness_;
+            *source, *target, 0.015, preliminary.transformation_);
+        auto reverse_result = registration::EvaluateRegistration(
+                *target, *source, 0.015, registration_result.transformation_.inverse());
+        double min_quality = std::min(registration_result.fitness_,
+                                      reverse_result.fitness_);
+        ROS_WARN_STREAM("Result from mesh to obs: " << registration_result.fitness_ <<
+                " Other way round: " << reverse_result.fitness_);
+        if (min_quality > max_fitness) {
+            max_fitness = min_quality;
             best_result = registration_result;
         }
     }
