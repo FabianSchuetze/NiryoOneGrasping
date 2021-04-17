@@ -16,16 +16,25 @@ namespace registration = o3d::pipelines::registration;
 void VisualizeRegistration(const open3d::geometry::PointCloud &source,
                            const open3d::geometry::PointCloud &target,
                            const registration::RegistrationResult &result) {
-    std::shared_ptr<o3d::geometry::PointCloud> source_transformed_ptr(
-        new o3d::geometry::PointCloud);
-    std::shared_ptr<o3d::geometry::PointCloud> target_ptr(
-        new o3d::geometry::PointCloud);
-    *source_transformed_ptr = source;
-    *target_ptr = target;
-    source_transformed_ptr->Transform(result.transformation_);
+    //std::shared_ptr<o3d::geometry::PointCloud> source_transformed_ptr(
+        //new o3d::geometry::PointCloud);
+    //std::shared_ptr<o3d::geometry::PointCloud> target_ptr(
+        //new o3d::geometry::PointCloud);
+    auto sourcep = std::make_shared<o3d::geometry::PointCloud>(source);
+    auto targetp = std::make_shared<o3d::geometry::PointCloud>(target);
+    auto origp = o3d::geometry::TriangleMesh::CreateCoordinateFrame(0.1);
+    auto framep = o3d::geometry::TriangleMesh::CreateCoordinateFrame(0.1);
+    //*source_transformed_ptr = source;
+    //*target_ptr = target;
+    framep->Transform(result.transformation_);
+    sourcep->Transform(result.transformation_);
     std::stringstream ss;
-    ss << "Registration Result, fitness: " << result.fitness_;
-    o3d::visualization::DrawGeometries({source_transformed_ptr, target_ptr},
+    double roll = ObjectPose::calculateRoll(result.transformation_);
+    double yaw = ObjectPose::calculateYaw(result.transformation_);
+    double pitch = ObjectPose::calculatePitch(result.transformation_);
+    ss << "Registration Result, fitness, roll, yaw, pitch " << result.fitness_ <<
+        ", " << roll << ", " << yaw << ", " << pitch;
+    o3d::visualization::DrawGeometries({sourcep, targetp, origp, framep},
                                        ss.str());
 }
 
@@ -38,6 +47,33 @@ Eigen::Vector3d inline convert_color(const pcl::PointXYZRGB &point) {
 
 namespace ObjectPose {
 
+double calculateRoll(const Eigen::Matrix4d &transformation) {
+
+    Eigen::Matrix3d tmp = transformation.block(0, 0, 3, 3);
+    Eigen::Quaternion<double> quat(tmp);
+    double first = 2 * (quat.w() * quat.x() + quat.y() * quat.z());
+    double second = 1 - 2 * (quat.x() * quat.x() + quat.z() * quat.z());
+    double roll = std::atan2(first, second);
+    return roll;
+}
+double calculateYaw(const Eigen::Matrix4d &transformation) {
+
+    Eigen::Matrix3d tmp = transformation.block(0, 0, 3, 3);
+    Eigen::Quaternion<double> quat(tmp);
+    double first = 2 * (quat.w() * quat.z() + quat.x() * quat.y());
+    double second = 1 - 2 * (quat.x() * quat.x() + quat.z() * quat.z());
+    double yaw = std::atan2(first, second);
+    return yaw;
+}
+
+double calculatePitch(const Eigen::Matrix4d &transformation) {
+
+    Eigen::Matrix3d tmp = transformation.block(0, 0, 3, 3);
+    Eigen::Quaternion<double> quat(tmp);
+    double first = 2 * (quat.w() * quat.y() - quat.y() * quat.x());
+    double pitch = std::asin(first);
+    return pitch;
+}
 void PoseEstimation::readMeshes(const std::filesystem::path &path) {
     std::string line;
     ROS_WARN_STREAM("Trying to open file " << path);
@@ -126,16 +162,16 @@ RegistrationResult PoseEstimation::globalRegistration(const Ptr &source,
         correspondence_checker;
     auto correspondence_checker_edge_length =
         registration::CorrespondenceCheckerBasedOnEdgeLength(0.92);
-    auto correspondence_checker_distance =
-        registration::CorrespondenceCheckerBasedOnDistance(1.5 * 0.05);
-    auto correspondence_checker_normal =
-        registration::CorrespondenceCheckerBasedOnNormal(0.52359878);
+    //auto correspondence_checker_distance =
+        //registration::CorrespondenceCheckerBasedOnDistance(1.5 * 0.1);
+    //auto correspondence_checker_normal =
+        //registration::CorrespondenceCheckerBasedOnNormal(0.52359878);
     correspondence_checker.emplace_back(correspondence_checker_edge_length);
-    correspondence_checker.emplace_back(correspondence_checker_distance);
-    correspondence_checker.emplace_back(correspondence_checker_normal);
+    //correspondence_checker.emplace_back(correspondence_checker_distance);
+    //correspondence_checker.emplace_back(correspondence_checker_normal);
     bool mutual_filter(true);
     for (int i = 0; i < 3; ++i) {
-        auto preliminary = registration::RegistrationRANSACBasedOnFeatureMatching(
+        auto preliminary = ModifiedRegistrationRANSACBasedOnFeatureMatching(
             *source, *target, *source_fpfh, *target_fpfh, mutual_filter, 1.5 * 0.05,
             registration::TransformationEstimationPointToPoint(false), 4,
             correspondence_checker,
@@ -146,8 +182,12 @@ RegistrationResult PoseEstimation::globalRegistration(const Ptr &source,
                 *target, *source, 0.015, registration_result.transformation_.inverse());
         double min_quality = std::min(registration_result.fitness_,
                                       reverse_result.fitness_);
+        double distance = std::abs(registration_result.transformation_(0, 3)) +
+                         std::abs(registration_result.transformation_(1, 3)) +
+                         std::abs(registration_result.transformation_(2, 3));
         ROS_WARN_STREAM("Result from mesh to obs: " << registration_result.fitness_ <<
-                " Other way round: " << reverse_result.fitness_);
+                " Other way round: " << reverse_result.fitness_ << 
+                " with distance " << distance);
         if (min_quality > max_fitness) {
             max_fitness = min_quality;
             best_result = registration_result;

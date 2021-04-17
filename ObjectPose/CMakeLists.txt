@@ -102,7 +102,8 @@ include_directories(
   ${catkin_INCLUDE_DIRS}
 )
 
-add_executable(pose_estimation src/main.cpp src/pose_estimation.cpp)
+add_executable(pose_estimation src/main.cpp src/Registration.cpp
+    src/pose_estimation.cpp )
 add_dependencies(pose_estimation ${${PROJECT_NAME}_EXPORTED_TARGETS}
     ${catkin_EXPORTED_TARGETS})
 target_link_libraries(pose_estimation ${catkin_LIBRARIES} ${PCL_LIBRARIES}
