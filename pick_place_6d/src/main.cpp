@@ -41,8 +41,9 @@ int main(int argc, char **argv) {
     Picking picker;
     picker.connectToRobot(nh);
     ROS_WARN_STREAM("Connected to robot");
-    ROS_WARN_STREAM("waiting for topic" << _topic.second);
-    nh.subscribe(_topic.second, 1, &Picking::callback, &picker);
+    ROS_WARN_STREAM("waiting for topic: " << _topic.second);
+    ros::Subscriber sub =
+    nh.subscribe("/grasp_pose", 10, &Picking::callback, &picker);
     ros::spin();
     return 0;
 }
