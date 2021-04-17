@@ -8,7 +8,6 @@ using namespace Clustering;
 
 void Scene::callback(const pcl::PointCloud<pcl::PointXYZRGB>::ConstPtr &input) {
     std::string frame = input->header.frame_id;
-    // ROS_WARN_STREAM("The frame is " << frame);
     const std::lock_guard<std::mutex> lock(mutex_);
     if (!(frame == BASE_LINK)) {
         const std::string target("base_link");
@@ -27,7 +26,7 @@ bool Scene::pointCloud(pcl::PointCloud<pcl::PointXYZRGB>::Ptr &out) {
     const auto diff = std::chrono::system_clock::now() - last_callback;
     const auto sec = std::chrono::duration_cast<std::chrono::seconds>(diff);
     if (sec.count() > TIME_THRESHOLD) {
-        ROS_WARN_STREAM("Last callback too old");
+        ROS_DEBUG_STREAM("Last callback too old");
         return false;
     }
     out = cloud;

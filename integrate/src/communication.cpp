@@ -146,6 +146,7 @@ void Integration::callback(const PointCloud::Ptr &cloud) {
 
 void Integration::convertPointCloudsToRGBD() {
     std::size_t i(0);
+    auto t1 = std::chrono::system_clock::now();
     for (const auto &cloud : pointclouds) {
         save_pointcloud(cloud, paths.pointcloud, i);
         auto color = decipherImage(cloud);
@@ -157,6 +158,9 @@ void Integration::convertPointCloudsToRGBD() {
         save_transform(transforms[i], paths.transform, i);
         ++i;
     }
+    auto t2 = std::chrono::system_clock::now();
+    auto diff = std::chrono::duration_cast<std::chrono::seconds>(t2 - t1);
+    ROS_WARN_STREAM("The saving of data took: " << diff.count());
 }
 
 pcl::PointXYZRGB inline toPointXYZRGB(const Eigen::Vector3d &point,

@@ -1,7 +1,7 @@
 #include "cluster.hpp"
 #include "scene.hpp"
 #include "segmentation.hpp"
-#include <chrono>
+//#include <chrono>
 #include <pcl/common/centroid.h>
 #include <pcl/io/pcd_io.h>
 #include <pcl/search/search.h>
@@ -16,6 +16,12 @@ static constexpr std::size_t RATE(1);
 // TODO: For testing experiments larger than I think is actually possible
 static constexpr float RADIUS(0.45);
 static constexpr float MIN_DISTANCE(0.1);
+static constexpr std::size_t MIN_POINTS(300);
+static constexpr std::size_t MAX_POINTS(50000);
+static constexpr float MIN_RADIUS(0.02);
+static constexpr std::size_t MAX_ITERATION(1000);
+// TODO: Check if DISTANCE can be equal to MIN_RADIUS
+static constexpr float DISTANCE(0.01);
 
 typedef pcl::PointCloud<pcl::PointXYZRGB> PointCloud;
 
@@ -43,7 +49,7 @@ bool extractWorkspace(const PointCloud::ConstPtr &cloud,
     std::vector<float> distances;
     std::vector<int> indices;
     search.radiusSearch(origin, RADIUS, indices, distances);
-    ROS_WARN_STREAM("The number of remaining points: " << indices.size());
+    ROS_DEBUG_STREAM("The number of remaining points: " << indices.size());
     cluster->clear();
     for (int idx : indices) {
         auto pt = (*cloud)[idx];
@@ -78,9 +84,9 @@ pcl::PointXYZRGB centroid(const PointCloud::ConstPtr &input) {
 // TODO: I do not think this is needed anymore, as the  workspace function
 // restricts the size
 bool validCenter(const pcl::PointXYZRGB &point) {
-    float squaredDist =
+    auto squared =
         static_cast<float>(std::pow(point.x, 2) + std::pow(point.y, 2));
-    float dist = std::sqrt(squaredDist);
+    float dist = std::sqrt(squared);
     if (dist < 0.12) {
         std::cout << "Check is this a needed at all!" << std::endl;
         return false;
@@ -122,15 +128,15 @@ int main(int argc, char **argv) {
                                                         QUEUE, true);
     PointCloud::Ptr cloud(new PointCloud), workspace(new PointCloud),
         segmented(new PointCloud);
-    ClusterAlgorithm<pcl::PointXYZRGB> cluster_algo(300, 50000, 0.02);
-    PlaneSegmentation<pcl::PointXYZRGB> segmentation(1000, 0.01);
+    ClusterAlgorithm<pcl::PointXYZRGB> cluster_algo(MIN_POINTS, MAX_POINTS,
+                                                    MIN_RADIUS);
+    PlaneSegmentation<pcl::PointXYZRGB> segmentation(MAX_ITERATION, DISTANCE);
     pcl::PCDWriter writer;
     while (ros::ok()) {
-        const auto t1 = std::chrono::high_resolution_clock::now();
         rate.sleep();
         ros::spinOnce();
         if ((!scene.pointCloud(cloud)) or (cloud->empty())) {
-            ROS_WARN_STREAM("No valid data arrived");
+            ROS_DEBUG_STREAM("No valid data arrived");
             continue;
         }
         writer.write<pcl::PointXYZRGB>("input_cloud.pcd", *cloud, false);
@@ -167,10 +173,6 @@ int main(int argc, char **argv) {
                 ++j;
             }
         }
-        const auto t2 = std::chrono::high_resolution_clock::now();
-        const auto dur =
-            std::chrono::duration_cast<std::chrono::seconds>(t2 - t1);
-        std::cout << "The run took" << dur.count() << std::endl;
     }
     sub.shutdown();
     return 0;

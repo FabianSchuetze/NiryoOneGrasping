@@ -128,9 +128,13 @@ void Integration::initializePoseGraph() {
 }
 
 std::shared_ptr<o3d::geometry::PointCloud> Integration::createScene() {
-    std::cout << "inside create scence " << std::endl;
+    //std::cout << "inside create scence " << std::endl;
+    auto t1 = std::chrono::system_clock::now();
     initializePoseGraph();
     auto pcd = integrate();
+    auto t2 = std::chrono::system_clock::now();
+    auto diff = std::chrono::duration_cast<std::chrono::seconds>(t2 - t1);
+    ROS_WARN_STREAM("The interation took: " << diff.count());
     return pcd;
 }
 } // namespace integration

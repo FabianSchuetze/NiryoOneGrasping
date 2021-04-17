@@ -31,11 +31,11 @@ double obtain_yaw(const geometry_msgs::Quaternion &quat) {
     double second = 1 - 2 * (quat.x * quat.x + quat.z * quat.z);
     double yaw = std::atan2(first, second);
     ROS_WARN_STREAM("Incomin yaw: " << yaw);
-    if (yaw > PI / 2.0) {
-        yaw = yaw - PI;
-    } else if (yaw < -PI / 2.0) {
-        yaw = yaw + PI;
-    } // angles are close to zero;
+    //if (yaw > PI / 2.0) {
+        //yaw = yaw - PI;
+    //} else if (yaw < -PI / 2.0) {
+        //yaw = yaw + PI;
+    //} // angles are close to zero;
     return yaw;
 }
 
@@ -70,6 +70,7 @@ generateGraspPose(const geometry_msgs::TransformStamped &ros_transform,
         throw std::runtime_error("Couldd not read mesh file");
     }
     Eigen::Isometry3d transform = tf2::transformToEigen(ros_transform);
+    ROS_WARN_STREAM("The incoming transform is:\n " << transform.matrix());
     mesh.Transform(transform.matrix());
     Eigen::Vector3d center = mesh.GetCenter();
     geometry_msgs::Pose grasp_pose;
