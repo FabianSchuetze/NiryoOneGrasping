@@ -27,8 +27,8 @@ find_package(catkin REQUIRED COMPONENTS
 )
 
 add_message_files(
-  DIRECTORY msg
-  FILES positions.msg
+  FILES 
+  positions.msg
 )
 
 generate_messages(
@@ -74,6 +74,7 @@ catkin_package(
 ## Build ##
 ###########
 set(${PROJECT_NAME}_SRC
+    src/empty.cpp
 )
 find_package(Open3D REQUIRED)
 list(APPEND Open3D_LIBRARIES dl)
@@ -89,8 +90,8 @@ find_package(PCL REQUIRED)
 find_package(realsense2 REQUIRED)
 
 
-#add_library(${PROJECT_NAME} SHARED ${${PROJECT_NAME}_SRC})
-#target_link_libraries(${PROJECT_NAME} ${catkin_LIBRARIES})
+add_library(${PROJECT_NAME} SHARED ${${PROJECT_NAME}_SRC})
+target_link_libraries(${PROJECT_NAME} ${catkin_LIBRARIES})
 
 
 
@@ -102,5 +103,7 @@ include_directories(
 )
 
 add_executable(pose_estimation src/main.cpp src/pose_estimation.cpp)
+add_dependencies(pose_estimation ${${PROJECT_NAME}_EXPORTED_TARGETS}
+    ${catkin_EXPORTED_TARGETS})
 target_link_libraries(pose_estimation ${catkin_LIBRARIES} ${PCL_LIBRARIES}
     ${Open3D_LIBRARIES})

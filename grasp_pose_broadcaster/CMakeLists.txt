@@ -11,15 +11,16 @@ find_package(catkin REQUIRED COMPONENTS
   tf2
   tf2_ros
   tf2_geometry_msgs
+  object_pose
 )
 
 ###################################
 ## catkin specific configuration ##
 ###################################
 catkin_package(
-#  INCLUDE_DIRS include
+  #INCLUDE_DIRS devel/include
 #  LIBRARIES turtle_tf2
- CATKIN_DEPENDS geometry_msgs roscpp std_msgs tf2 tf2_ros
+ CATKIN_DEPENDS geometry_msgs roscpp std_msgs tf2 tf2_ros message_runtime object_pose
 #  DEPENDS system_lib
 )
 
@@ -33,4 +34,5 @@ include_directories(
 
 ## C++ examples
 add_executable(grasp_pose_broadcaster src/main.cpp)
+add_dependencies(grasp_pose_broadcaster ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 target_link_libraries(grasp_pose_broadcaster ${catkin_LIBRARIES})

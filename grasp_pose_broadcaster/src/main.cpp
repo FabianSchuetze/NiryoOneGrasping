@@ -5,6 +5,7 @@
 #include <tf2/LinearMath/Quaternion.h>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 #include <tf2_ros/static_transform_broadcaster.h>
+#include <object_pose/positions.h>
 
 using param = std::pair<std::string, std::string>;
 constexpr std::size_t QUEUE(10);
@@ -102,7 +103,6 @@ class SubscribeAndPublish {
 }; // End of class SubscribeAndPublisL
 
 int main(int argc, char **argv) {
-    // ros::Publisher publisher;
     ros::init(argc, argv, "grasp_broadcaster");
     ros::NodeHandle nh;
     param incoming_poses("grasp_pose_broadcaster/estimated_poses", "");

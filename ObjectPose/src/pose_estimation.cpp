@@ -5,6 +5,8 @@
 #include <geometry_msgs/PoseArray.h>
 #include <sstream>
 #include <std_msgs/Header.h>
+#include <object_pose/positions.h>
+//test
 
 static constexpr std::size_t N_POINTS(1000);
 static constexpr std::size_t MAX_UINT(255);
@@ -65,7 +67,7 @@ PoseEstimation::PoseEstimation(const std::filesystem::path &path,
         ROS_ERROR_STREAM("The topic for publishing poses is empty");
         throw std::runtime_error("Empty topic for publishing poses");
     }
-    publisher = node.advertise<geometry_msgs::PoseArray>(topic, 1, true);
+    publisher = node.advertise<object_pose::positions>(topic, 1, true);
 }
 
 std::shared_ptr<o3d::geometry::PointCloud> PoseEstimation::toOpen3DPointCloud(
@@ -209,11 +211,12 @@ PoseEstimation::estimateTransformations() {
 }
 
 void PoseEstimation::publishTransforms(const std::vector<BestResult> &results) {
-    geometry_msgs::PoseArray poses;
+    object_pose::positions positions;
+    //geometry_msgs::PoseArray poses;
     std_msgs::Header header;
     header.frame_id = "base_link";
     header.seq = callback_received;
-    poses.header = header;
+    positions.poses.header = header;
     for (auto const &result : results) {
         ROS_WARN_STREAM("The transform of: " << result.source_name << " is\n"
                                              << result.result.transformation_);
@@ -221,10 +224,10 @@ void PoseEstimation::publishTransforms(const std::vector<BestResult> &results) {
         Eigen::Affine3d transform;
         transform = result.result.transformation_;
         tf::poseEigenToMsg(transform, pose);
-        poses.poses.push_back(pose);
+        positions.objects.push_back(result.source_name);
+        positions.poses.poses.push_back(pose);
     }
-    publisher.publish(poses);
-    //ros::spinOnce();
+    publisher.publish(positions);
 }
 
 

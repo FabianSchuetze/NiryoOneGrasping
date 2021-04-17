@@ -3,7 +3,6 @@
 #include <filesystem>
 #include <memory>
 #include <open3d/Open3D.h>
-//#include <pcl/point_types.h>
 #include <pcl_ros/point_cloud.h>
 #include <vector>
 namespace o3d = open3d;
