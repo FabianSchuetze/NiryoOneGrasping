@@ -25,7 +25,7 @@ int main(int argc, char **argv) {
     param incoming_clusters("pose_estimation/segmented", "");
     param estimated_poses("pose_estimation/estimated_poses", "");
     readParameters(nh, mesh, incoming_clusters, estimated_poses);
-    std::filesystem::path path("/home/fabian/.ros/segmented.pcd");
+    std::filesystem::path path("/home/fabian/.ros/segmented_old.pcd");
     pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud(
         new pcl::PointCloud<pcl::PointXYZRGB>);
     if (pcl::io::loadPCDFile(path, *cloud) == -1) {
@@ -34,7 +34,7 @@ int main(int argc, char **argv) {
     }
     ObjectPose::PoseEstimation pose_estimation(mesh.second,
                                                estimated_poses.second, nh);
-    // pose_estimation.callback(cloud);
+     //pose_estimation.callback(cloud);
     ros::Subscriber sub =
         nh.subscribe(incoming_clusters.second, QUEUE,
                      &ObjectPose::PoseEstimation::callback, &pose_estimation);

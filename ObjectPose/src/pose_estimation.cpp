@@ -3,9 +3,6 @@
 #include <algorithm>
 #include <eigen_conversions/eigen_msg.h>
 #include <geometry_msgs/PoseArray.h>
-#include <pcl/search/kdtree.h>
-#include <pcl/segmentation/extract_clusters.h>
-#include <ros/ros.h>
 #include <sstream>
 #include <std_msgs/Header.h>
 
@@ -116,6 +113,8 @@ std::vector<Ptr> PoseEstimation::findCluster(const Ptr &source) {
 
 RegistrationResult PoseEstimation::globalRegistration(const Ptr &source,
                                                       const Ptr &target) {
+    registration::RegistrationResult best_result;
+    double max_fitness(0.0);
     const auto source_fpfh = registration::ComputeFPFHFeature(
         *source, o3d::geometry::KDTreeSearchParamHybrid(0.05, 100));
     const auto target_fpfh = registration::ComputeFPFHFeature(
@@ -133,15 +132,21 @@ RegistrationResult PoseEstimation::globalRegistration(const Ptr &source,
     correspondence_checker.emplace_back(correspondence_checker_distance);
     correspondence_checker.emplace_back(correspondence_checker_normal);
     bool mutual_filter(true);
-    auto preliminary = registration::RegistrationRANSACBasedOnFeatureMatching(
-        *source, *target, *source_fpfh, *target_fpfh, mutual_filter, 1.5 * 0.05,
-        registration::TransformationEstimationPointToPoint(false), 4,
-        correspondence_checker,
-        registration::RANSACConvergenceCriteria(5000000, 0.9999));
-    auto registration_result = registration::RegistrationICP(
-        *source, *target, 0.01, preliminary.transformation_);
+    for (int i = 0; i < 3; ++i) {
+        auto preliminary = registration::RegistrationRANSACBasedOnFeatureMatching(
+            *source, *target, *source_fpfh, *target_fpfh, mutual_filter, 1.5 * 0.05,
+            registration::TransformationEstimationPointToPoint(false), 4,
+            correspondence_checker,
+            registration::RANSACConvergenceCriteria(5000000, 0.999999));
+        auto registration_result = registration::RegistrationICP(
+            *source, *target, 0.02, preliminary.transformation_);
+        if (registration_result.fitness_ > max_fitness) {
+            max_fitness = registration_result.fitness_;
+            best_result = registration_result;
+        }
+    }
     // VisualizeRegistration(*source, *target, registration_result);
-    return registration_result;
+    return best_result;
 }
 
 PoseEstimation::BestResult PoseEstimation::estimateTransformations(
