@@ -18,7 +18,8 @@ class Picking {
     };
     Picking();
     void connectToRobot(ros::NodeHandle&);
-    static EndEffectorPosition computePreGrasp(NiryoPose);
+    static EndEffectorPosition computePreGrasp_orientate(NiryoPose);
+    static EndEffectorPosition computePreGrasp_descend(NiryoPose);
     static EndEffectorPosition computeGrasp(NiryoPose);
     static EndEffectorPosition Close(NiryoPose);
     static EndEffectorPosition PostGrasp(NiryoPose);
