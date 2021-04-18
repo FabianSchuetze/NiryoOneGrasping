@@ -12,6 +12,7 @@
 using param = std::pair<std::string, std::string>;
 constexpr std::size_t QUEUE(10);
 constexpr double PI(3.14);
+constexpr double HEIGHT_BAKING(0.08);
 
 template <typename... T>
 void readParameters(const ros::NodeHandle &nh, T &... args) {
@@ -30,11 +31,10 @@ double obtain_yaw(const geometry_msgs::Quaternion &quat) {
     double first = 2 * (quat.w * quat.z + quat.x * quat.y);
     double second = 1 - 2 * (quat.x * quat.x + quat.z * quat.z);
     double yaw = std::atan2(first, second);
-    ROS_WARN_STREAM("Incomin yaw: " << yaw);
-    //if (yaw > PI / 2.0) {
-        //yaw = yaw - PI;
+    // if (yaw > PI / 2.0) {
+    // yaw = yaw - PI;
     //} else if (yaw < -PI / 2.0) {
-        //yaw = yaw + PI;
+    // yaw = yaw + PI;
     //} // angles are close to zero;
     return yaw;
 }
@@ -52,11 +52,11 @@ generateTransformation(const geometry_msgs::Pose &pose, double yaw) {
     transformStamped.transform.rotation.y = q.y();
     transformStamped.transform.rotation.z = q.z();
     transformStamped.transform.rotation.w = q.w();
-    ROS_WARN_STREAM("The transformed pose is: x, y, z "
-                    << transformStamped.transform.translation.x << ", "
-                    << transformStamped.transform.translation.y << ", "
-                    << transformStamped.transform.translation.z << ", "
-                    << " and yaw: " << yaw);
+    // ROS_WARN_STREAM("The transformed pose is: x, y, z "
+    //<< transformStamped.transform.translation.x << ", "
+    //<< transformStamped.transform.translation.y << ", "
+    //<< transformStamped.transform.translation.z << ", "
+    //<< " and yaw: " << yaw);
     return transformStamped;
 }
 
@@ -70,31 +70,32 @@ generateGraspPose(const geometry_msgs::TransformStamped &ros_transform,
         throw std::runtime_error("Couldd not read mesh file");
     }
     Eigen::Isometry3d transform = tf2::transformToEigen(ros_transform);
-    ROS_WARN_STREAM("The incoming transform is:\n " << transform.matrix());
+    ROS_DEBUG_STREAM("The incoming transform is:\n " << transform.matrix());
     mesh.Transform(transform.matrix());
-    Eigen::Vector3d center = mesh.GetCenter();
+    const Eigen::Vector3d center = mesh.GetCenter();
+    const Eigen::Vector3d bound = mesh.GetMaxBound();
     geometry_msgs::Pose grasp_pose;
     grasp_pose.position.x = center(0);
     grasp_pose.position.y = center(1);
-    grasp_pose.position.z = 0;
+    std::string baking("BakingVanilla");
+    if (name.find(baking) != std::string::npos) {
+        grasp_pose.position.z = HEIGHT_BAKING; // mesh of baking is incorrect
+    } else {
+        grasp_pose.position.z = bound(2);
+    }
     tf2::Quaternion q;
     q.setRPY(0, 0, yaw);
     grasp_pose.orientation = tf2::toMsg(q);
-    ROS_WARN_STREAM("The grasp pose is: x, y, z "
-                    << grasp_pose.position.x << ", " << grasp_pose.position.y
-                    << ", " << grasp_pose.position.z << ", "
-                    << " and yaw: " << yaw);
     return grasp_pose;
 }
 
 class SubscribeAndPublish {
   public:
     SubscribeAndPublish(ros::NodeHandle &n_, const std::string &publication) {
-        ROS_WARN_STREAM("The publication is" << publication);
+        // ROS_WARN_STREAM("The publication is" << publication);
         pub_ = n_.advertise<geometry_msgs::PoseArray>(publication, 1, true);
     }
     void callback(const object_pose::positions &msg) {
-        ROS_WARN_STREAM("Inside the callback");
         const auto now = ros::Time::now();
         std::vector<geometry_msgs::TransformStamped> transforms;
         geometry_msgs::PoseArray poses;
@@ -109,15 +110,19 @@ class SubscribeAndPublish {
             transformStamped.header.stamp = now;
             transformStamped.header.frame_id = msg.poses.header.frame_id;
             transformStamped.child_frame_id = name;
-            ROS_WARN_STREAM(
-                "The child_frame_id is: " << transformStamped.child_frame_id);
+            ROS_WARN_STREAM("Grasp pose for "
+                            << transformStamped.child_frame_id
+                            << " is\n: x, y, z, yaw: " << grasp_pose.position.x
+                            << ", " << grasp_pose.position.y << ", "
+                            << grasp_pose.position.z << ", " << yaw);
+            // ROS_WARN_STREAM(
+            //"The child_frame_id is: " << transformStamped.child_frame_id);
             poses.poses.push_back(grasp_pose);
             transforms.push_back(transformStamped);
         }
         ROS_WARN_STREAM("Transfroms size: " << transforms.size());
         pub_.publish(poses);
         br.sendTransform(transforms);
-        ROS_WARN_STREAM("At the end");
     }
 
   private:
