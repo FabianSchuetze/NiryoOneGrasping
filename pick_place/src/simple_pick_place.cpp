@@ -26,7 +26,7 @@ const EndEffectorPosition computePreGrasp(const std::vector<double>& goal) {
     geometry_msgs::Point p;
     p.x = goal[0];
     p.y = goal[1];
-    p.z = goal[2] + 0.15;
+    p.z = goal[2];
     if (p.z < 0.135) {
         throw std::runtime_error("Z values cannot be lower than 0.135");
     }
@@ -45,7 +45,7 @@ const EndEffectorPosition computeGrasp(const std::vector<double>& goal) {
     geometry_msgs::Point p;
     p.x = goal[0];
     p.y = goal[1];
-    p.z = goal[2] + 0.135;
+    p.z = goal[2];
     if (p.z < 0.135) {
         throw std::runtime_error("Z values cannot be lower than 0.135");
     }

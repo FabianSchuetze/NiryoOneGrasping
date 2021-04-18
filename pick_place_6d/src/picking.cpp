@@ -46,40 +46,24 @@ Picking::EndEffectorPosition Picking::Final() {
 }
 
 Picking::EndEffectorPosition Picking::computePreGrasp_orientate(NiryoPose p) {
-    // if (p.first.z < 0.135) {
-    // const float z = p.first.z;
     p.first.z = 0.25;
-    //ROS_WARN_STREAM("Recveived z value of " << z << " modified to 0.15");
-    //}
     EndEffectorPosition pose1 = pose(p, true);
     return pose1;
 }
 
 Picking::EndEffectorPosition Picking::computePreGrasp_descend(NiryoPose p) {
-    //if (p.first.z < 0.135) {
-        const float z = p.first.z;
     p.first.z += 0.15;
-        //ROS_WARN_STREAM("Recveived z value of " << z << " modified to 0.15");
-    //}
     EndEffectorPosition pose1 = pose(p, true);
     return pose1;
 }
 
 Picking::EndEffectorPosition Picking::computeGrasp(NiryoPose p) {
-    //if (p.first.z < 0.135) {
-    p.first.z += 0.1;
-        //ROS_WARN_STREAM("Set the height value to 0.135");
-        //// throw std::runtime_error("Z values cannot be lower than 0.135");
-    //}
+    p.first.z += 0.085;
     EndEffectorPosition pose1 = pose(p, true);
     return pose1;
 }
 Picking::EndEffectorPosition Picking::Close(NiryoPose p) {
-    //if (p.first.z < 0.135) {
-        p.first.z += 0.1;
-        //ROS_WARN_STREAM("Set the height value to 0.135");
-        // throw std::runtime_error("Z values cannot be lower than 0.135");
-    //}
+    p.first.z += 0.085;
     EndEffectorPosition pose1 = pose(p, false);
     return pose1;
 }
