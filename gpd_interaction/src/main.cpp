@@ -17,7 +17,7 @@
 #include <thread>
 
 using param = std::pair<std::string, std::string>;
-using PointCloud = pcl::PointCloud<pcl::PointXYZRGB>;
+using PointCloud = pcl::PointCloud<pcl::PointXYZ>;
 constexpr std::size_t QUEUE(10);
 constexpr double PI(3.14);
 constexpr double HEIGHT_BAKING(0.08);
@@ -71,10 +71,11 @@ class SubscribeAndPublish {
         // ROS_WARN_STREAM("The publication is" << publication);
         pub_ = n_.advertise<geometry_msgs::PoseArray>(publication, 1, true);
         publish_pointcloud_ =
-            n_.advertise<pcl::PointCloud<pcl::PointXYZRGB>>("XXX", 1);
+            n_.advertise<pcl::PointCloud<pcl::PointXYZ>>("/cloud_pcd", 1);
     }
 
     void callback_grasp_pose(const gpd_ros::GraspConfigList &msg) {
+        ROS_WARN_STREAM("Inside the grap pose callback");
         const std::string name = msg.header.frame_id;
         const gpd_ros::GraspConfig &grasp = msg.grasps[0];
         Eigen::Matrix4d frame = Eigen::MatrixXd::Identity(4, 4);
@@ -90,15 +91,14 @@ class SubscribeAndPublish {
         ros_transform.matrix() = frame;
     }
 
-    pcl::PointXYZRGB inline toPointXYZRGB(const Eigen::Vector3d &point,
-                                          const Eigen::Vector3d &color) {
-        pcl::PointXYZRGB pcl_point;
+    pcl::PointXYZ inline toPointXYZ(const Eigen::Vector3d &point) {
+        pcl::PointXYZ pcl_point;
         pcl_point.x = static_cast<float>(point(0));
         pcl_point.y = static_cast<float>(point(1));
         pcl_point.z = static_cast<float>(point(2));
-        pcl_point.r = static_cast<uint8_t>(std::round(color(0) * MAX_UINT));
-        pcl_point.g = static_cast<uint8_t>(std::round(color(1) * MAX_UINT));
-        pcl_point.b = static_cast<uint8_t>(std::round(color(2) * MAX_UINT));
+        //pcl_point.r = static_cast<uint8_t>(std::round(color(0) * MAX_UINT));
+        //pcl_point.g = static_cast<uint8_t>(std::round(color(1) * MAX_UINT));
+        //pcl_point.b = static_cast<uint8_t>(std::round(color(2) * MAX_UINT));
         return pcl_point;
     }
 
@@ -114,7 +114,7 @@ class SubscribeAndPublish {
         const std::vector<Eigen::Vector3d> &points = cloud->points_;
         const std::vector<Eigen::Vector3d> &colors = cloud->colors_;
         for (std::size_t idx = 0; idx < points.size(); ++idx) {
-            auto point = toPointXYZRGB(points[idx], colors[idx]);
+            auto point = toPointXYZ(points[idx]);
             pcl_cloud->push_back(point);
         }
         pcl_cloud->height = 1;
@@ -159,17 +159,19 @@ class SubscribeAndPublish {
 
 int main(int argc, char **argv) {
     ros::init(argc, argv, "grasp_broadcaster");
+    ros::AsyncSpinner spinner(3);
+    spinner.start();
     ros::NodeHandle nh;
-    param incoming_poses("grasp_pose_broadcaster/estimated_poses", "");
-    param outgoing_poses("grasp_pose_broadcaster/outgoing_poses", "");
+    param incoming_poses("gpd_interaction/estimated_poses", "");
+    param outgoing_poses("gpd_interaction/outgoing_poses", "");
     readParameters(nh, incoming_poses, outgoing_poses);
     SubscribeAndPublish interaction(nh, outgoing_poses.second);
     ros::Subscriber sub =
         nh.subscribe(incoming_poses.second, QUEUE,
                      &SubscribeAndPublish::callback_object_pose, &interaction);
     ros::Subscriber sub2 =
-        nh.subscribe("/detect_grasp/clustered_grasps", QUEUE,
+        nh.subscribe("/detect_grasps/clustered_grasps", QUEUE,
                      &SubscribeAndPublish::callback_grasp_pose, &interaction);
-    ros::spin();
+    ros::waitForShutdown();
     return 0;
 };
