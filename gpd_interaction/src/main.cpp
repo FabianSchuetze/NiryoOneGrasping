@@ -89,6 +89,7 @@ class SubscribeAndPublish {
         frame.block<3, 1>(0, 2) = axis;
         frame.block<3, 1>(0, 3) = position;
         ros_transform.matrix() = frame;
+        grasp_pose_received = true;
     }
 
     pcl::PointXYZ inline toPointXYZ(const Eigen::Vector3d &point) {
@@ -124,6 +125,7 @@ class SubscribeAndPublish {
     }
 
     void callback_object_pose(const object_pose::positions &msg) {
+        ROS_WARN_STREAM("Inside the object pose callback");
         const auto now = ros::Time::now();
         std::vector<geometry_msgs::TransformStamped> transforms;
         geometry_msgs::PoseArray poses;
@@ -139,10 +141,13 @@ class SubscribeAndPublish {
             while (!grasp_pose_received) {
                 std::this_thread::sleep_for(std::chrono::seconds(1));
             }
+            ROS_WARN_STREAM("At the end here");
             Eigen::Isometry3d tmp = transformStamped* ros_transform;
             auto final_transform = tf2::eigenToTransform(tmp);
-            final_transform.header.frame_id = name + "final";
+            final_transform.child_frame_id = name + "final";
+            final_transform.header.frame_id = "base_link";
             transforms.push_back(final_transform);
+            break;
         }
         ROS_WARN_STREAM("Transfroms size: " << transforms.size());
         pub_.publish(poses);
