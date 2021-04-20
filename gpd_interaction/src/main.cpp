@@ -1,5 +1,8 @@
+#include <chrono>
+#include <filesystem>
 #include <geometry_msgs/PoseArray.h>
 #include <geometry_msgs/TransformStamped.h>
+#include <gpd_ros/GraspConfigList.h>
 #include <object_pose/positions.h>
 #include <open3d/Open3D.h>
 #include <pcl/common/transforms.h>
@@ -12,10 +15,7 @@
 #include <tf2_eigen/tf2_eigen.h>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 #include <tf2_ros/static_transform_broadcaster.h>
-#include <gpd_ros/GraspConfigList.h>
-#include <chrono>
 #include <thread>
-#include <filesystem>
 
 using param = std::pair<std::string, std::string>;
 using PointCloud = pcl::PointCloud<pcl::PointXYZ>;
@@ -50,8 +50,8 @@ double obtain_yaw(const geometry_msgs::Quaternion &quat) {
     return yaw;
 }
 
-Eigen::Isometry3d
-generateTransformation(const geometry_msgs::Pose &pose, double yaw) {
+Eigen::Isometry3d generateTransformation(const geometry_msgs::Pose &pose,
+                                         double yaw) {
     geometry_msgs::TransformStamped transformStamped;
     geometry_msgs::Pose grasp_pose;
     transformStamped.transform.translation.x = pose.position.x;
@@ -81,7 +81,7 @@ class SubscribeAndPublish {
         const std::string name = msg.header.frame_id;
         const gpd_ros::GraspConfig &grasp = msg.grasps[0];
         Eigen::Matrix4d frame = Eigen::MatrixXd::Identity(4, 4);
-        Eigen::Vector3d approach, binormal, axis , position;
+        Eigen::Vector3d approach, binormal, axis, position;
         tf2::fromMsg(grasp.approach, approach);
         tf2::fromMsg(grasp.binormal, binormal);
         tf2::fromMsg(grasp.axis, axis);
@@ -99,10 +99,17 @@ class SubscribeAndPublish {
         pcl_point.x = static_cast<float>(point(0));
         pcl_point.y = static_cast<float>(point(1));
         pcl_point.z = static_cast<float>(point(2));
-        //pcl_point.r = static_cast<uint8_t>(std::round(color(0) * MAX_UINT));
-        //pcl_point.g = static_cast<uint8_t>(std::round(color(1) * MAX_UINT));
-        //pcl_point.b = static_cast<uint8_t>(std::round(color(2) * MAX_UINT));
+        // pcl_point.r = static_cast<uint8_t>(std::round(color(0) * MAX_UINT));
+        // pcl_point.g = static_cast<uint8_t>(std::round(color(1) * MAX_UINT));
+        // pcl_point.b = static_cast<uint8_t>(std::round(color(2) * MAX_UINT));
         return pcl_point;
+    }
+    std::string shortName(const std::string &input_name,
+                          std::string extension) {
+        const std::string fn = fs::path(input_name).filename();
+        std::string delimiter = "_";
+        std::string token = fn.substr(0, fn.find(delimiter));
+        return token + extension;
     }
 
     void publishPointCloud(const std::string &name) {
@@ -128,6 +135,7 @@ class SubscribeAndPublish {
     }
 
     void callback_object_pose(const object_pose::positions &msg) {
+        grasp_pose_received = false;
         ROS_WARN_STREAM("Inside the object pose callback");
         const auto now = ros::Time::now();
         std::vector<geometry_msgs::TransformStamped> transforms;
@@ -139,23 +147,22 @@ class SubscribeAndPublish {
             geometry_msgs::Pose pose = msg.poses.poses[i];
             const std::string &name = msg.objects[i];
             double yaw = obtain_yaw(pose.orientation);
-            Eigen::Isometry3d transformStamped = generateTransformation(pose, yaw);
+            Eigen::Isometry3d transformStamped =
+                generateTransformation(pose, yaw);
             auto transform = tf2::eigenToTransform(transformStamped);
             transform.header.frame_id = "base_link";
-            transform.child_frame_id = fs::path(name).filename();
+            transform.child_frame_id = shortName(name, "");
             publishPointCloud(name);
             while ((!grasp_pose_received) and ros::ok()) {
                 std::this_thread::sleep_for(std::chrono::seconds(1));
             }
-            ROS_WARN_STREAM("At the end here");
-            Eigen::Isometry3d tmp = transformStamped* ros_transform;
+            grasp_pose_received = false;
+            Eigen::Isometry3d tmp = transformStamped * ros_transform;
             auto final_transform = tf2::eigenToTransform(tmp);
-            std::string grasp("_grasp");
-            final_transform.child_frame_id = fs::path(name).filename().c_str() + grasp;
+            final_transform.child_frame_id = shortName(name, "_grasp");
             final_transform.header.frame_id = "base_link";
             transforms.push_back(transform);
             transforms.push_back(final_transform);
-            //break;
         }
         ROS_WARN_STREAM("Transfroms size: " << transforms.size());
         pub_.publish(poses);
