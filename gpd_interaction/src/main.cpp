@@ -15,9 +15,11 @@
 #include <gpd_ros/GraspConfigList.h>
 #include <chrono>
 #include <thread>
+#include <filesystem>
 
 using param = std::pair<std::string, std::string>;
 using PointCloud = pcl::PointCloud<pcl::PointXYZ>;
+namespace fs = std::filesystem;
 constexpr std::size_t QUEUE(10);
 constexpr double PI(3.14);
 constexpr double HEIGHT_BAKING(0.08);
@@ -120,7 +122,8 @@ class SubscribeAndPublish {
         }
         pcl_cloud->height = 1;
         pcl_cloud->width = points.size();
-        pcl_cloud->header.frame_id = name;
+        std::string fn = fs::path(name).filename();
+        pcl_cloud->header.frame_id = fn;
         publish_pointcloud_.publish(pcl_cloud);
     }
 
@@ -137,17 +140,22 @@ class SubscribeAndPublish {
             const std::string &name = msg.objects[i];
             double yaw = obtain_yaw(pose.orientation);
             Eigen::Isometry3d transformStamped = generateTransformation(pose, yaw);
+            auto transform = tf2::eigenToTransform(transformStamped);
+            transform.header.frame_id = "base_link";
+            transform.child_frame_id = fs::path(name).filename();
             publishPointCloud(name);
-            while (!grasp_pose_received) {
+            while ((!grasp_pose_received) and ros::ok()) {
                 std::this_thread::sleep_for(std::chrono::seconds(1));
             }
             ROS_WARN_STREAM("At the end here");
             Eigen::Isometry3d tmp = transformStamped* ros_transform;
             auto final_transform = tf2::eigenToTransform(tmp);
-            final_transform.child_frame_id = name + "final";
+            std::string grasp("_grasp");
+            final_transform.child_frame_id = fs::path(name).filename().c_str() + grasp;
             final_transform.header.frame_id = "base_link";
+            transforms.push_back(transform);
             transforms.push_back(final_transform);
-            break;
+            //break;
         }
         ROS_WARN_STREAM("Transfroms size: " << transforms.size());
         pub_.publish(poses);
