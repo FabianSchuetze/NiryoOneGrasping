@@ -47,23 +47,41 @@ Picking::EndEffectorPosition Picking::Final() {
 
 Picking::EndEffectorPosition Picking::computePreGrasp_orientate(NiryoPose p) {
     p.first.z = 0.25;
+    if (p.second.pitch == 0) {
+        p.first.x -= 0.08; //descend and approach
+    }
     EndEffectorPosition pose1 = pose(p, true);
     return pose1;
 }
 
 Picking::EndEffectorPosition Picking::computePreGrasp_descend(NiryoPose p) {
-    p.first.z += 0.15;
+    if (p.second.pitch == 1.5) {
+        p.first.z += 0.15;
+    } else if (p.second.pitch == 0.0) {
+        p.first.z += 0.15;
+        p.first.x -= 0.03;
+    }
     EndEffectorPosition pose1 = pose(p, true);
     return pose1;
 }
 
 Picking::EndEffectorPosition Picking::computeGrasp(NiryoPose p) {
-    p.first.z += 0.085;
+    if (p.second.pitch == 1.5) {
+        p.first.z += 0.085;
+    } else if (p.second.pitch == 0.0) {
+        p.first.z = 0.03;
+        p.first.x -= 0.03;
+    }
     EndEffectorPosition pose1 = pose(p, true);
     return pose1;
 }
 Picking::EndEffectorPosition Picking::Close(NiryoPose p) {
-    p.first.z += 0.085;
+    if (p.second.pitch == 1.5) {
+        p.first.z += 0.085;
+    } else if (p.second.pitch == 0.0) {
+        p.first.z = 0.03;
+        p.first.x -= 0.03;
+    }
     EndEffectorPosition pose1 = pose(p, false);
     return pose1;
 }
@@ -73,14 +91,6 @@ Picking::EndEffectorPosition Picking::PostGrasp(NiryoPose p) {
     EndEffectorPosition pose1 = pose(p, false);
     return pose1;
 }
-
-// niryo_one_msgs::RPY Picking::rotation() {
-// niryo_one_msgs::RPY rot;
-// rot.roll = 0;
-// rot.pitch = 1.5;
-// rot.yaw = 0;
-// return rot;
-//}
 
 geometry_msgs::Point Picking::point(float x, float y, float z) {
     geometry_msgs::Point p;
@@ -224,7 +234,12 @@ Picking::convertToNiryo(const geometry_msgs::PoseArray &poses) {
         NiryoPose niryo_pose;
         auto [roll, pitch, yaw] = convertQuaternionToRPY(pose.orientation);
         niryo_pose.second.roll = 0;
-        niryo_pose.second.pitch = 1.5; // always bend the hand
+        if (0.5 < pitch <= 1.5) {
+            niryo_pose.second.pitch = 1.5;
+        } else if (-0.5 < pitch < 0.5) {
+            niryo_pose.second.pitch = 0;
+        }
+        //niryo_pose.second.pitch = 1.5; // always bend the hand
         niryo_pose.second.yaw = yaw;
         niryo_pose.first.x = pose.position.x;
         niryo_pose.first.y = pose.position.y;

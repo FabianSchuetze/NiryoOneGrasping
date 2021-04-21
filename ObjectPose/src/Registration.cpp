@@ -64,14 +64,14 @@ static RegistrationResult EvaluateRANSACBasedOnCorrespondence(
     }
     return result;
 }
-//double calculateYaw(const Eigen::Matrix4d &transformation) {
+// double calculateYaw(const Eigen::Matrix4d &transformation) {
 
-    //Eigen::Matrix3d tmp = transformation.block(0, 0, 3, 3);
-    //Eigen::Quaternion<double> quat(tmp);
-    //double first = 2 * (quat.w() * quat.z() + quat.x() * quat.y());
-    //double second = 1 - 2 * (quat.x() * quat.x() + quat.z() * quat.z());
-    //double yaw = std::atan2(first, second);
-    //return yaw;
+// Eigen::Matrix3d tmp = transformation.block(0, 0, 3, 3);
+// Eigen::Quaternion<double> quat(tmp);
+// double first = 2 * (quat.w() * quat.z() + quat.x() * quat.y());
+// double second = 1 - 2 * (quat.x() * quat.x() + quat.z() * quat.z());
+// double yaw = std::atan2(first, second);
+// return yaw;
 //}
 RegistrationResult ModifiedRegistrationRANSACBasedOnCorrespondence(
     const geometry::PointCloud &source, const geometry::PointCloud &target,
@@ -128,10 +128,8 @@ RegistrationResult ModifiedRegistrationRANSACBasedOnCorrespondence(
                 if (std::abs(yaw) > (3.14 / 2.0)) {
                     continue;
                 }
-                if (std::abs(roll) > (3.14 / 8.0)) {
-                    continue;
-                }
-                if (std::abs(pitch) > (3.14 / 8.0)) {
+                if ((std::abs(roll) > (3.14 / 10.0)) or
+                    (std::abs(pitch) > (3.14 / 10.0))) {
                     continue;
                 }
                 geometry::PointCloud pcd = source;
@@ -141,8 +139,8 @@ RegistrationResult ModifiedRegistrationRANSACBasedOnCorrespondence(
                     transformation);
 
                 if (result.IsBetterRANSACThan(best_result_local)) {
-                    ROS_WARN_STREAM("Better result, roll, yaw, pitch " <<
-                            roll << ", " << yaw << ", " << pitch);
+                    ROS_WARN_STREAM("Better result, roll, yaw, pitch "
+                                    << roll << ", " << yaw << ", " << pitch);
                     best_result_local = result;
 
                     // Update exit condition if necessary
