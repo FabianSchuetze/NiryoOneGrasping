@@ -31,8 +31,8 @@ const EndEffectorPosition computePreGrasp(const std::vector<double>& goal) {
         throw std::runtime_error("Z values cannot be lower than 0.135");
     }
     niryo_one_msgs::RPY rot;
-    rot.roll = 0;
-    rot.pitch = 1.5;
+    rot.roll = goal[3];
+    rot.pitch = goal[4];
     rot.yaw = goal[5];
     NiryoPose pose1(p, rot);
     EndEffectorPosition eef;
@@ -50,8 +50,8 @@ const EndEffectorPosition computeGrasp(const std::vector<double>& goal) {
         throw std::runtime_error("Z values cannot be lower than 0.135");
     }
     niryo_one_msgs::RPY rot;
-    rot.roll = 0;
-    rot.pitch = 1.5;
+    rot.roll = goal[3];
+    rot.pitch = goal[4];
     rot.yaw = goal[5];
     NiryoPose pose1(p, rot);
     EndEffectorPosition eef;
