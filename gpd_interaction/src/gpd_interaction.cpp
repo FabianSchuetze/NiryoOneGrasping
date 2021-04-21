@@ -5,6 +5,8 @@
 #include <pcl_ros/point_cloud.h>
 #include <tf2_eigen/tf2_eigen.h>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
+#include <tf/LinearMath/Matrix3x3.h>
+#include <tf/LinearMath/Quaternion.h>
 using PointCloud = pcl::PointCloud<pcl::PointXYZRGB>;
 namespace fs = std::filesystem;
 constexpr double PI(3.14);
@@ -24,20 +26,6 @@ pcl::PointXYZRGB inline toPointXYZRGB(const Eigen::Vector3d &point) {
     pcl_point.b = static_cast<uint8_t>(MAX_UINT);
     return pcl_point;
 }
-double calculateRoll(const Eigen::Quaterniond &quat) {
-
-    double first = 2 * (quat.w() * quat.x() + quat.y() * quat.z());
-    double second = 1 - 2 * (quat.x() * quat.x() + quat.z() * quat.z());
-    double roll = std::atan2(first, second);
-    return roll;
-}
-double calculateYaw(const Eigen::Quaterniond &quat) {
-
-    double first = 2 * (quat.w() * quat.z() + quat.x() * quat.y());
-    double second = 1 - 2 * (quat.x() * quat.x() + quat.z() * quat.z());
-    double yaw = std::atan2(first, second);
-    return yaw;
-}
 
 double calculateYaw(const geometry_msgs::Quaternion &quat) {
     double first = 2 * (quat.w * quat.z + quat.x * quat.y);
@@ -46,19 +34,13 @@ double calculateYaw(const geometry_msgs::Quaternion &quat) {
     return yaw;
 }
 
-double calculatePitch(const Eigen::Quaterniond &quat) {
-
-    double first = 2 * (quat.w() * quat.y() - quat.y() * quat.x());
-    double pitch = std::asin(first);
-    return pitch;
-}
-
 std::tuple<double, double, double> RPY(const Eigen::Isometry3d &transform) {
     Eigen::Matrix3d tmp = transform.matrix().block(0, 0, 3, 3);
     Eigen::Quaternion<double> quat(tmp);
-    double roll = calculateRoll(quat);
-    double pitch = calculatePitch(quat);
-    double yaw = calculateYaw(quat);
+    tf::Quaternion q(quat.x(), quat.y(), quat.z(), quat.w());
+    tf::Matrix3x3 rotation(q);
+    double roll(0.0), pitch(0.0), yaw(0.0);
+    rotation.getRPY(roll, pitch, yaw);
     return {roll, pitch, yaw};
 }
 
@@ -163,8 +145,7 @@ int GPDInteraction::filterPossibleTransforms(const Eigen::Isometry3d &object) {
     int best_hand(-1);
     auto [roll_object, pitch_object, yaw_object] = RPY(object);
     double error = std::numeric_limits<double>::max();
-    for (std::size_t i = 0; i < BEST_SAMPLES;
-         ++i) { // check the best 10 results {
+    for (std::size_t i = 0; i < BEST_SAMPLES; ++i) {
         const auto &possible_transform = possible_transforms[i];
         const auto hand = object * possible_transform;
         auto [roll_hand, pitch_hand, yaw_hand] = RPY(hand);
@@ -216,11 +197,11 @@ void GPDInteraction::callback_object_pose(const object_pose::positions &msg) {
             continue;
         }
         Eigen::Isometry3d grasp_frame = generateHand(object_frame, res);
-        Eigen::Isometry3d tmp = object_frame * grasp_frame;
-        transforms.push_back(rosTransform(tmp, name, "_grasp"));
-        auto [roll_hand, pitch_hand, yaw_hand] = RPY(tmp);
-        Hand final_hand{tmp(0, 3), tmp(1, 3), pitch_hand, yaw_hand};
-        auto grasp_pose = generateGraspPose(final_hand);
+        transforms.push_back(rosTransform(grasp_frame, name, "_grasp"));
+        auto [roll_hand, pitch_hand, yaw_hand] = RPY(grasp_frame);
+        ROS_WARN_STREAM("The yaw is: " << yaw_hand);
+        auto grasp_pose = generateGraspPose(
+            Hand{grasp_frame(0, 3), grasp_frame(1, 3), pitch_hand, yaw_hand});
         poses.poses.push_back(grasp_pose);
     }
     ROS_WARN_STREAM("Transfroms size: " << transforms.size());

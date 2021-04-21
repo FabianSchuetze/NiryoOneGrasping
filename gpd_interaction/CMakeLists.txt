@@ -36,7 +36,7 @@ include_directories(
 )
 
 ## C++ examples
-add_executable(gpd_interaction src/gdp_interaction.cpp src/main.cpp)
+add_executable(gpd_interaction src/gpd_interaction.cpp src/main.cpp)
 add_dependencies(gpd_interaction ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 target_link_libraries(gpd_interaction ${catkin_LIBRARIES}
     ${Open3D_LIBRARIES})
