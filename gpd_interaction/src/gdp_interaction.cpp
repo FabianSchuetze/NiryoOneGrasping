@@ -78,6 +78,16 @@ geometry_msgs::TransformStamped rosTransform(const Eigen::Isometry3d &transform,
     return tmp;
 }
 
+geometry_msgs::Pose generateGraspPose(const Hand &hand) {
+    geometry_msgs::Pose grasp_pose;
+    grasp_pose.position.x = std::max(hand.x, 0.02);
+    grasp_pose.position.y = hand.y;
+    tf2::Quaternion q;
+    q.setRPY(0, hand.pitch, hand.yaw);
+    grasp_pose.orientation = tf2::toMsg(q);
+    return grasp_pose;
+}
+
 Eigen::Isometry3d GPDInteraction::generateTransformation(const Hand &hand) {
     geometry_msgs::TransformStamped transformStamped;
     geometry_msgs::Pose grasp_pose;
@@ -182,11 +192,11 @@ Eigen::Isometry3d GPDInteraction::generateHand(const Eigen::Isometry3d &object,
 void GPDInteraction::callback_object_pose(const object_pose::positions &msg) {
     grasp_pose_received = false;
     ROS_WARN_STREAM("Inside the object pose callback");
-    // const auto now = ros::Time::now();
+    const auto now = ros::Time::now();
     std::vector<geometry_msgs::TransformStamped> transforms;
-    // geometry_msgs::PoseArray poses;
-    // poses.header.frame_id = msg.poses.header.frame_id;
-    // poses.header.stamp = now;
+    geometry_msgs::PoseArray poses;
+    poses.header.frame_id = msg.poses.header.frame_id;
+    poses.header.stamp = now;
     for (std::size_t i = 0; i < msg.objects.size(); ++i) {
         grasp_pose_received = false;
         geometry_msgs::Pose pose = msg.poses.poses[i];
@@ -208,9 +218,13 @@ void GPDInteraction::callback_object_pose(const object_pose::positions &msg) {
         Eigen::Isometry3d grasp_frame = generateHand(object_frame, res);
         Eigen::Isometry3d tmp = object_frame * grasp_frame;
         transforms.push_back(rosTransform(tmp, name, "_grasp"));
+        auto [roll_hand, pitch_hand, yaw_hand] = RPY(tmp);
+        Hand final_hand{tmp(0, 3), tmp(1, 3), pitch_hand, yaw_hand};
+        auto grasp_pose = generateGraspPose(final_hand);
+        poses.poses.push_back(grasp_pose);
     }
     ROS_WARN_STREAM("Transfroms size: " << transforms.size());
-    // pub_.publish(poses);
+    pub_.publish(poses);
     br.sendTransform(transforms);
 }
 } // namespace gpd
