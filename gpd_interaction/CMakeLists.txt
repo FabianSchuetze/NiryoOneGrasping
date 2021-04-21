@@ -19,7 +19,7 @@ find_package(catkin REQUIRED COMPONENTS
 ## catkin specific configuration ##
 ###################################
 catkin_package(
-  #INCLUDE_DIRS devel/include
+  INCLUDE_DIRS include
 #  LIBRARIES turtle_tf2
  CATKIN_DEPENDS geometry_msgs roscpp std_msgs tf2 tf2_ros message_runtime
  object_pose gpd_ros
@@ -32,11 +32,11 @@ catkin_package(
 
 find_package(Open3D REQUIRED)
 include_directories(
-  ${catkin_INCLUDE_DIRS} ${Open3D_LIBRARIES}
+  ${catkin_INCLUDE_DIRS} ${Open3D_LIBRARIES} include
 )
 
 ## C++ examples
-add_executable(gpd_interaction src/main.cpp)
+add_executable(gpd_interaction src/gdp_interaction.cpp src/main.cpp)
 add_dependencies(gpd_interaction ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 target_link_libraries(gpd_interaction ${catkin_LIBRARIES}
     ${Open3D_LIBRARIES})
