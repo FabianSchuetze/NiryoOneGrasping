@@ -298,6 +298,7 @@ Picking::convertToNiryo(const geometry_msgs::PoseArray &poses) {
             //ROS_ERROR_STREAM("Cannot find the right pitch from: " << pitch);
             //continue;
         //}
+        niryo_pose.second.pitch = pitch;
         niryo_pose.second.yaw = yaw;
         niryo_pose.first.x = pose.position.x;
         niryo_pose.first.y = pose.position.y;
