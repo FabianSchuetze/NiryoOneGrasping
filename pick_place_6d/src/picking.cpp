@@ -3,7 +3,12 @@
 #include <niryo_one_msgs/RobotMoveAction.h>
 #include <niryo_one_msgs/SetInt.h>
 #include <tf/LinearMath/Matrix3x3.h>
-#include <tf/LinearMath/Quaternion.h>
+#include <tf/LinearMath/Transform.h>
+#include <tf/transform_datatypes.h>
+#include <eigen_conversions/eigen_msg.h>
+#include <tf2/LinearMath/Quaternion.h>
+#include <tf2/convert.h>
+#include <Eigen/Geometry>
 #include <thread>
 
 static constexpr int MAX_ATTPEMTS(10);
@@ -11,6 +16,9 @@ static constexpr float MAX_DURATION(10.0);
 static constexpr int TOOL_ID(13);
 static constexpr int MAX_SPEED(200);
 static constexpr int CMD_TYPE(6);
+static constexpr float HALF_ANGLE(1.5);
+static constexpr float FIFITY_DEGREE(0.87);
+
 
 Picking::Picking() : robot("/niryo_one/commander/robot_action/", true) { ; };
 
@@ -25,7 +33,7 @@ Picking::EndEffectorPosition Picking::Rest() {
     geometry_msgs::Point p = point(0.3, 0, 0.35);
     _pose.first = p;
     EndEffectorPosition pose1 = pose(_pose, true);
-    pose1.pose.second.pitch = 1.5;
+    pose1.pose.second.pitch = HALF_ANGLE;
     return pose1;
 }
 Picking::EndEffectorPosition Picking::PreFinal() {
@@ -33,7 +41,7 @@ Picking::EndEffectorPosition Picking::PreFinal() {
     geometry_msgs::Point p = point(0.1, -0.2, 0.25);
     _pose.first = p;
     EndEffectorPosition pose1 = pose(_pose, false);
-    pose1.pose.second.pitch = 1.5;
+    pose1.pose.second.pitch = HALF_ANGLE;
     return pose1;
 }
 Picking::EndEffectorPosition Picking::Final() {
@@ -41,52 +49,80 @@ Picking::EndEffectorPosition Picking::Final() {
     geometry_msgs::Point p = point(0.1, -0.2, 0.25);
     _pose.first = p;
     EndEffectorPosition pose1 = pose(_pose, true);
-    pose1.pose.second.pitch = 1.5;
+    pose1.pose.second.pitch = HALF_ANGLE;
     return pose1;
 }
 
-Picking::EndEffectorPosition Picking::computePreGrasp_orientate(NiryoPose p) {
-    p.first.z = 0.25;
+Picking::EndEffectorPosition Picking::computePreGrasp_orientate(NiryoPose p,
+        const Eigen::Isometry3d& incoming_pose) {
     if (p.second.pitch == 0) {
-        p.first.x -= 0.08; //descend and approach
+        Eigen::Isometry3d move;
+        move.matrix()(0,3) = -0.08;
+        move.matrix()(2,3) = 0.25;
+        Eigen::Isometry3d approach = incoming_pose * move;
+        p.first.x = approach.matrix()(0,3);
+        p.first.y = approach.matrix()(1,3);
+        p.first.z = approach.matrix()(2,3);
+        //p.first.x -= 0.08; //descend and approach
+    } else {
+        p.first.z = 0.25;
     }
     EndEffectorPosition pose1 = pose(p, true);
     return pose1;
 }
 
-Picking::EndEffectorPosition Picking::computePreGrasp_descend(NiryoPose p) {
+Picking::EndEffectorPosition Picking::computePreGrasp_descend(NiryoPose p,
+        const Eigen::Isometry3d& incoming_pose) {
     if (p.second.pitch == 1.5) {
         p.first.z += 0.15;
     } else if (p.second.pitch == 0.0) {
-        p.first.z += 0.15;
-        p.first.x -= 0.03;
+        Eigen::Isometry3d move;
+        move.matrix()(0,3) = -0.03;
+        move.matrix()(2,3) = 0.15;
+        Eigen::Isometry3d approach = incoming_pose * move;
+        p.first.x = approach.matrix()(0,3);
+        p.first.y = approach.matrix()(1,3);
+        p.first.z = approach.matrix()(2,3);
     }
     EndEffectorPosition pose1 = pose(p, true);
     return pose1;
 }
 
-Picking::EndEffectorPosition Picking::computeGrasp(NiryoPose p) {
+Picking::EndEffectorPosition Picking::computeGrasp(NiryoPose p,
+        const Eigen::Isometry3d& incoming_pose) {
     if (p.second.pitch == 1.5) {
         p.first.z += 0.085;
     } else if (p.second.pitch == 0.0) {
-        p.first.z = 0.03;
-        p.first.x -= 0.03;
+        Eigen::Isometry3d move;
+        move.matrix()(0,3) = -0.03;
+        move.matrix()(2,3) = 0.03;
+        Eigen::Isometry3d approach = incoming_pose * move;
+        p.first.x = approach.matrix()(0,3);
+        p.first.y = approach.matrix()(1,3);
+        p.first.z = approach.matrix()(2,3);
     }
     EndEffectorPosition pose1 = pose(p, true);
     return pose1;
 }
-Picking::EndEffectorPosition Picking::Close(NiryoPose p) {
+Picking::EndEffectorPosition Picking::Close(NiryoPose p,
+        const Eigen::Isometry3d& incoming_pose) {
     if (p.second.pitch == 1.5) {
         p.first.z += 0.085;
     } else if (p.second.pitch == 0.0) {
-        p.first.z = 0.03;
-        p.first.x -= 0.03;
+        Eigen::Isometry3d move;
+        move.matrix()(0,3) = -0.03;
+        move.matrix()(2,3) = 0.03;
+        Eigen::Isometry3d approach = incoming_pose * move;
+        p.first.x = approach.matrix()(0,3);
+        p.first.y = approach.matrix()(1,3);
+        p.first.z = approach.matrix()(2,3);
     }
     EndEffectorPosition pose1 = pose(p, false);
     return pose1;
 }
 
-Picking::EndEffectorPosition Picking::PostGrasp(NiryoPose p) {
+Picking::EndEffectorPosition Picking::PostGrasp(NiryoPose p,
+        const Eigen::Isometry3d& incoming_pose) {
     p.first.z = 0.25;
     EndEffectorPosition pose1 = pose(p, false);
     return pose1;
@@ -197,14 +233,26 @@ void Picking::moveJoints(const std::vector<double> &position) {
 }
 
 void Picking::moveArm(const NiryoPose &pose) {
+    //tf2::Quaternion quat;
+    //quat.setRPY( pose.second.roll, pose.second.pitch, pose.second.yaw);
+    geometry_msgs::Quaternion quat_msg = tf::createQuaternionMsgFromRollPitchYaw(
+            pose.second.roll, pose.second.pitch, pose.second.yaw);
+    Eigen::Quaternion<double> quat;
+    Eigen::Vector3d linear;
+    tf::quaternionMsgToEigen(quat_msg, quat);
+    tf::pointMsgToEigen(pose.first, linear);
+    Eigen::Isometry3d grasp_pose;
+    grasp_pose.linear() = quat.toRotationMatrix();
+    grasp_pose.translation() = linear;
+    ROS_WARN_STREAM("The grap frame is:\n" << grasp_pose.matrix());
     std::chrono::seconds sec(1);
     const Picking::EndEffectorPosition pre_grasp_orientate =
-        Picking::computePreGrasp_orientate(pose);
+        Picking::computePreGrasp_orientate(pose, grasp_pose);
     const Picking::EndEffectorPosition pre_grasp_descend =
-        Picking::computePreGrasp_descend(pose);
-    const EndEffectorPosition grasp = computeGrasp(pose);
-    const EndEffectorPosition close = Close(pose);
-    const EndEffectorPosition post_grasp = PostGrasp(pose);
+        Picking::computePreGrasp_descend(pose, grasp_pose);
+    const EndEffectorPosition grasp = computeGrasp(pose, grasp_pose);
+    const EndEffectorPosition close = Close(pose, grasp_pose);
+    const EndEffectorPosition post_grasp = PostGrasp(pose, grasp_pose);
     const EndEffectorPosition pre_final = PreFinal();
     const EndEffectorPosition open = Final();
     const EndEffectorPosition rest_position = Rest();
@@ -240,16 +288,16 @@ Picking::convertToNiryo(const geometry_msgs::PoseArray &poses) {
         auto [roll, pitch, yaw] = convertQuaternionToRPY(pose.orientation);
         ROS_WARN_STREAM("The incoming pitch and yaw is: " << pitch << ", " << yaw);
         niryo_pose.second.roll = 0;
-        if ((0.5 < pitch) and (pitch <= 1.5)) {
-            ROS_WARN_STREAM("Pitch: " << pitch << ", set to 1.5");
-            niryo_pose.second.pitch = 1.5;
-        } else if ((-0.5 < pitch) and (pitch < 0.5)) {
-            niryo_pose.second.pitch = 0;
-            ROS_WARN_STREAM("Pitch: " << pitch << ", set to 0");
-        } else {
-            ROS_ERROR_STREAM("Cannot find the right pitch from: " << pitch);
-            continue;
-        }
+        //if ((FIFITY_DEGREE < pitch) and (pitch <= HALF_ANGLE)) {
+            //ROS_WARN_STREAM("Pitch: " << pitch << ", set to 1.5");
+            //niryo_pose.second.pitch = HALF_ANGLE;
+        //} else if ((-FIFITY_DEGREE < pitch) and (pitch < FIFITY_DEGREE)) {
+            //niryo_pose.second.pitch = 0;
+            //ROS_WARN_STREAM("Pitch: " << pitch << ", set to 0");
+        //} else {
+            //ROS_ERROR_STREAM("Cannot find the right pitch from: " << pitch);
+            //continue;
+        //}
         niryo_pose.second.yaw = yaw;
         niryo_pose.first.x = pose.position.x;
         niryo_pose.first.y = pose.position.y;

@@ -18,9 +18,11 @@ find_package(catkin REQUIRED COMPONENTS
   tf_conversions
   genmsg
   tf2_eigen
+  tf2
   tf2_geometry_msgs
   cv_bridge
   pose_detection
+  eigen_conversions
 )
 
 generate_messages(
@@ -48,10 +50,12 @@ catkin_package(
       tf2_geometry_msgs
       tf_conversions
       tf2_ros
+      tf2
       genmsg
       pcl_ros
       cv_bridge
       pose_detection
+      eigen_conversions
   DEPENDS 
     EIGEN3
     OpenCV
