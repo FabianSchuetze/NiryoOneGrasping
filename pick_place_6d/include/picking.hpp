@@ -6,6 +6,7 @@
 #include <niryo_one_msgs/RobotMoveAction.h>
 #include <niryo_one_msgs/SetInt.h>
 #include <vector>
+#include <Eigen/Geometry>
 
 class Picking {
   public:
@@ -18,11 +19,11 @@ class Picking {
     };
     Picking();
     void connectToRobot(ros::NodeHandle&);
-    static EndEffectorPosition computePreGrasp_orientate(NiryoPose);
-    static EndEffectorPosition computePreGrasp_descend(NiryoPose);
-    static EndEffectorPosition computeGrasp(NiryoPose);
-    static EndEffectorPosition Close(NiryoPose);
-    static EndEffectorPosition PostGrasp(NiryoPose);
+    static EndEffectorPosition computePreGrasp_orientate(NiryoPose, const Eigen::Isometry3d&);
+    static EndEffectorPosition computePreGrasp_descend(NiryoPose, const Eigen::Isometry3d&);
+    static EndEffectorPosition computeGrasp(NiryoPose, const Eigen::Isometry3d&);
+    static EndEffectorPosition Close(NiryoPose, const Eigen::Isometry3d&);
+    static EndEffectorPosition PostGrasp(NiryoPose, const Eigen::Isometry3d&);
     static EndEffectorPosition PreFinal();
     static EndEffectorPosition Final();
     static EndEffectorPosition Rest();
