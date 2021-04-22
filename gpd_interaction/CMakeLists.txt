@@ -13,6 +13,7 @@ find_package(catkin REQUIRED COMPONENTS
   tf2_geometry_msgs
   object_pose
   gpd_ros
+  eigen_conversions
 )
 
 ###################################
@@ -22,7 +23,7 @@ catkin_package(
   INCLUDE_DIRS include
 #  LIBRARIES turtle_tf2
  CATKIN_DEPENDS geometry_msgs roscpp std_msgs tf2 tf2_ros message_runtime
- object_pose gpd_ros
+ object_pose gpd_ros eigen_conversions
 #  DEPENDS system_lib
 )
 

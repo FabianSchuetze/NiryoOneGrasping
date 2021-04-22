@@ -3,10 +3,10 @@
 #include <open3d/Open3D.h>
 #include <pcl/point_types.h>
 #include <pcl_ros/point_cloud.h>
-#include <tf2_eigen/tf2_eigen.h>
-#include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 #include <tf/LinearMath/Matrix3x3.h>
 #include <tf/LinearMath/Quaternion.h>
+#include <tf2_eigen/tf2_eigen.h>
+#include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 using PointCloud = pcl::PointCloud<pcl::PointXYZRGB>;
 namespace fs = std::filesystem;
 constexpr double PI(3.14);
@@ -14,6 +14,8 @@ constexpr double HEIGHT_BAKING(0.08);
 static constexpr std::size_t MAX_UINT(255);
 static constexpr std::size_t N_SAMPLES(50000);
 static constexpr std::size_t BEST_SAMPLES(10);
+static constexpr float HALF_ANGLE(1.5);
+static constexpr float FIFITY_DEGREE(0.87);
 
 namespace gpd {
 pcl::PointXYZRGB inline toPointXYZRGB(const Eigen::Vector3d &point) {
@@ -149,7 +151,7 @@ int GPDInteraction::filterPossibleTransforms(const Eigen::Isometry3d &object) {
         const auto &possible_transform = possible_transforms[i];
         const auto hand = object * possible_transform;
         auto [roll_hand, pitch_hand, yaw_hand] = RPY(hand);
-        if (pitch_hand > 1.5 || pitch_hand < -0.5) {
+        if ((pitch_hand > 1.5) or (pitch_hand < -0.5)) {
             continue;
         }
         double curr_error = std::abs(yaw_object - yaw_hand);
@@ -165,11 +167,25 @@ Eigen::Isometry3d GPDInteraction::generateHand(const Eigen::Isometry3d &object,
                                                int idx) {
     const auto grasp_frame = object * possible_transforms[idx];
     auto [roll_hand, pitch_hand, yaw_hand] = RPY(grasp_frame);
-    Hand hand{grasp_frame(0, 3), grasp_frame(1, 3), pitch_hand, yaw_hand};
+    Hand hand{grasp_frame(0, 3), grasp_frame(1, 3), 0, pitch_hand, yaw_hand};
     auto res = generateTransformation(hand);
     return res;
 }
 
+double GPDInteraction::correctPitch(double pitch) {
+    double corrected_pitch(0);
+    if ((FIFITY_DEGREE < pitch) and (pitch <= HALF_ANGLE)) {
+        ROS_WARN_STREAM("Pitch: " << pitch << ", set to 1.5");
+        corrected_pitch = HALF_ANGLE;
+    } else if ((-FIFITY_DEGREE < pitch) and (pitch < FIFITY_DEGREE)) {
+        corrected_pitch = 0;
+        ROS_WARN_STREAM("Pitch: " << pitch << ", set to 0");
+    } else {
+        ROS_ERROR_STREAM("Cannot find the right pitch from: " << pitch);
+        throw std::runtime_error("Cannot find the right pitch");
+    }
+    return corrected_pitch;
+}
 void GPDInteraction::callback_object_pose(const object_pose::positions &msg) {
     grasp_pose_received = false;
     ROS_WARN_STREAM("Inside the object pose callback");
@@ -182,7 +198,7 @@ void GPDInteraction::callback_object_pose(const object_pose::positions &msg) {
         grasp_pose_received = false;
         geometry_msgs::Pose pose = msg.poses.poses[i];
         const std::string &name = msg.objects[i];
-        Hand hand{pose.position.x, pose.position.y, 0,
+        Hand hand{pose.position.x, pose.position.y, 0, 0,
                   calculateYaw(pose.orientation)};
         Eigen::Isometry3d object_frame = generateTransformation(hand);
         transforms.push_back(rosTransform(object_frame, name, ""));
@@ -199,9 +215,11 @@ void GPDInteraction::callback_object_pose(const object_pose::positions &msg) {
         Eigen::Isometry3d grasp_frame = generateHand(object_frame, res);
         transforms.push_back(rosTransform(grasp_frame, name, "_grasp"));
         auto [roll_hand, pitch_hand, yaw_hand] = RPY(grasp_frame);
-        ROS_WARN_STREAM("The yaw is: " << yaw_hand);
-        auto grasp_pose = generateGraspPose(
-            Hand{grasp_frame(0, 3), grasp_frame(1, 3), pitch_hand, yaw_hand});
+        double corrected_pitch = correctPitch(pitch_hand);
+        double height = (corrected_pitch == 1.5) ? grasp_frame(2, 3) : 0;
+        Hand finalHand{grasp_frame(0, 3), grasp_frame(1, 3), height,
+                       corrected_pitch, yaw_hand};
+        auto grasp_pose = generateGraspPose(finalHand);
         poses.poses.push_back(grasp_pose);
     }
     ROS_WARN_STREAM("Transfroms size: " << transforms.size());

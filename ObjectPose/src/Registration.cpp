@@ -33,10 +33,28 @@
 #include <open3d/pipelines/registration/Feature.h>
 #include <open3d/utility/Console.h>
 #include <open3d/utility/Helper.h>
+#include <tf/transform_datatypes.h>
+#include <tf_conversions/tf_eigen.h>
 
 using namespace open3d;
 using namespace open3d::pipelines;
 using namespace open3d::pipelines::registration;
+
+std::tuple<double, double, double>
+convertQuaternionToRPY(const Eigen::Matrix4d &transformation) {
+    // Eigen::Matrix4d result;
+    Eigen::Isometry3d result;
+    result.matrix() = transformation;
+    // Eigen::Quaterniond quat;
+    // quat = result.linear();
+    tf::Matrix3x3 rotation;
+    tf::matrixEigenToTF(result.linear(), rotation);
+    // tf::Quaternion q(quat.x, quat.y, quat.z, quat.w);
+    // tf::Matrix3x3 rotation(q);
+    double roll(0.0), pitch(0.0), yaw(0.0);
+    rotation.getRPY(roll, pitch, yaw);
+    return {roll, pitch, yaw};
+}
 
 static RegistrationResult EvaluateRANSACBasedOnCorrespondence(
     const geometry::PointCloud &source, const geometry::PointCloud &target,
@@ -64,15 +82,7 @@ static RegistrationResult EvaluateRANSACBasedOnCorrespondence(
     }
     return result;
 }
-// double calculateYaw(const Eigen::Matrix4d &transformation) {
 
-// Eigen::Matrix3d tmp = transformation.block(0, 0, 3, 3);
-// Eigen::Quaternion<double> quat(tmp);
-// double first = 2 * (quat.w() * quat.z() + quat.x() * quat.y());
-// double second = 1 - 2 * (quat.x() * quat.x() + quat.z() * quat.z());
-// double yaw = std::atan2(first, second);
-// return yaw;
-//}
 RegistrationResult ModifiedRegistrationRANSACBasedOnCorrespondence(
     const geometry::PointCloud &source, const geometry::PointCloud &target,
     const CorrespondenceSet &corres, double max_correspondence_distance,
@@ -87,6 +97,7 @@ RegistrationResult ModifiedRegistrationRANSACBasedOnCorrespondence(
         max_correspondence_distance <= 0.0) {
         return RegistrationResult();
     }
+    //double min_quality = 0.0;
 
     RegistrationResult best_result;
     int exit_itr = -1;
@@ -96,6 +107,7 @@ RegistrationResult ModifiedRegistrationRANSACBasedOnCorrespondence(
         CorrespondenceSet ransac_corres(ransac_n);
         RegistrationResult best_result_local;
         int exit_itr_local = criteria.max_iteration_;
+        double min_quality(0);
 
 #pragma omp for nowait
         for (int itr = 0; itr < criteria.max_iteration_; itr++) {
@@ -122,9 +134,11 @@ RegistrationResult ModifiedRegistrationRANSACBasedOnCorrespondence(
                 if (!check) {
                     continue;
                 }
-                double yaw = ObjectPose::calculateYaw(transformation);
-                double roll = ObjectPose::calculateRoll(transformation);
-                double pitch = ObjectPose::calculatePitch(transformation);
+                auto [roll, pitch, yaw] =
+                    convertQuaternionToRPY(transformation);
+                // double yaw = ObjectPose::calculateYaw(transformation);
+                // double roll = ObjectPose::calculateRoll(transformation);
+                // double pitch = ObjectPose::calculatePitch(transformation);
                 if (std::abs(yaw) > (3.14 / 2.0)) {
                     continue;
                 }
@@ -132,16 +146,31 @@ RegistrationResult ModifiedRegistrationRANSACBasedOnCorrespondence(
                     (std::abs(pitch) > (3.14 / 10.0))) {
                     continue;
                 }
+                if (std::isnan(pitch) or std::isnan(roll) or std::isnan(yaw)) {
+                    continue;
+                }
                 geometry::PointCloud pcd = source;
                 pcd.Transform(transformation);
                 auto result = EvaluateRANSACBasedOnCorrespondence(
                     pcd, target, corres, max_correspondence_distance,
                     transformation);
+                auto reverse_result = registration::EvaluateRegistration(
+                    target, pcd, max_correspondence_distance,
+                    result.transformation_.inverse());
+                double quality =
+                    std::min(result.fitness_, reverse_result.fitness_);
 
-                if (result.IsBetterRANSACThan(best_result_local)) {
+                if ((result.IsBetterRANSACThan(best_result_local)) and
+                    (quality > min_quality)) {
                     ROS_WARN_STREAM("Better result, roll, yaw, pitch "
                                     << roll << ", " << yaw << ", " << pitch);
+                    ROS_WARN_STREAM("The qualities are : "
+                                    << result.fitness_ << ", "
+                                    << reverse_result.fitness_ << ", "
+                                    << quality);
+                    ObjectPose::VisualizeRegistration(source, target, result);
                     best_result_local = result;
+                    min_quality = quality;
 
                     // Update exit condition if necessary
                     double exit_itr_d =

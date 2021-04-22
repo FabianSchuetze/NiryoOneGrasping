@@ -13,12 +13,22 @@ static constexpr std::size_t MAX_UINT(255);
 static constexpr float SCALE(0.1);
 static constexpr float MIN_DENSITY(0.02);
 static constexpr std::size_t MIN_POINTS(100);
-static constexpr std::size_t MAX_REPEATS(500000);
-static constexpr float CERTAINTY(0.9999);
+static constexpr std::size_t MAX_REPEATS(5000000);
+static constexpr float CERTAINTY(0.99999);
 static constexpr float GRAPH(0.92);
 
 using o3d::pipelines::registration::RegistrationResult;
 namespace registration = o3d::pipelines::registration;
+
+
+Eigen::Vector3d inline convert_color(const pcl::PointXYZRGB &point) {
+    double r = static_cast<double>(point.r) / MAX_UINT;
+    double g = static_cast<double>(point.g) / MAX_UINT;
+    double b = static_cast<double>(point.b) / MAX_UINT;
+    return {r, g, b};
+}
+
+namespace ObjectPose {
 
 void VisualizeRegistration(const open3d::geometry::PointCloud &source,
                            const open3d::geometry::PointCloud &target,
@@ -38,15 +48,6 @@ void VisualizeRegistration(const open3d::geometry::PointCloud &source,
     o3d::visualization::DrawGeometries({sourcep, targetp, origp, framep},
                                        ss.str());
 }
-
-Eigen::Vector3d inline convert_color(const pcl::PointXYZRGB &point) {
-    double r = static_cast<double>(point.r) / MAX_UINT;
-    double g = static_cast<double>(point.g) / MAX_UINT;
-    double b = static_cast<double>(point.b) / MAX_UINT;
-    return {r, g, b};
-}
-
-namespace ObjectPose {
 
 double calculateRoll(const Eigen::Matrix4d &transformation) {
 
@@ -172,7 +173,7 @@ RegistrationResult PoseEstimation::globalRegistration(const Ptr &source,
     for (int i = 0; i < 3; ++i) {
         auto preliminary = ModifiedRegistrationRANSACBasedOnFeatureMatching(
             *source, *target, *source_fpfh, *target_fpfh, mutual_filter,
-            1.5 * 0.05,
+            1.5 * 0.09,
             registration::TransformationEstimationPointToPoint(false), 4,
             correspondence_checker,
             registration::RANSACConvergenceCriteria(MAX_REPEATS, CERTAINTY));
@@ -204,7 +205,7 @@ PoseEstimation::BestResult PoseEstimation::estimateTransformations(
         const Ptr &potential_target = targets[t_idx];
         std::size_t n_points = potential_target->points_.size();
         for (size_t s_idx = 0; s_idx < sources.size(); ++s_idx) {
-            ROS_WARN_STREAM("Doing Source " << t_idx);
+            ROS_WARN_STREAM("Doing Source " << s_idx);
             auto [name, mesh] = sources[s_idx];
             auto pcd = mesh.SamplePointsUniformly(n_points);
             std::string baking("BakingVanilla");

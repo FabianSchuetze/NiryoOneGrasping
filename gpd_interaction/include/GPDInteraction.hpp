@@ -12,7 +12,7 @@
 
 namespace gpd {
 struct Hand {
-    double x, y, pitch, yaw;
+    double x, y, z, pitch, yaw;
 };
 geometry_msgs::TransformStamped rosTransform(const Eigen::Isometry3d &,
                                              const std::string &, std::string);
@@ -36,6 +36,7 @@ class GPDInteraction {
     void publishPointCloud(const std::string &name);
     int filterPossibleTransforms(const Eigen::Isometry3d &);
     Eigen::Isometry3d generateHand(const Eigen::Isometry3d &, int);
+    static double correctPitch(double);
 };
 } // namespace gpd
 #endif

@@ -57,7 +57,7 @@ Picking::EndEffectorPosition Picking::computePreGrasp_orientate(NiryoPose p,
         const Eigen::Isometry3d& incoming_pose) {
     if (p.second.pitch == 0) {
         Eigen::Isometry3d move;
-        move.matrix()(0,3) = -0.08;
+        move.matrix()(0,3) = -0.1;
         move.matrix()(2,3) = 0.25;
         Eigen::Isometry3d approach = incoming_pose * move;
         p.first.x = approach.matrix()(0,3);
@@ -77,7 +77,7 @@ Picking::EndEffectorPosition Picking::computePreGrasp_descend(NiryoPose p,
         p.first.z += 0.15;
     } else if (p.second.pitch == 0.0) {
         Eigen::Isometry3d move;
-        move.matrix()(0,3) = -0.03;
+        move.matrix()(0,3) = -0.1;
         move.matrix()(2,3) = 0.15;
         Eigen::Isometry3d approach = incoming_pose * move;
         p.first.x = approach.matrix()(0,3);
@@ -94,7 +94,7 @@ Picking::EndEffectorPosition Picking::computeGrasp(NiryoPose p,
         p.first.z += 0.085;
     } else if (p.second.pitch == 0.0) {
         Eigen::Isometry3d move;
-        move.matrix()(0,3) = -0.03;
+        move.matrix()(0,3) = -0.1;
         move.matrix()(2,3) = 0.03;
         Eigen::Isometry3d approach = incoming_pose * move;
         p.first.x = approach.matrix()(0,3);
@@ -110,7 +110,7 @@ Picking::EndEffectorPosition Picking::Close(NiryoPose p,
         p.first.z += 0.085;
     } else if (p.second.pitch == 0.0) {
         Eigen::Isometry3d move;
-        move.matrix()(0,3) = -0.03;
+        move.matrix()(0,3) = -0.1;
         move.matrix()(2,3) = 0.03;
         Eigen::Isometry3d approach = incoming_pose * move;
         p.first.x = approach.matrix()(0,3);
