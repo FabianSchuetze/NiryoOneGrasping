@@ -232,14 +232,24 @@ Picking::convertToNiryo(const geometry_msgs::PoseArray &poses) {
     std::vector<NiryoPose> niryo_poses;
     for (const auto &pose : poses.poses) {
         NiryoPose niryo_pose;
+        ROS_WARN_STREAM("The incoming quaternion is: " <<
+                pose.orientation.x  << ", " <<
+                pose.orientation.y << ", " <<
+                pose.orientation.z << ", " <<
+                pose.orientation.w);
         auto [roll, pitch, yaw] = convertQuaternionToRPY(pose.orientation);
+        ROS_WARN_STREAM("The incoming pitch and yaw is: " << pitch << ", " << yaw);
         niryo_pose.second.roll = 0;
-        if (0.5 < pitch <= 1.5) {
+        if ((0.5 < pitch) and (pitch <= 1.5)) {
+            ROS_WARN_STREAM("Pitch: " << pitch << ", set to 1.5");
             niryo_pose.second.pitch = 1.5;
-        } else if (-0.5 < pitch < 0.5) {
+        } else if ((-0.5 < pitch) and (pitch < 0.5)) {
             niryo_pose.second.pitch = 0;
+            ROS_WARN_STREAM("Pitch: " << pitch << ", set to 0");
+        } else {
+            ROS_ERROR_STREAM("Cannot find the right pitch from: " << pitch);
+            continue;
         }
-        //niryo_pose.second.pitch = 1.5; // always bend the hand
         niryo_pose.second.yaw = yaw;
         niryo_pose.first.x = pose.position.x;
         niryo_pose.first.y = pose.position.y;
