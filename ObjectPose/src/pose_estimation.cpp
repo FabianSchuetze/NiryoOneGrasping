@@ -207,6 +207,10 @@ PoseEstimation::BestResult PoseEstimation::estimateTransformations(
             ROS_WARN_STREAM("Doing Source " << t_idx);
             auto [name, mesh] = sources[s_idx];
             auto pcd = mesh.SamplePointsUniformly(n_points);
+            std::string baking("BakingVanilla");
+            if (name.find(baking) != std::string::npos) {
+                pcd->Scale(1.25, pcd->GetCenter());
+            }
             pcd->EstimateNormals();
             auto result = globalRegistration(pcd, potential_target);
             ROS_WARN_STREAM("Fittness of the result is:" << result.fitness_);
