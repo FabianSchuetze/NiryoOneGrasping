@@ -66,6 +66,7 @@ geometry_msgs::Pose generateGraspPose(const Hand &hand) {
     geometry_msgs::Pose grasp_pose;
     grasp_pose.position.x = std::max(hand.x, 0.02);
     grasp_pose.position.y = hand.y;
+    grasp_pose.position.z = hand.z;
     tf2::Quaternion q;
     q.setRPY(0, hand.pitch, hand.yaw);
     grasp_pose.orientation = tf2::toMsg(q);
@@ -123,7 +124,7 @@ void GPDInteraction::callback_grasp_pose(const gpd_ros::GraspConfigList &msg) {
     grasp_pose_received = true;
 }
 
-void GPDInteraction::publishPointCloud(const std::string &name) {
+Eigen::Vector3d GPDInteraction::publishPointCloud(const std::string &name) {
     open3d::geometry::TriangleMesh mesh;
     bool success = open3d::io::ReadTriangleMesh(name, mesh);
     if (!success) {
@@ -131,6 +132,7 @@ void GPDInteraction::publishPointCloud(const std::string &name) {
         throw std::runtime_error("Couldd not read mesh file");
     }
     auto cloud = mesh.SamplePointsUniformly(N_SAMPLES);
+    const Eigen::Vector3d center = mesh.GetCenter();
     PointCloud::Ptr pcl_cloud(new PointCloud);
     for (const auto &o3d_point : cloud->points_) {
         auto point = toPointXYZRGB(o3d_point);
@@ -141,6 +143,7 @@ void GPDInteraction::publishPointCloud(const std::string &name) {
     std::string fn = fs::path(name).filename();
     pcl_cloud->header.frame_id = fn;
     publish_pointcloud_.publish(pcl_cloud);
+    return center;
 }
 
 int GPDInteraction::filterPossibleTransforms(const Eigen::Isometry3d &object) {
@@ -202,7 +205,7 @@ void GPDInteraction::callback_object_pose(const object_pose::positions &msg) {
                   calculateYaw(pose.orientation)};
         Eigen::Isometry3d object_frame = generateTransformation(hand);
         transforms.push_back(rosTransform(object_frame, name, ""));
-        publishPointCloud(name);
+        Eigen::Vector3d center = publishPointCloud(name);
         while ((!grasp_pose_received) and ros::ok()) {
             std::this_thread::sleep_for(std::chrono::seconds(1));
         }
@@ -216,10 +219,14 @@ void GPDInteraction::callback_object_pose(const object_pose::positions &msg) {
         transforms.push_back(rosTransform(grasp_frame, name, "_grasp"));
         auto [roll_hand, pitch_hand, yaw_hand] = RPY(grasp_frame);
         double corrected_pitch = correctPitch(pitch_hand);
-        double height = (corrected_pitch == 1.5) ? grasp_frame(2, 3) : 0;
+        double height = (corrected_pitch > 1.49) ? center(2) : 0;
+        ROS_WARN_STREAM("The correct height is: " << height);
         Hand finalHand{grasp_frame(0, 3), grasp_frame(1, 3), height,
                        corrected_pitch, yaw_hand};
         auto grasp_pose = generateGraspPose(finalHand);
+        ROS_WARN_STREAM("The final grasp pose is: " << 
+                grasp_pose.position.x << ", " << grasp_pose.position.y 
+                << ", " << grasp_pose.position.z);
         poses.poses.push_back(grasp_pose);
     }
     ROS_WARN_STREAM("Transfroms size: " << transforms.size());

@@ -162,13 +162,7 @@ RegistrationResult PoseEstimation::globalRegistration(const Ptr &source,
         correspondence_checker;
     auto correspondence_checker_edge_length =
         registration::CorrespondenceCheckerBasedOnEdgeLength(GRAPH);
-    // auto correspondence_checker_distance =
-    // registration::CorrespondenceCheckerBasedOnDistance(1.5 * 0.1);
-    // auto correspondence_checker_normal =
-    // registration::CorrespondenceCheckerBasedOnNormal(0.52359878);
     correspondence_checker.emplace_back(correspondence_checker_edge_length);
-    // correspondence_checker.emplace_back(correspondence_checker_distance);
-    // correspondence_checker.emplace_back(correspondence_checker_normal);
     bool mutual_filter(true);
     for (int i = 0; i < 3; ++i) {
         auto preliminary = ModifiedRegistrationRANSACBasedOnFeatureMatching(

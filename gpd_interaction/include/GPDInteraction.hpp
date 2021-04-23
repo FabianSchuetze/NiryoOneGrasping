@@ -33,7 +33,7 @@ class GPDInteraction {
     static Eigen::Isometry3d generateTransformation(const Hand &);
     static Eigen::Isometry3d
     convertHandToTransform(const gpd_ros::GraspConfig &);
-    void publishPointCloud(const std::string &name);
+    Eigen::Vector3d publishPointCloud(const std::string &name);
     int filterPossibleTransforms(const Eigen::Isometry3d &);
     Eigen::Isometry3d generateHand(const Eigen::Isometry3d &, int);
     static double correctPitch(double);
