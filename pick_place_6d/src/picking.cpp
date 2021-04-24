@@ -55,8 +55,7 @@ Picking::EndEffectorPosition Picking::Final() {
 Picking::EndEffectorPosition
 Picking::computePreGrasp_orientate(NiryoPose p,
                                    const Eigen::Isometry3d &incoming_pose) {
-    // if (p.second.pitch == 0) {
-    Eigen::Isometry3d move;
+    Eigen::Isometry3d move(Eigen::Matrix4d::Identity(4,4));
     move.matrix()(0, 3) = -0.1;
     move.matrix()(2, 3) = 0.2;
     Eigen::Isometry3d approach = incoming_pose * move;
@@ -66,17 +65,13 @@ Picking::computePreGrasp_orientate(NiryoPose p,
     if (p.first.x < 0.11) {
         ROS_ERROR_STREAM("Recived x value of " << p.first.x
                                                << "set to 0.1 for safty");
-        p.first.x = 0.11;
+        p.first.x = 0.13;
     }
-    //}
-    //} else {
-    // p.first.z = 0.20;
-    //}
     ROS_WARN_STREAM("Orientate Pose: " << p.first.x << ", " << p.first.y << ", "
                                        << p.first.z << ", " << p.second.roll
                                        << ", " << p.second.pitch << ", "
                                        << p.second.yaw);
-    p.first.z = 0.25; // SAFTY FIRST
+    //p.first.z = 0.25; // SAFTY FIRST
     EndEffectorPosition pose1 = pose(p, true);
     return pose1;
 }
@@ -84,65 +79,56 @@ Picking::computePreGrasp_orientate(NiryoPose p,
 Picking::EndEffectorPosition
 Picking::computePreGrasp_descend(NiryoPose p,
                                  const Eigen::Isometry3d &incoming_pose) {
-    // if (p.second.pitch > 1.49) {
-    // p.first.z += 0.15;
-    //} else if (p.second.pitch == 0.0) {
-    Eigen::Isometry3d move;
-    move.matrix()(0, 3) = -0.07;
-    move.matrix()(2, 3) = 0.10;
+    Eigen::Isometry3d move(Eigen::Matrix4d::Identity(4,4));
+    move.matrix()(0, 3) = -0.08;
+    move.matrix()(2, 3) = 0.04;
     Eigen::Isometry3d approach = incoming_pose * move;
+    ROS_WARN_STREAM("Pre Grasp Desecend: Incoming pose\n" << incoming_pose.matrix() << "\n move\n" 
+            << move.matrix());
     p.first.x = approach.matrix()(0, 3);
     if (p.first.x < 0.11) {
         ROS_ERROR_STREAM("Recived x value of " << p.first.x
                                                << "set to 0.1 for safty");
-        p.first.x = 0.11;
+        p.first.x = 0.13;
     }
     p.first.y = approach.matrix()(1, 3);
     p.first.z = approach.matrix()(2, 3);
-    //}
     ROS_WARN_STREAM("Descend Pose: " << p.first.x << ", " << p.first.y << ", "
                                      << p.first.z << ", " << p.second.roll
                                      << ", " << p.second.pitch << ", "
                                      << p.second.yaw);
-    p.first.z = 0.15; // SAFTY FIRST
+    //p.first.z = 0.15; // SAFTY FIRST
     EndEffectorPosition pose1 = pose(p, true);
     return pose1;
 }
 
 Picking::EndEffectorPosition
 Picking::computeGrasp(NiryoPose p, const Eigen::Isometry3d &incoming_pose) {
-    // if (p.second.pitch > 1.49) {
-    // p.first.z += 0.085;
-    //} else if (p.second.pitch == 0.0) {
-    Eigen::Isometry3d move;
+    Eigen::Isometry3d move(Eigen::Matrix4d::Identity(4,4));
     move.matrix()(0, 3) = -0.04;
-    move.matrix()(2, 3) = 0.04;
+    move.matrix()(2, 3) = 0.03;
     Eigen::Isometry3d approach = incoming_pose * move;
     p.first.x = approach.matrix()(0, 3);
     if (p.first.x < 0.11) {
         ROS_ERROR_STREAM("Recived x value of " << p.first.x
                                                << "set to 0.1 for safty");
-        p.first.x = 0.11;
+        p.first.x = 0.13;
     }
     p.first.y = approach.matrix()(1, 3);
     p.first.z = approach.matrix()(2, 3);
-    //}
     ROS_WARN_STREAM("Compute Grasp Pose: "
                     << p.first.x << ", " << p.first.y << ", " << p.first.z
                     << ", " << p.second.roll << ", " << p.second.pitch << ", "
                     << p.second.yaw);
-    p.first.z = 0.15; // SAFTY FIRST
+    //p.first.z = 0.15; // SAFTY FIRST
     EndEffectorPosition pose1 = pose(p, true);
     return pose1;
 }
 Picking::EndEffectorPosition
 Picking::Close(NiryoPose p, const Eigen::Isometry3d &incoming_pose) {
-    // if (p.second.pitch > 1.49) {
-    // p.first.z += 0.085;
-    //} else if (p.second.pitch == 0.0) {
-    Eigen::Isometry3d move;
+    Eigen::Isometry3d move(Eigen::Matrix4d::Identity(4,4));
     move.matrix()(0, 3) = -0.04;
-    move.matrix()(2, 3) = 0.04;
+    move.matrix()(2, 3) = 0.03;
     Eigen::Isometry3d approach = incoming_pose * move;
     p.first.x = approach.matrix()(0, 3);
     if (p.first.x < 0.11) {
@@ -156,7 +142,7 @@ Picking::Close(NiryoPose p, const Eigen::Isometry3d &incoming_pose) {
     ROS_WARN_STREAM("Close Pose: " << p.first.x << ", " << p.first.y << ", "
                                    << p.first.z << ", " << p.second.roll << ", "
                                    << p.second.pitch << ", " << p.second.yaw);
-    p.first.z = 0.15; // SAFTY FIRST
+    //p.first.z = 0.15; // SAFTY FIRST
     EndEffectorPosition pose1 = pose(p, false);
     return pose1;
 }
@@ -273,8 +259,6 @@ void Picking::moveJoints(const std::vector<double> &position) {
 }
 
 void Picking::moveArm(const NiryoPose &pose) {
-    // tf2::Quaternion quat;
-    // quat.setRPY( pose.second.roll, pose.second.pitch, pose.second.yaw);
     geometry_msgs::Quaternion quat_msg =
         tf::createQuaternionMsgFromRollPitchYaw(
             pose.second.roll, pose.second.pitch, pose.second.yaw);
@@ -322,11 +306,6 @@ Picking::convertToNiryo(const geometry_msgs::PoseArray &poses) {
     std::vector<NiryoPose> niryo_poses;
     for (const auto &pose : poses.poses) {
         NiryoPose niryo_pose;
-        // ROS_WARN_STREAM("The incoming quaternion is: " <<
-        // pose.orientation.x  << ", " <<
-        // pose.orientation.y << ", " <<
-        // pose.orientation.z << ", " <<
-        // pose.orientation.w);
         auto [roll, pitch, yaw] = convertQuaternionToRPY(pose.orientation);
         niryo_pose.second.roll = 0;
         niryo_pose.second.pitch = pitch;
@@ -345,7 +324,6 @@ Picking::convertToNiryo(const geometry_msgs::PoseArray &poses) {
 
 void Picking::callback(const geometry_msgs::PoseArray &poses) {
     ROS_WARN_STREAM("Inside the callback");
-    // if poses > exceeds the previous pose
     std::vector<NiryoPose> niryo_poses = convertToNiryo(poses);
     for (const auto &pose : niryo_poses) {
         moveArm(pose);
