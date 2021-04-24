@@ -27,8 +27,10 @@ const EndEffectorPosition computePreGrasp(const std::vector<double>& goal) {
     p.x = goal[0];
     p.y = goal[1];
     p.z = goal[2];
-    if (p.z < 0.135) {
-        throw std::runtime_error("Z values cannot be lower than 0.135");
+    if ((p.z < 0.10) and (goal[4] > 0.5)) {
+        throw std::runtime_error("Z values cannot be lower than 0.135 and pitch larger than 0.5");
+    } else if ((p.z < 0.03)) {
+        throw std::runtime_error("Z value cannot be lower than 0.03");
     }
     niryo_one_msgs::RPY rot;
     rot.roll = goal[3];
@@ -46,8 +48,10 @@ const EndEffectorPosition computeGrasp(const std::vector<double>& goal) {
     p.x = goal[0];
     p.y = goal[1];
     p.z = goal[2];
-    if (p.z < 0.135) {
-        throw std::runtime_error("Z values cannot be lower than 0.135");
+    if ((p.z < 0.10) and (goal[4] > 0.5)) {
+        throw std::runtime_error("Z values cannot be lower than 0.135 and yaw larger than 0.5");
+    } else if ((p.z < 0.03)) {
+        throw std::runtime_error("Z value cannot be lower than 0.03");
     }
     niryo_one_msgs::RPY rot;
     rot.roll = goal[3];
