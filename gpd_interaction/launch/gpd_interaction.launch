@@ -4,5 +4,4 @@
         <param name="/estimated_poses" value="/estimated_poses"/>
         <param name="/outgoing_poses" value="/grasp_pose"/>
 </node>
-<include file="$(find object_pose)/launch/estimate_pose.launch"/>
 </launch>

@@ -167,14 +167,14 @@ RegistrationResult PoseEstimation::globalRegistration(const Ptr &source,
     for (int i = 0; i < 3; ++i) {
         auto preliminary = ModifiedRegistrationRANSACBasedOnFeatureMatching(
             *source, *target, *source_fpfh, *target_fpfh, mutual_filter,
-            1.5 * 0.09,
+            1.5 * 0.12,
             registration::TransformationEstimationPointToPoint(false), 4,
             correspondence_checker,
             registration::RANSACConvergenceCriteria(MAX_REPEATS, CERTAINTY));
         auto registration_result = registration::RegistrationICP(
-            *source, *target, 0.015, preliminary.transformation_);
+            *source, *target, 0.03, preliminary.transformation_);
         auto reverse_result = registration::EvaluateRegistration(
-            *target, *source, 0.015,
+            *target, *source, 0.03,
             registration_result.transformation_.inverse());
         double min_quality =
             std::min(registration_result.fitness_, reverse_result.fitness_);
@@ -234,8 +234,8 @@ PoseEstimation::estimateTransformations() {
         BestResult result = estimateTransformations(sources, targets);
         found = (result.source_idx != -1) and (result.target_idx != -1);
         if (found) {
-            //VisualizeRegistration(*result.source, *result.target,
-                                  //result.result);
+            VisualizeRegistration(*result.source, *result.target,
+                                  result.result);
             results.push_back(result);
             sources.erase(sources.begin() + result.source_idx);
             targets.erase(targets.begin() + result.target_idx);
