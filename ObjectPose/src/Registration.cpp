@@ -162,13 +162,8 @@ RegistrationResult ModifiedRegistrationRANSACBasedOnCorrespondence(
 
                 if ((result.IsBetterRANSACThan(best_result_local)) and
                     (quality > min_quality)) {
-                    ROS_WARN_STREAM("Better result, roll, yaw, pitch "
-                                    << roll << ", " << yaw << ", " << pitch);
-                    ROS_WARN_STREAM("The qualities are : "
-                                    << result.fitness_ << ", "
-                                    << reverse_result.fitness_ << ", "
-                                    << quality);
-                    ObjectPose::VisualizeRegistration(source, target, result);
+                    //ROS_WARN_STREAM("Better result, roll, yaw, pitch "
+                                    //<< roll << ", " << yaw << ", " << pitch);
                     best_result_local = result;
                     min_quality = quality;
 
@@ -186,7 +181,6 @@ RegistrationResult ModifiedRegistrationRANSACBasedOnCorrespondence(
 #pragma omp critical
         {
             if (best_result_local.IsBetterRANSACThan(best_result)) {
-                ROS_WARN_STREAM("Other check");
                 best_result = best_result_local;
             }
             if (exit_itr_local > exit_itr) {

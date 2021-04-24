@@ -78,7 +78,7 @@ double calculatePitch(const Eigen::Matrix4d &transformation) {
 }
 void PoseEstimation::readMeshes(const std::filesystem::path &path) {
     std::string line;
-    ROS_WARN_STREAM("Trying to open file " << path);
+    ROS_INFO_STREAM("Trying to open file " << path);
     std::ifstream file(path);
     if (!file.is_open()) {
         throw std::runtime_error("Files can't be opened");
@@ -107,7 +107,7 @@ PoseEstimation::PoseEstimation(const std::filesystem::path &path,
 
 std::shared_ptr<o3d::geometry::PointCloud> PoseEstimation::toOpen3DPointCloud(
     const pcl::PointCloud<pcl::PointXYZRGB>::ConstPtr &pcl_cloud) {
-    ROS_WARN_STREAM("The input point cloud has size " << pcl_cloud->size());
+    ROS_INFO_STREAM("The input point cloud has size " << pcl_cloud->size());
     std::shared_ptr<o3d::geometry::PointCloud> o3d_cloud =
         std::make_shared<o3d::geometry::PointCloud>();
     std::vector<Eigen::Vector3d> points, colors;
@@ -116,7 +116,7 @@ std::shared_ptr<o3d::geometry::PointCloud> PoseEstimation::toOpen3DPointCloud(
         points.emplace_back(point.x, point.y, point.z);
         colors.push_back(convert_color(point));
     }
-    ROS_WARN_STREAM("The number of copied points " << points.size());
+    ROS_INFO_STREAM("The number of copied points " << points.size());
     o3d_cloud->points_ = points;
     o3d_cloud->colors_ = colors;
     return o3d_cloud;
@@ -128,9 +128,9 @@ std::vector<Ptr> PoseEstimation::findCluster(const Ptr &source) {
         source->ClusterDBSCAN(MIN_DENSITY, MIN_POINTS, false);
     std::vector<std::size_t> points(indices.size());
     std::iota(points.begin(), points.end(), 0);
-    ROS_WARN_STREAM("Found number of indices : " << indices.size());
+    ROS_INFO_STREAM("Found number of indices : " << indices.size());
     auto it = std::max_element(indices.begin(), indices.end());
-    ROS_WARN_STREAM("The number of clusters is : " << *it);
+    ROS_INFO_STREAM("The number of clusters is : " << *it);
     if (*it == -1) {
         ROS_ERROR_STREAM("Did not find any clusters");
         throw std::runtime_error("Did not find any clusters");
@@ -192,7 +192,7 @@ PoseEstimation::BestResult PoseEstimation::estimateTransformations(
     std::vector<Ptr> &targets) {
     double best(0.3);
     BestResult best_result;
-    ROS_WARN_STREAM("Target and Source size: " << targets.size() << ", "
+    ROS_INFO_STREAM("Target and Source size: " << targets.size() << ", "
                                                << sources.size());
     for (size_t t_idx = 0; t_idx < targets.size(); ++t_idx) {
         ROS_WARN_STREAM("Doing Target " << t_idx);
@@ -208,7 +208,7 @@ PoseEstimation::BestResult PoseEstimation::estimateTransformations(
             }
             pcd->EstimateNormals();
             auto result = globalRegistration(pcd, potential_target);
-            ROS_WARN_STREAM("Fittness of the result is:" << result.fitness_);
+            ROS_WARN_STREAM("Fitness of the result is:" << result.fitness_);
             if (result.fitness_ > best) {
                 best_result.source_idx = s_idx;
                 best_result.source_name = name;
@@ -234,8 +234,8 @@ PoseEstimation::estimateTransformations() {
         BestResult result = estimateTransformations(sources, targets);
         found = (result.source_idx != -1) and (result.target_idx != -1);
         if (found) {
-            VisualizeRegistration(*result.source, *result.target,
-                                  result.result);
+            //VisualizeRegistration(*result.source, *result.target,
+                                  //result.result);
             results.push_back(result);
             sources.erase(sources.begin() + result.source_idx);
             targets.erase(targets.begin() + result.target_idx);

@@ -132,7 +132,7 @@ Eigen::Vector3d GPDInteraction::publishPointCloud(const std::string &name) {
         throw std::runtime_error("Couldd not read mesh file");
     }
     auto cloud = mesh.SamplePointsUniformly(N_SAMPLES);
-    const Eigen::Vector3d center = mesh.GetCenter();
+    Eigen::Vector3d center = mesh.GetCenter();
     PointCloud::Ptr pcl_cloud(new PointCloud);
     for (const auto &o3d_point : cloud->points_) {
         auto point = toPointXYZRGB(o3d_point);
@@ -147,48 +147,60 @@ Eigen::Vector3d GPDInteraction::publishPointCloud(const std::string &name) {
 }
 
 int GPDInteraction::filterPossibleTransforms(const Eigen::Isometry3d &object) {
-    int best_hand(-1);
-    auto [roll_object, pitch_object, yaw_object] = RPY(object);
-    double error = std::numeric_limits<double>::max();
+    static Eigen::Isometry3d move;
+    move.matrix() = Eigen::Matrix4d::Identity(4,4);
+    move.matrix()(0,3) = 0.1;
+    //int best_hand(-1);
+    //auto [roll_object, pitch_object, yaw_object] = RPY(object);
+    //double error = std::numeric_limits<double>::max();
     for (std::size_t i = 0; i < BEST_SAMPLES; ++i) {
-        const auto &possible_transform = possible_transforms[i];
-        const auto hand = object * possible_transform;
-        auto [roll_hand, pitch_hand, yaw_hand] = RPY(hand);
-        if ((pitch_hand > 1.5) or (pitch_hand < -0.5)) {
-            continue;
-        }
-        double curr_error = std::abs(yaw_object - yaw_hand);
-        if (curr_error < error) {
-            best_hand = i;
-            error = curr_error;
+        auto grasp_frame = generateHand(object, i);
+        auto finger_frame = grasp_frame * move;
+        ROS_WARN_STREAM("The finger should be at: " << finger_frame(2,3));
+        if (finger_frame(2,3) > 0) {// finger must be above zero
+            return i;
         }
     }
-    return best_hand;
+
+        //const auto &possible_transform = possible_transforms[i];
+        //const auto hand = object * possible_transform;
+        //auto [roll_hand, pitch_hand, yaw_hand] = RPY(hand);
+        //if ((pitch_hand > 1.5) or (pitch_hand < -0.5)) {
+            //continue;
+        //}
+        //double curr_error = std::abs(yaw_object - yaw_hand);
+        //if (curr_error < error) {
+            //best_hand = i;
+            //error = curr_error;
+        //}
+    //}
+    return -1;
 }
 
 Eigen::Isometry3d GPDInteraction::generateHand(const Eigen::Isometry3d &object,
                                                int idx) {
     const auto grasp_frame = object * possible_transforms[idx];
     auto [roll_hand, pitch_hand, yaw_hand] = RPY(grasp_frame);
-    Hand hand{grasp_frame(0, 3), grasp_frame(1, 3), 0, pitch_hand, yaw_hand};
+    Hand hand{grasp_frame(0, 3), grasp_frame(1, 3), grasp_frame(2,3), pitch_hand, yaw_hand};
     auto res = generateTransformation(hand);
+    res.matrix()(2,3) = grasp_frame(2,3);
     return res;
 }
 
-double GPDInteraction::correctPitch(double pitch) {
-    double corrected_pitch(0);
-    if ((FIFITY_DEGREE < pitch) and (pitch <= HALF_ANGLE)) {
-        ROS_WARN_STREAM("Pitch: " << pitch << ", set to 1.5");
-        corrected_pitch = HALF_ANGLE;
-    } else if ((-FIFITY_DEGREE < pitch) and (pitch < FIFITY_DEGREE)) {
-        corrected_pitch = 0;
-        ROS_WARN_STREAM("Pitch: " << pitch << ", set to 0");
-    } else {
-        ROS_ERROR_STREAM("Cannot find the right pitch from: " << pitch);
-        throw std::runtime_error("Cannot find the right pitch");
-    }
-    return corrected_pitch;
-}
+//double GPDInteraction::correctPitch(double pitch) {
+    //double corrected_pitch(0);
+    //if ((FIFITY_DEGREE < pitch) and (pitch <= HALF_ANGLE)) {
+        //ROS_WARN_STREAM("Pitch: " << pitch << ", set to 1.5");
+        //corrected_pitch = HALF_ANGLE;
+    //} else if ((-FIFITY_DEGREE < pitch) and (pitch < FIFITY_DEGREE)) {
+        //corrected_pitch = 0;
+        //ROS_WARN_STREAM("Pitch: " << pitch << ", set to 0");
+    //} else {
+        //ROS_ERROR_STREAM("Cannot find the right pitch from: " << pitch);
+        //throw std::runtime_error("Cannot find the right pitch");
+    //}
+    //return corrected_pitch;
+//}
 void GPDInteraction::callback_object_pose(const object_pose::positions &msg) {
     grasp_pose_received = false;
     ROS_WARN_STREAM("Inside the object pose callback");
@@ -205,7 +217,7 @@ void GPDInteraction::callback_object_pose(const object_pose::positions &msg) {
                   calculateYaw(pose.orientation)};
         Eigen::Isometry3d object_frame = generateTransformation(hand);
         transforms.push_back(rosTransform(object_frame, name, ""));
-        Eigen::Vector3d center = publishPointCloud(name);
+        publishPointCloud(name);
         while ((!grasp_pose_received) and ros::ok()) {
             std::this_thread::sleep_for(std::chrono::seconds(1));
         }
@@ -215,18 +227,17 @@ void GPDInteraction::callback_object_pose(const object_pose::positions &msg) {
             ROS_WARN_STREAM("Did not desocver a valid hand");
             continue;
         }
+        //for (int i = 0; i < 3; ++i) {
         Eigen::Isometry3d grasp_frame = generateHand(object_frame, res);
-        transforms.push_back(rosTransform(grasp_frame, name, "_grasp"));
+        std::string grasp_name = "grasp_" + std::to_string(res);
+        transforms.push_back(rosTransform(grasp_frame, name, grasp_name));
         auto [roll_hand, pitch_hand, yaw_hand] = RPY(grasp_frame);
-        double corrected_pitch = correctPitch(pitch_hand);
-        double height = (corrected_pitch > 1.49) ? center(2) : 0;
-        ROS_WARN_STREAM("The correct height is: " << height);
-        Hand finalHand{grasp_frame(0, 3), grasp_frame(1, 3), height,
-                       corrected_pitch, yaw_hand};
+        Hand finalHand{grasp_frame(0, 3), grasp_frame(1, 3), grasp_frame(2,3),
+                       pitch_hand, yaw_hand};
         auto grasp_pose = generateGraspPose(finalHand);
-        ROS_WARN_STREAM("The final grasp pose is: " << 
-                grasp_pose.position.x << ", " << grasp_pose.position.y 
-                << ", " << grasp_pose.position.z);
+        //ROS_WARN_STREAM("The final grasp pose is: " << 
+                //grasp_pose.position.x << ", " << grasp_pose.position.y 
+                //<< ", " << grasp_pose.position.z);
         poses.poses.push_back(grasp_pose);
     }
     ROS_WARN_STREAM("Transfroms size: " << transforms.size());
