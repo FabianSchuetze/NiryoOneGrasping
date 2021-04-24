@@ -148,14 +148,16 @@ void Integration::convertPointCloudsToRGBD() {
     std::size_t i(0);
     auto t1 = std::chrono::system_clock::now();
     for (const auto &cloud : pointclouds) {
-        save_pointcloud(cloud, paths.pointcloud, i);
         auto color = decipherImage(cloud);
         auto depth = decipherDepth(cloud);
         colors.push_back(color);
         depths.push_back(depth);
+        if (debug_) {
+        save_pointcloud(cloud, paths.pointcloud, i);
         save_img(color, paths.color, i);
         save_img(depth, paths.depth, i);
         save_transform(transforms[i], paths.transform, i);
+        }
         ++i;
     }
     auto t2 = std::chrono::system_clock::now();

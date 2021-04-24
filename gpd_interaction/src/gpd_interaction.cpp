@@ -99,7 +99,7 @@ GPDInteraction::GPDInteraction(ros::NodeHandle &n_,
 
 Eigen::Isometry3d
 GPDInteraction::convertHandToTransform(const gpd_ros::GraspConfig &grasp) {
-    Eigen::Isometry3d trans;
+    Eigen::Isometry3d trans(Eigen::Matrix4d::Identity(4,4));
     Eigen::Matrix4d frame = Eigen::MatrixXd::Identity(4, 4);
     Eigen::Vector3d approach, binormal, axis, position;
     tf2::fromMsg(grasp.approach, approach);
@@ -146,8 +146,8 @@ Eigen::Vector3d GPDInteraction::publishPointCloud(const std::string &name) {
 }
 
 int GPDInteraction::filterPossibleTransforms(const Eigen::Isometry3d &object) {
-    static Eigen::Isometry3d move;
-    move.matrix() = Eigen::Matrix4d::Identity(4, 4);
+    static Eigen::Isometry3d move(Eigen::Matrix4d::Identity(4,4));
+    //move.matrix() = Eigen::Matrix4d::Identity(4, 4);
     move.matrix()(0, 3) = 0.1;
     for (std::size_t i = 0; i < possible_transforms.size(); ++i) {
         auto grasp_frame = generateHand(object, i);

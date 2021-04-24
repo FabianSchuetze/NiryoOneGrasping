@@ -26,7 +26,8 @@ class Integration {
     // const std::filesystem::path &);
     explicit Integration(const std::filesystem::path &,
                          const std::string &cameraFrame,
-                         const std::string &publishTopic);
+                         const std::string &publishTopic,
+                         bool debug);
     void initializePoseGraph();
     std::shared_ptr<o3d::geometry::PointCloud> integrate();
     RGBDRegistration registerImmediateRGBDPair(std::size_t);
@@ -44,6 +45,7 @@ class Integration {
     std::vector<tf::StampedTransform> transforms;
     o3d::camera::PinholeCameraIntrinsic intrinsic;
     o3d::pipelines::registration::PoseGraph pose_graph;
+    bool debug_;
     // Eigen::Affine3f starting_pose;
     Paths paths;
     // std::size_t i;
