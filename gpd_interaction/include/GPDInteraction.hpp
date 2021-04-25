@@ -33,10 +33,12 @@ class GPDInteraction {
     static Eigen::Isometry3d generateTransformation(const Hand &);
     static Eigen::Isometry3d
     convertHandToTransform(const gpd_ros::GraspConfig &);
-    Eigen::Vector3d publishPointCloud(const std::string &name);
+    void publishPointCloud(const std::string &name);
     int filterPossibleTransforms(const Eigen::Isometry3d &);
     Eigen::Isometry3d generateHand(const Eigen::Isometry3d &, int);
     static double correctPitch(double);
+    static Eigen::Isometry3d cleanObjectPose(const geometry_msgs::Pose &);
+    static geometry_msgs::Pose cleanGraspPose(const Eigen::Isometry3d &);
 };
 } // namespace gpd
 #endif

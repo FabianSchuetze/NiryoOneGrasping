@@ -25,7 +25,7 @@ find_package(realsense2 REQUIRED)
 
 catkin_package(
   LIBRARIES ${PROJECT_NAME}
-  INCLUDE_DIRS include
+  INCLUDE_DIRS 
   CATKIN_DEPENDS
     moveit_core
     moveit_visual_tools
@@ -43,19 +43,19 @@ endif()
 ###########
 ## Build ##
 ###########
-set(${PROJECT_NAME}_SRC
-    src/io_helper_functions.cpp
-)
-include_directories(SYSTEM ${catkin_INCLUDE_DIRS} ${EIGEN3_INCLUDE_DIRS} ${OpenCV_INCLUDE_DIRS} )
-include_directories(${REALSENSE2_INCLUDE_DIR})
-include_directories(include)
-add_library(${PROJECT_NAME} SHARED ${${PROJECT_NAME}_SRC})
+#set(${PROJECT_NAME}_SRC
+    #src/io_helper_functions.cpp
+#)
+#include_directories(SYSTEM ${catkin_INCLUDE_DIRS} ${EIGEN3_INCLUDE_DIRS} ${OpenCV_INCLUDE_DIRS} )
+#include_directories(${REALSENSE2_INCLUDE_DIR})
+#include_directories(include)
+#add_library(${PROJECT_NAME} SHARED ${${PROJECT_NAME}_SRC})
 
-add_executable(DisplayImage src/main.cpp )
-add_executable(WriteImagesToFile src/write_images_to_file.cpp)
-target_link_libraries(DisplayImage ${OpenCV_LIBS} 
-    ${catkin_LIBRARIES}
-    ${CXX_FILESYSTEM_LIBRARIES})
-target_link_libraries(WriteImagesToFile ${OpenCV_LIBS} 
-    ${catkin_LIBRARIES} realsense2 ${PROJECT_NAME}
-    ${CXX_FILESYSTEM_LIBRARIES})
+#add_executable(DisplayImage src/main.cpp )
+#add_executable(WriteImagesToFile src/write_images_to_file.cpp)
+#target_link_libraries(DisplayImage ${OpenCV_LIBS} 
+    #${catkin_LIBRARIES}
+    #${CXX_FILESYSTEM_LIBRARIES})
+#target_link_libraries(WriteImagesToFile ${OpenCV_LIBS} 
+    #${catkin_LIBRARIES} realsense2 ${PROJECT_NAME}
+    #${CXX_FILESYSTEM_LIBRARIES})
