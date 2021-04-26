@@ -18,8 +18,8 @@ static constexpr int TOMM = 1000;
 static constexpr uint HEIGHT = 480;
 static constexpr uint WIDTH = 640;
 static constexpr std::size_t MAX_UINT(255);
-static constexpr std::size_t RATE(10);
 
+// TODO: Part of util package
 std::string return_current_time_and_date() {
     auto now = std::chrono::system_clock::now();
     auto in_time_t = std::chrono::system_clock::to_time_t(now);
@@ -28,6 +28,7 @@ std::string return_current_time_and_date() {
     return ss.str();
 }
 
+// TODO: Part of util package
 fs::path generatePath(const fs::path &root, int iter,
                       std::string ending) { // NOLINT
     fs::path name;
@@ -42,6 +43,7 @@ fs::path generatePath(const fs::path &root, int iter,
     return fn;
 }
 
+// TODO: Part of util folder
 Integration::Paths Integration::open_folder(const std::string &dest) {
     std::string current_date = return_current_time_and_date();
     std::filesystem::path second_root(current_date);
@@ -58,12 +60,14 @@ Integration::Paths Integration::open_folder(const std::string &dest) {
     return paths;
 }
 
+// TODO: Part of util folder
 void Integration::save_pointcloud(const PointCloud::Ptr &cloud,
                                   const fs::path &path, int iter) {
     fs::path fn = generatePath(path, iter, ".pcd");
     pcl::io::savePCDFile(fn, *cloud);
 }
 
+// TODO: Part of util folder
 void Integration::save_img(const std::shared_ptr<Image> &img,
                            const fs::path &path, int iter) {
     fs::path fn = generatePath(path, iter, ".png");
@@ -77,6 +81,7 @@ void Integration::save_img(const std::shared_ptr<Image> &img,
     }
 }
 
+// TODO: Part of util folder
 void Integration::save_transform(const tf::StampedTransform &transform,
                                  const fs::path &path, int iter) {
     fs::path fn = generatePath(path, iter, ".txt");
@@ -153,10 +158,10 @@ void Integration::convertPointCloudsToRGBD() {
         colors.push_back(color);
         depths.push_back(depth);
         if (debug_) {
-        save_pointcloud(cloud, paths.pointcloud, i);
-        save_img(color, paths.color, i);
-        save_img(depth, paths.depth, i);
-        save_transform(transforms[i], paths.transform, i);
+            save_pointcloud(cloud, paths.pointcloud, i);
+            save_img(color, paths.color, i);
+            save_img(depth, paths.depth, i);
+            save_transform(transforms[i], paths.transform, i);
         }
         ++i;
     }
@@ -177,6 +182,7 @@ pcl::PointXYZRGB inline toPointXYZRGB(const Eigen::Vector3d &point,
     return pcl_point;
 }
 
+// TODO: Part of utils library
 PointCloud::Ptr Integration::toPclPointCloud(
     std::shared_ptr<o3d::geometry::PointCloud> const &cloud) {
     PointCloud::Ptr pcl_cloud(new PointCloud);

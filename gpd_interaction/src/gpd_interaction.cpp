@@ -14,6 +14,7 @@ static constexpr std::size_t N_SAMPLES(50000);
 static constexpr float TEN_CENTIMER(0.1);
 
 namespace gpd {
+// TODO: Check if I can use this somewhere else
 pcl::PointXYZRGB inline toPointXYZRGB(const Eigen::Vector3d &point) {
     pcl::PointXYZRGB pcl_point;
     pcl_point.x = static_cast<float>(point(0));
@@ -32,6 +33,7 @@ double calculateYaw(const geometry_msgs::Quaternion &quat) {
     return yaw;
 }
 
+// TODO: Check if I can use this somewhere else?
 std::tuple<double, double, double> RPY(const Eigen::Isometry3d &transform) {
     Eigen::Matrix3d tmp = transform.matrix().block(0, 0, 3, 3);
     Eigen::Quaternion<double> quat(tmp);
@@ -129,13 +131,14 @@ void GPDInteraction::publishPointCloud(const std::string &name) {
     auto cloud = mesh.SamplePointsUniformly(N_SAMPLES)->points_;
     // Eigen::Vector3d center = mesh.GetCenter();
     PointCloud::Ptr pcl_cloud(new PointCloud);
-    std::transform(cloud.begin(), cloud.end(), std::back_inserter(*pcl_cloud),
-                   [](auto x) { return toPointXYZRGB(x); });
+    // std::transform(cloud.begin(), cloud.end(),
+    // std::back_inserter(*pcl_cloud),
+    //[](auto x) { return toPointXYZRGB(x); });
     // does this work?
-    // for (const auto &o3d_point : cloud->points_) {
-    ////auto point = toPointXYZRGB(o3d_point);
-    // pcl_cloud->push_back(toPointXYZRGB(o3d_point));
-    //}
+    for (const auto &o3d_point : cloud) {
+        auto point = toPointXYZRGB(o3d_point);
+        pcl_cloud->push_back(toPointXYZRGB(o3d_point));
+    }
     pcl_cloud->height = 1;
     pcl_cloud->width = cloud.size();
     std::string fn = fs::path(name).filename();
@@ -220,10 +223,10 @@ void GPDInteraction::callback_object_pose(const object_pose::positions &msg) {
         // std::string grasp_name = "grasp_" + std::to_string(res);
         transforms.push_back(rosTransform(grasp_frame, name, "grasp"));
         auto grasp_pose = cleanGraspPose(grasp_frame);
-        //auto [roll_hand, pitch_hand, yaw_hand] = RPY(grasp_frame);
-        //Hand finalHand{grasp_frame(0, 3), grasp_frame(1, 3), grasp_frame(2, 3),
-                       //pitch_hand, yaw_hand};
-        //auto grasp_pose = generateGraspPose(finalHand);
+        // auto [roll_hand, pitch_hand, yaw_hand] = RPY(grasp_frame);
+        // Hand finalHand{grasp_frame(0, 3), grasp_frame(1, 3), grasp_frame(2,
+        // 3), pitch_hand, yaw_hand};
+        // auto grasp_pose = generateGraspPose(finalHand);
         poses.poses.push_back(grasp_pose);
     }
     ROS_WARN_STREAM("Transfroms size: " << transforms.size());

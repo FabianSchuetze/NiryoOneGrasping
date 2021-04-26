@@ -39,10 +39,10 @@ int main(int argc, char **argv) {
     actionlib::SimpleActionClient<pick_place::MoveJointsAction> ac(mover.second,
                                                                    true);
     ROS_WARN_STREAM("Waiting for server " << mover.second << "to start");
-    ac.waitForServer(); // will wait for infinite time
+    ac.waitForServer();
+    ROS_WARN_STREAM("Connected to action server.");
     integration::Integration integrate(camera.second, cameraFrame.second,
                                        publishTopic.second, debug.second);
-    ROS_INFO("Action server started, sending goal.");
     ros::Subscriber sub =
         nh.subscribe("/camera/depth_registered/points", QUEUE,
                      &integration::Integration::callback, &integrate);
