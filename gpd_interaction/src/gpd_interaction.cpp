@@ -206,7 +206,7 @@ void GPDInteraction::callback_object_pose(const object_pose::positions &msg) {
         // calculateYaw(object_pose.orientation)};
         Eigen::Isometry3d object_frame = cleanObjectPose(msg.poses.poses[i]);
         // TODO Publish the transforms in hte object pose node
-        // transforms.push_back(rosTransform(object_frame, name, ""));
+         transforms.push_back(rosTransform(object_frame, name, ""));
         publishPointCloud(name);
         while ((!grasp_pose_received) and ros::ok()) {
             std::this_thread::sleep_for(std::chrono::seconds(1));
@@ -221,7 +221,7 @@ void GPDInteraction::callback_object_pose(const object_pose::positions &msg) {
         // ROS_WARN_STREAM("Picked number " << res);
         Eigen::Isometry3d grasp_frame = generateHand(object_frame, res);
         // std::string grasp_name = "grasp_" + std::to_string(res);
-        transforms.push_back(rosTransform(grasp_frame, name, "grasp"));
+        transforms.push_back(rosTransform(grasp_frame, name, "grasp_"));
         auto grasp_pose = cleanGraspPose(grasp_frame);
         // auto [roll_hand, pitch_hand, yaw_hand] = RPY(grasp_frame);
         // Hand finalHand{grasp_frame(0, 3), grasp_frame(1, 3), grasp_frame(2,

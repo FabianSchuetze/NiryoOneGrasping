@@ -20,7 +20,6 @@ static constexpr float GRAPH(0.92);
 using o3d::pipelines::registration::RegistrationResult;
 namespace registration = o3d::pipelines::registration;
 
-
 Eigen::Vector3d inline convert_color(const pcl::PointXYZRGB &point) {
     double r = static_cast<double>(point.r) / MAX_UINT;
     double g = static_cast<double>(point.g) / MAX_UINT;
@@ -149,8 +148,8 @@ std::vector<Ptr> PoseEstimation::findCluster(const Ptr &source) {
     //}
 }
 
-RegistrationResult PoseEstimation::globalRegistration(const Ptr &source,
-                                                      const Ptr &target) {
+std::pair<double, RegistrationResult>
+PoseEstimation::globalRegistration(const Ptr &source, const Ptr &target) {
     registration::RegistrationResult best_result;
     double max_fitness(0.0);
     const auto source_fpfh = registration::ComputeFPFHFeature(
@@ -164,6 +163,7 @@ RegistrationResult PoseEstimation::globalRegistration(const Ptr &source,
         registration::CorrespondenceCheckerBasedOnEdgeLength(GRAPH);
     correspondence_checker.emplace_back(correspondence_checker_edge_length);
     bool mutual_filter(true);
+    o3d::pipelines::registration::RegistrationResult registration_result;
     for (int i = 0; i < 3; ++i) {
         auto preliminary = ModifiedRegistrationRANSACBasedOnFeatureMatching(
             *source, *target, *source_fpfh, *target_fpfh, mutual_filter,
@@ -171,7 +171,7 @@ RegistrationResult PoseEstimation::globalRegistration(const Ptr &source,
             registration::TransformationEstimationPointToPoint(false), 4,
             correspondence_checker,
             registration::RANSACConvergenceCriteria(MAX_REPEATS, CERTAINTY));
-        auto registration_result = registration::RegistrationICP(
+        registration_result = registration::RegistrationICP(
             *source, *target, 0.03, preliminary.transformation_);
         auto reverse_result = registration::EvaluateRegistration(
             *target, *source, 0.03,
@@ -182,9 +182,12 @@ RegistrationResult PoseEstimation::globalRegistration(const Ptr &source,
             max_fitness = min_quality;
             best_result = registration_result;
         }
+        if (min_quality > 0.999) {
+            break;
+        }
     }
-    // VisualizeRegistration(*source, *target, registration_result);
-    return best_result;
+    VisualizeRegistration(*source, *target, best_result);
+    return {max_fitness, best_result};
 }
 
 PoseEstimation::BestResult PoseEstimation::estimateTransformations(
@@ -194,6 +197,7 @@ PoseEstimation::BestResult PoseEstimation::estimateTransformations(
     BestResult best_result;
     ROS_INFO_STREAM("Target and Source size: " << targets.size() << ", "
                                                << sources.size());
+    auto begin = std::chrono::system_clock::now();
     for (size_t t_idx = 0; t_idx < targets.size(); ++t_idx) {
         ROS_WARN_STREAM("Doing Target " << t_idx);
         const Ptr &potential_target = targets[t_idx];
@@ -202,24 +206,30 @@ PoseEstimation::BestResult PoseEstimation::estimateTransformations(
             ROS_WARN_STREAM("Doing Source " << s_idx);
             auto [name, mesh] = sources[s_idx];
             auto pcd = mesh.SamplePointsUniformly(n_points);
-            std::string baking("BakingVanilla");
-            if (name.find(baking) != std::string::npos) {
-                pcd->Scale(1.25, pcd->GetCenter());
-            }
+            // std::string baking("BakingVanilla");
+            // if (name.find(baking) != std::string::npos) {
+            // pcd->Scale(1.25, pcd->GetCenter());
+            //}
             pcd->EstimateNormals();
-            auto result = globalRegistration(pcd, potential_target);
-            ROS_WARN_STREAM("Fitness of the result is:" << result.fitness_);
-            if (result.fitness_ > best) {
+            auto [fitness, result] = globalRegistration(pcd, potential_target);
+            ROS_WARN_STREAM("Fitness of the result is:" << fitness);
+            if (fitness > best) {
                 best_result.source_idx = s_idx;
                 best_result.source_name = name;
                 best_result.target_idx = t_idx;
                 best_result.result = result;
                 best_result.source = pcd;
                 best_result.target = potential_target;
-                best = result.fitness_;
+                best = fitness;
+            }
+            if (fitness > 0.999) {
+                return best_result;
             }
         }
     }
+    auto end = std::chrono::system_clock::now();
+    auto diff = std::chrono::duration_cast<std::chrono::seconds>(end - begin);
+    ROS_WARN_STREAM("The estimation took: " << diff.count());
     return best_result;
 }
 

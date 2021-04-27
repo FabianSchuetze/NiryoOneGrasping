@@ -40,7 +40,7 @@ class PoseEstimation {
     toOpen3DPointCloud(const pcl::PointCloud<pcl::PointXYZRGB>::ConstPtr &);
     static std::vector<Ptr> findCluster(const Ptr &);
     void readMeshes(const std::filesystem::path &);
-    o3d::pipelines::registration::RegistrationResult
+    std::pair<double, o3d::pipelines::registration::RegistrationResult>
     globalRegistration(const Ptr &, const Ptr &);
     BestResult estimateTransformations(
         std::vector<std::pair<std::string, o3d::geometry::TriangleMesh>> &,

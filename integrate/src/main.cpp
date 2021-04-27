@@ -5,8 +5,8 @@
 #include <pick_place/MoveJointsAction.h>
 #include <ros/ros.h>
 
-static constexpr std::size_t FREQUENCY(30);
-static constexpr std::size_t QUEUE(20);
+static constexpr std::size_t FREQUENCY(40);
+static constexpr std::size_t QUEUE(30);
 static std::string SUCCEEDED("SUCCEEDED");
 
 template <typename... T>
