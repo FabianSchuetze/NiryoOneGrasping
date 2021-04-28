@@ -54,7 +54,7 @@ void MoveJointsAction::callback(const pick_place::MoveJointsGoalConstPtr &) {
     std::size_t step(0);
     std::size_t sz(trajectory.size());
     while (!as.isPreemptRequested() and ros::ok() and step < sz) {
-        std::this_thread::sleep_for(std::chrono::seconds(1));
+        std::this_thread::sleep_for(std::chrono::milliseconds(50));
         const std::vector<double> &joint_position = trajectory[step];
         std::cout << "received value:\n";
         for (const auto x : joint_position) {
@@ -62,7 +62,7 @@ void MoveJointsAction::callback(const pick_place::MoveJointsGoalConstPtr &) {
         }
         std::cout << "Moving joints " << std::endl;
         picker.moveJoints(joint_position);
-        std::this_thread::sleep_for(std::chrono::seconds(1));
+        //std::this_thread::sleep_for(std::chrono::seconds(0.2));
         feedback.fraction = static_cast<float>(step) / sz;
         as.publishFeedback(feedback);
         ++step;
