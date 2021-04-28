@@ -14,7 +14,7 @@
 static constexpr int MAX_ATTPEMTS(10);
 static constexpr float MAX_DURATION(10.0);
 static constexpr int TOOL_ID(13);
-static constexpr int MAX_SPEED(200);
+static constexpr int MAX_SPEED(1000);
 static constexpr int CMD_TYPE(6);
 static constexpr float HALF_ANGLE(1.5);
 static constexpr float FIFITY_DEGREE(0.87);
@@ -56,7 +56,7 @@ Picking::EndEffectorPosition
 Picking::computePreGrasp_orientate(NiryoPose p,
                                    const Eigen::Isometry3d &incoming_pose) {
     Eigen::Isometry3d move(Eigen::Matrix4d::Identity(4,4));
-    move.matrix()(0, 3) = -0.1;
+    move.matrix()(0, 3) = -0.14;
     move.matrix()(2, 3) = 0.2;
     Eigen::Isometry3d approach = incoming_pose * move;
     p.first.x = approach.matrix()(0, 3);
@@ -80,7 +80,7 @@ Picking::EndEffectorPosition
 Picking::computePreGrasp_descend(NiryoPose p,
                                  const Eigen::Isometry3d &incoming_pose) {
     Eigen::Isometry3d move(Eigen::Matrix4d::Identity(4,4));
-    move.matrix()(0, 3) = -0.08;
+    move.matrix()(0, 3) = -0.12;
     move.matrix()(2, 3) = 0.04;
     Eigen::Isometry3d approach = incoming_pose * move;
     ROS_WARN_STREAM("Pre Grasp Desecend: Incoming pose\n" << incoming_pose.matrix() << "\n move\n" 
@@ -105,7 +105,7 @@ Picking::computePreGrasp_descend(NiryoPose p,
 Picking::EndEffectorPosition
 Picking::computeGrasp(NiryoPose p, const Eigen::Isometry3d &incoming_pose) {
     Eigen::Isometry3d move(Eigen::Matrix4d::Identity(4,4));
-    move.matrix()(0, 3) = -0.04;
+    move.matrix()(0, 3) = -0.07;
     move.matrix()(2, 3) = 0.03;
     Eigen::Isometry3d approach = incoming_pose * move;
     p.first.x = approach.matrix()(0, 3);
@@ -127,7 +127,7 @@ Picking::computeGrasp(NiryoPose p, const Eigen::Isometry3d &incoming_pose) {
 Picking::EndEffectorPosition
 Picking::Close(NiryoPose p, const Eigen::Isometry3d &incoming_pose) {
     Eigen::Isometry3d move(Eigen::Matrix4d::Identity(4,4));
-    move.matrix()(0, 3) = -0.04;
+    move.matrix()(0, 3) = -0.07;
     move.matrix()(2, 3) = 0.03;
     Eigen::Isometry3d approach = incoming_pose * move;
     p.first.x = approach.matrix()(0, 3);
