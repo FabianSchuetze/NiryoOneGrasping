@@ -1,0 +1,1 @@
+/home/fabian/Documents/work/transforms/src/pose_estimation/data/o3d_teebox_transformed.ply
