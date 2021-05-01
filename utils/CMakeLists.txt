@@ -11,7 +11,6 @@ find_package(catkin REQUIRED COMPONENTS
   tf2
   tf2_ros
   tf2_geometry_msgs
-  object_pose
 )
 
 ###################################
@@ -20,7 +19,7 @@ find_package(catkin REQUIRED COMPONENTS
 catkin_package(
   INCLUDE_DIRS include
   LIBRARIES ${PROJECT_NAME}
- CATKIN_DEPENDS geometry_msgs roscpp std_msgs tf2 tf2_ros message_runtime object_pose
+ CATKIN_DEPENDS geometry_msgs roscpp std_msgs tf2 tf2_ros message_runtime
 #  DEPENDS system_lib
 )
 include_directories(include)
