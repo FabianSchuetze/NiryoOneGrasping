@@ -51,11 +51,6 @@ class Integration {
     // std::size_t i;
     const std::string cameraFrame, publishTopic;
     tf::TransformListener listener;
-    static void
-    readImages(const std::filesystem::path &,
-               std::vector<std::shared_ptr<o3d::geometry::Image>> &);
-    void readImages(const std::filesystem::path &, std::string,
-                    std::vector<std::shared_ptr<o3d::geometry::Image>> &);
     static o3d::geometry::PointCloud
         meshToPointCloud(o3d::geometry::TriangleMesh);
     static std::shared_ptr<o3d::geometry::RGBDImage>

@@ -1,7 +1,7 @@
 <launch>
     <node pkg="tf2_ros" type="static_transform_publisher" 
         name="link1_broadcaster" 
-        args="0.02 -0.04 0.06 0.0 0.0 0.70710678 -0.70710678 forearm_link camera_link" />
-<include file="$(find realsense2_camera)/launch/rs_rgbd.launch" />
+        args="0.005 -0.04 0.07 0.0 0.0 0.70710678 -0.70710678 forearm_link camera_link" />
+<!--<include file="$(find realsense2_camera)/launch/rs_rgbd.launch" />-->
 </launch>
 
