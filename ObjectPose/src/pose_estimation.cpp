@@ -20,6 +20,7 @@ static constexpr float GRAPH(0.92);
 using o3d::pipelines::registration::RegistrationResult;
 namespace registration = o3d::pipelines::registration;
 
+// TODO: Replace with utils function
 Eigen::Vector3d inline convert_color(const pcl::PointXYZRGB &point) {
     double r = static_cast<double>(point.r) / MAX_UINT;
     double g = static_cast<double>(point.g) / MAX_UINT;
@@ -39,15 +40,17 @@ void VisualizeRegistration(const open3d::geometry::PointCloud &source,
     framep->Transform(result.transformation_);
     sourcep->Transform(result.transformation_);
     std::stringstream ss;
+    // TODO: replace with RPY calculation!
     double roll = ObjectPose::calculateRoll(result.transformation_);
     double yaw = ObjectPose::calculateYaw(result.transformation_);
     double pitch = ObjectPose::calculatePitch(result.transformation_);
-    ss << "Registration Result, fitness, roll, yaw, pitch " << result.fitness_
-       << ", " << roll << ", " << yaw << ", " << pitch;
+    ss << "Registration Result, fitness, roll, pitch, yaw " << result.fitness_
+       << ", " << roll << ", " << pitch << ", " << yaw;
     o3d::visualization::DrawGeometries({sourcep, targetp, origp, framep},
                                        ss.str());
 }
 
+//TODO: Replace with RPY
 double calculateRoll(const Eigen::Matrix4d &transformation) {
 
     Eigen::Matrix3d tmp = transformation.block(0, 0, 3, 3);
@@ -57,6 +60,7 @@ double calculateRoll(const Eigen::Matrix4d &transformation) {
     double roll = std::atan2(first, second);
     return roll;
 }
+//TODO: Replace with RPY
 double calculateYaw(const Eigen::Matrix4d &transformation) {
 
     Eigen::Matrix3d tmp = transformation.block(0, 0, 3, 3);
@@ -67,6 +71,7 @@ double calculateYaw(const Eigen::Matrix4d &transformation) {
     return yaw;
 }
 
+//TODO: Replace with RPY
 double calculatePitch(const Eigen::Matrix4d &transformation) {
 
     Eigen::Matrix3d tmp = transformation.block(0, 0, 3, 3);

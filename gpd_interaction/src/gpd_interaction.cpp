@@ -7,6 +7,7 @@
 #include <tf/LinearMath/Quaternion.h>
 #include <tf2_eigen/tf2_eigen.h>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
+#include <utils/utils.hpp>
 using PointCloud = pcl::PointCloud<pcl::PointXYZRGB>;
 namespace fs = std::filesystem;
 static constexpr std::size_t MAX_UINT(255);
@@ -26,23 +27,23 @@ pcl::PointXYZRGB inline toPointXYZRGB(const Eigen::Vector3d &point) {
     return pcl_point;
 }
 
-double calculateYaw(const geometry_msgs::Quaternion &quat) {
-    double first = 2 * (quat.w * quat.z + quat.x * quat.y);
-    double second = 1 - 2 * (quat.x * quat.x + quat.z * quat.z);
-    double yaw = std::atan2(first, second);
-    return yaw;
-}
+//double calculateYaw(const geometry_msgs::Quaternion &quat) {
+    //double first = 2 * (quat.w * quat.z + quat.x * quat.y);
+    //double second = 1 - 2 * (quat.x * quat.x + quat.z * quat.z);
+    //double yaw = std::atan2(first, second);
+    //return yaw;
+//}
 
 // TODO: Check if I can use this somewhere else?
-std::tuple<double, double, double> RPY(const Eigen::Isometry3d &transform) {
-    Eigen::Matrix3d tmp = transform.matrix().block(0, 0, 3, 3);
-    Eigen::Quaternion<double> quat(tmp);
-    tf::Quaternion q(quat.x(), quat.y(), quat.z(), quat.w());
-    tf::Matrix3x3 rotation(q);
-    double roll(0.0), pitch(0.0), yaw(0.0);
-    rotation.getRPY(roll, pitch, yaw);
-    return {roll, pitch, yaw};
-}
+//std::tuple<double, double, double> RPY(const Eigen::Isometry3d &transform) {
+    //Eigen::Matrix3d tmp = transform.matrix().block(0, 0, 3, 3);
+    //Eigen::Quaternion<double> quat(tmp);
+    //tf::Quaternion q(quat.x(), quat.y(), quat.z(), quat.w());
+    //tf::Matrix3x3 rotation(q);
+    //double roll(0.0), pitch(0.0), yaw(0.0);
+    //rotation.getRPY(roll, pitch, yaw);
+    //return {roll, pitch, yaw};
+//}
 
 std::string shortName(const std::string &input_name,
                       std::string extension) { // NOLINT
@@ -61,32 +62,32 @@ geometry_msgs::TransformStamped rosTransform(const Eigen::Isometry3d &transform,
     return tmp;
 }
 
-geometry_msgs::Pose generateGraspPose(const Hand &hand) {
-    geometry_msgs::Pose grasp_pose;
-    grasp_pose.position.x = hand.x;
-    grasp_pose.position.y = hand.y;
-    grasp_pose.position.z = hand.z;
-    tf2::Quaternion q;
-    q.setRPY(0, hand.pitch, hand.yaw);
-    grasp_pose.orientation = tf2::toMsg(q);
-    return grasp_pose;
-}
+//geometry_msgs::Pose generateGraspPose(const Hand &hand) {
+    //geometry_msgs::Pose grasp_pose;
+    //grasp_pose.position.x = hand.x;
+    //grasp_pose.position.y = hand.y;
+    //grasp_pose.position.z = hand.z;
+    //tf2::Quaternion q;
+    //q.setRPY(0, hand.pitch, hand.yaw);
+    //grasp_pose.orientation = tf2::toMsg(q);
+    //return grasp_pose;
+//}
 
-Eigen::Isometry3d GPDInteraction::generateTransformation(const Hand &hand) {
-    geometry_msgs::TransformStamped transformStamped;
-    geometry_msgs::Pose grasp_pose;
-    transformStamped.transform.translation.x = hand.x;
-    transformStamped.transform.translation.y = hand.y;
-    transformStamped.transform.translation.z = hand.z;
-    tf2::Quaternion q;
-    q.setRPY(0, hand.pitch, hand.yaw);
-    transformStamped.transform.rotation.x = q.x();
-    transformStamped.transform.rotation.y = q.y();
-    transformStamped.transform.rotation.z = q.z();
-    transformStamped.transform.rotation.w = q.w();
-    Eigen::Isometry3d transform = tf2::transformToEigen(transformStamped);
-    return transform;
-}
+//Eigen::Isometry3d GPDInteraction::generateTransformation(const Hand &hand) {
+    //geometry_msgs::TransformStamped transformStamped;
+    //geometry_msgs::Pose grasp_pose;
+    //transformStamped.transform.translation.x = hand.x;
+    //transformStamped.transform.translation.y = hand.y;
+    //transformStamped.transform.translation.z = hand.z;
+    //tf2::Quaternion q;
+    //q.setRPY(0, hand.pitch, hand.yaw);
+    //transformStamped.transform.rotation.x = q.x();
+    //transformStamped.transform.rotation.y = q.y();
+    //transformStamped.transform.rotation.z = q.z();
+    //transformStamped.transform.rotation.w = q.w();
+    //Eigen::Isometry3d transform = tf2::transformToEigen(transformStamped);
+    //return transform;
+//}
 
 GPDInteraction::GPDInteraction(ros::NodeHandle &n_,
                                const std::string &publication)
@@ -165,28 +166,38 @@ int GPDInteraction::filterPossibleTransforms(const Eigen::Isometry3d &object) {
 Eigen::Isometry3d GPDInteraction::generateHand(const Eigen::Isometry3d &object,
                                                int idx) {
     const auto grasp_frame = object * possible_transforms[idx];
-    auto [roll_hand, pitch_hand, yaw_hand] = RPY(grasp_frame);
-    Hand hand{grasp_frame(0, 3), grasp_frame(1, 3), grasp_frame(2, 3),
-              pitch_hand, yaw_hand};
-    auto res = generateTransformation(hand);
-    res.matrix()(2, 3) = grasp_frame(2, 3);
-    return res;
+    auto [roll_hand, pitch_hand, yaw_hand] = utils::RPY(grasp_frame);
+    utils::DOF dof(grasp_frame(0,3), grasp_frame(1,3), grasp_frame(2,3),
+            0, pitch_hand, yaw_hand);
+    //Hand hand{grasp_frame(0, 3), grasp_frame(1, 3), grasp_frame(2, 3),
+              //pitch_hand, yaw_hand};
+    //auto res = utils::generateTransformation(hand);
+    geometry_msgs::TransformStamped tmp = dof.transformStamped();
+    return tf2::transformToEigen(tmp);
+    //res.matrix()(2, 3) = grasp_frame(2, 3);
+    //return res;
 }
 
 Eigen::Isometry3d
 GPDInteraction::cleanObjectPose(const geometry_msgs::Pose &raw_pose) {
-    Hand hand{raw_pose.position.x, raw_pose.position.y, 0, 0,
-              calculateYaw(raw_pose.orientation)};
-    Eigen::Isometry3d object_frame = generateTransformation(hand);
-    return object_frame;
+    auto [roll, pitch, yaw] = utils::RPY(raw_pose.orientation);
+    //Hand hand{raw_pose.position.x, raw_pose.position.y, 0, 0, yaw};
+    utils::DOF dof(raw_pose.position.x, raw_pose.position.y, 0, 0, 0, yaw);
+    geometry_msgs::TransformStamped tmp = dof.transformStamped();
+    return tf2::transformToEigen(tmp);
+    //Eigen::Isometry3d object_frame = generateTransformation(hand);
+    //return object_frame;
 }
 
 geometry_msgs::Pose
 GPDInteraction::cleanGraspPose(const Eigen::Isometry3d &grasp_frame) {
-    auto [roll_hand, pitch_hand, yaw_hand] = RPY(grasp_frame);
-    Hand finalHand{grasp_frame(0, 3), grasp_frame(1, 3), grasp_frame(2, 3),
-                   pitch_hand, yaw_hand};
-    auto grasp_pose = generateGraspPose(finalHand);
+    auto [roll_hand, pitch_hand, yaw_hand] = utils::RPY(grasp_frame);
+    //Hand finalHand{grasp_frame(0, 3), grasp_frame(1, 3), grasp_frame(2, 3),
+                   //pitch_hand, yaw_hand};
+    utils::DOF dof(grasp_frame(0, 3), grasp_frame(1,3),  grasp_frame(2, 3),
+            0, pitch_hand, yaw_hand);
+    geometry_msgs::Pose grasp_pose = dof.pose();
+    //auto grasp_pose = generateGraspPose(finalHand);
     return grasp_pose;
 }
 
