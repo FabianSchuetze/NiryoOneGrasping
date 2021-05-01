@@ -17,7 +17,6 @@ static constexpr int TOOL_ID(13);
 static constexpr int MAX_SPEED(1000);
 static constexpr int CMD_TYPE(6);
 static constexpr float HALF_ANGLE(1.5);
-static constexpr float FIFITY_DEGREE(0.87);
 
 Picking::Picking() : robot("/niryo_one/commander/robot_action/", true) { ; };
 
@@ -71,7 +70,7 @@ Picking::computePreGrasp_orientate(NiryoPose p,
                                        << p.first.z << ", " << p.second.roll
                                        << ", " << p.second.pitch << ", "
                                        << p.second.yaw);
-    //p.first.z = 0.25; // SAFTY FIRST
+    p.first.z = 0.25; // SAFTY FIRST
     EndEffectorPosition pose1 = pose(p, true);
     return pose1;
 }
@@ -93,11 +92,17 @@ Picking::computePreGrasp_descend(NiryoPose p,
     }
     p.first.y = approach.matrix()(1, 3);
     p.first.z = approach.matrix()(2, 3);
+    p.first.z = approach.matrix()(2, 3);
+    if (p.first.z < 0.03) {
+        ROS_ERROR_STREAM("Recived z value of " << p.first.z
+                                               << "set to 0.04 for safty");
+        p.first.z = 0.035;
+    }
     ROS_WARN_STREAM("Descend Pose: " << p.first.x << ", " << p.first.y << ", "
                                      << p.first.z << ", " << p.second.roll
                                      << ", " << p.second.pitch << ", "
                                      << p.second.yaw);
-    //p.first.z = 0.15; // SAFTY FIRST
+    p.first.z = 0.15; // SAFTY FIRST
     EndEffectorPosition pose1 = pose(p, true);
     return pose1;
 }
@@ -106,7 +111,8 @@ Picking::EndEffectorPosition
 Picking::computeGrasp(NiryoPose p, const Eigen::Isometry3d &incoming_pose) {
     Eigen::Isometry3d move(Eigen::Matrix4d::Identity(4,4));
     move.matrix()(0, 3) = -0.07;
-    move.matrix()(2, 3) = 0.03;
+    //TODO: No final offset possible at the end, part of the grasp suggestion
+    //move.matrix()(2, 3) = 0.03;
     Eigen::Isometry3d approach = incoming_pose * move;
     p.first.x = approach.matrix()(0, 3);
     if (p.first.x < 0.11) {
@@ -116,11 +122,16 @@ Picking::computeGrasp(NiryoPose p, const Eigen::Isometry3d &incoming_pose) {
     }
     p.first.y = approach.matrix()(1, 3);
     p.first.z = approach.matrix()(2, 3);
+    if (p.first.z < 0.03) {
+        ROS_ERROR_STREAM("Recived z value of " << p.first.z
+                                               << "set to 0.04 for safty");
+        p.first.z = 0.035;
+    }
     ROS_WARN_STREAM("Compute Grasp Pose: "
                     << p.first.x << ", " << p.first.y << ", " << p.first.z
                     << ", " << p.second.roll << ", " << p.second.pitch << ", "
                     << p.second.yaw);
-    //p.first.z = 0.15; // SAFTY FIRST
+    p.first.z = 0.15; // SAFTY FIRST
     EndEffectorPosition pose1 = pose(p, true);
     return pose1;
 }
@@ -128,7 +139,8 @@ Picking::EndEffectorPosition
 Picking::Close(NiryoPose p, const Eigen::Isometry3d &incoming_pose) {
     Eigen::Isometry3d move(Eigen::Matrix4d::Identity(4,4));
     move.matrix()(0, 3) = -0.07;
-    move.matrix()(2, 3) = 0.03;
+    //TODO: No final offset possible at the end, part of the grasp suggestion
+    //move.matrix()(2, 3) = 0.03;
     Eigen::Isometry3d approach = incoming_pose * move;
     p.first.x = approach.matrix()(0, 3);
     if (p.first.x < 0.11) {
@@ -142,7 +154,7 @@ Picking::Close(NiryoPose p, const Eigen::Isometry3d &incoming_pose) {
     ROS_WARN_STREAM("Close Pose: " << p.first.x << ", " << p.first.y << ", "
                                    << p.first.z << ", " << p.second.roll << ", "
                                    << p.second.pitch << ", " << p.second.yaw);
-    //p.first.z = 0.15; // SAFTY FIRST
+    p.first.z = 0.15; // SAFTY FIRST
     EndEffectorPosition pose1 = pose(p, false);
     return pose1;
 }
