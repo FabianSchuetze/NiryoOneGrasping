@@ -10,19 +10,15 @@
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 #include <tf2_ros/static_transform_broadcaster.h>
 #include <filesystem>
-namespace fs = std::filesystem;
 
 using param = std::pair<std::string, std::string>;
 constexpr std::size_t QUEUE(10);
-//constexpr double HEIGHT_BAKING(0.08);
 constexpr double BEND_ARM(1.5);
 
-//geometry_msgs::Pose
 utils::DOF 
 generateGraspPose(const geometry_msgs::TransformStamped &ros_transform,
                   const std::string &name, double yaw) {
     open3d::geometry::TriangleMesh mesh;
-    //bool success = open3d::io::ReadTriangleMesh(name, mesh);
     if (!open3d::io::ReadTriangleMesh(name, mesh)) {
         ROS_ERROR_STREAM("Could not read mesh file " << name);
         throw std::runtime_error("Couldd not read mesh file");
@@ -36,26 +32,11 @@ generateGraspPose(const geometry_msgs::TransformStamped &ros_transform,
     const Eigen::Vector3d bound = mesh.GetMaxBound();
     utils::DOF dof(center(0), center(1), bound(2), 0, BEND_ARM, yaw);
     return dof;
-    //geometry_msgs::TransformStamped = dof.transformStamped();
-    //geometry_msgs::Pose grasp_pose = dof.pose();
-    //geometry_msgs::Pose grasp_pose;
-    //grasp_pose.position.x = center(0);
-    //grasp_pose.position.y = center(1);
-    //std::string baking("BakingVanilla");
-    //if (name.find(baking) != std::string::npos) {
-        //grasp_pose.position.z = HEIGHT_BAKING; // mesh of baking is incorrect
-    //} else {
-    //grasp_pose.position.z = bound(2);
-    //}
-    //tf2::Quaternion q;
-    //q.setRPY(0, BEND_ARM, yaw);
-    //grasp_pose.orientation = tf2::toMsg(q);
-    //return grasp_pose;
 }
 
 std::string shortName(const std::string &input_name,
                       std::string extension) { // NOLINT
-    const std::string fn = fs::path(input_name).filename();
+    const std::string fn = std::filesystem::path(input_name).filename();
     std::string delimiter = "_";
     std::string token = fn.substr(0, fn.find(delimiter));
     return token + extension;

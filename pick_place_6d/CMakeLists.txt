@@ -23,6 +23,7 @@ find_package(catkin REQUIRED COMPONENTS
   cv_bridge
   pose_detection
   eigen_conversions
+  utils
 )
 
 generate_messages(
@@ -56,6 +57,7 @@ catkin_package(
       cv_bridge
       pose_detection
       eigen_conversions
+      utils
   DEPENDS 
     EIGEN3
     OpenCV

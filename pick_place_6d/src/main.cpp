@@ -18,6 +18,7 @@
 #include "ros/ros.h"
 constexpr static int TOOL_ID(13);
 
+//TODO: Take from utils
 template <typename... T>
 void readParameters(const ros::NodeHandle &nh, T &... args) {
     auto read_parameters = [&](auto &t) {
