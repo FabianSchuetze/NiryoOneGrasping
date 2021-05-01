@@ -27,7 +27,8 @@ void Picking::connectToRobot(ros::NodeHandle &node) {
     setGripper(node);
 }
 
-//// namespace Picking {
+/// namespace Picking {
+// TODO: Send the transform ass well
 Picking::EndEffectorPosition Picking::FinalPositions(double x, double y,
                                                      double z,
                                                      bool open_gripper,
@@ -43,37 +44,11 @@ Picking::EndEffectorPosition Picking::FinalPositions(double x, double y,
 
 void Picking::sendTransform(const Eigen::Isometry3d &frame,
                             std::string frame_id) {
-    // geometry_msgs::Transform ros_frame;
     auto ros_frame = tf2::eigenToTransform(frame);
-    // ros_frame.header.stamp = ros::time::now();
     ros_frame.header.frame_id = "base_link";
     ros_frame.child_frame_id = frame_id;
     br.sendTransform(ros_frame);
 }
-// Picking::EndEffectorPosition Picking::Rest() {
-// NiryoPose _pose;
-// geometry_msgs::Point p = point(0.3, 0, 0.35);
-//_pose.first = p;
-// EndEffectorPosition pose1 = pose(_pose, false);
-// pose1.pose.second.pitch = HALF_ANGLE;
-// return pose1;
-//}
-// Picking::EndEffectorPosition Picking::PreFinal() {
-// NiryoPose _pose;
-// geometry_msgs::Point p = point(0.1, -0.2, 0.25);
-//_pose.first = p;
-// EndEffectorPosition pose1 = pose(_pose, false);
-// pose1.pose.second.pitch = HALF_ANGLE;
-// return pose1;
-//}
-// Picking::EndEffectorPosition Picking::Final() {
-// NiryoPose _pose;
-// geometry_msgs::Point p = point(0.1, -0.2, 0.25);
-//_pose.first = p;
-// EndEffectorPosition pose1 = pose(_pose, true);
-// pose1.pose.second.pitch = HALF_ANGLE;
-// return pose1;
-//}
 
 Picking::EndEffectorPosition
 Picking::PreGrasp_orientate(const Eigen::Isometry3d &incoming_pose) {
@@ -83,20 +58,6 @@ Picking::PreGrasp_orientate(const Eigen::Isometry3d &incoming_pose) {
     Eigen::Isometry3d approach = incoming_pose * move;
     NiryoPose p = convertToNiryo(approach, "PreGrasp_orientate");
     sendTransform(approach, "PreGrasp_orientate");
-    // p.first.x = approach.matrix()(0, 3);
-    // p.first.y = approach.matrix()(1, 3);
-    // p.first.z = approach.matrix()(2, 3);
-    // if (p.first.x < 0.11) {
-    // ROS_ERROR_STREAM("Recived x value of " << p.first.x
-    //<< "set to 0.1 for safty");
-    // p.first.x = 0.13;
-    //}
-    // ROS_WARN_STREAM("Orientate Pose: " << p.first.x << ", " << p.first.y
-    // <<
-    // ", "
-    //<< p.first.z << ", " << p.second.roll
-    //<< ", " << p.second.pitch << ", "
-    //<< p.second.yaw);
     p.first.z = 0.25; // SAFTY FIRST
     EndEffectorPosition pose1 = pose(p, true);
     return pose1;
@@ -110,28 +71,6 @@ Picking::PreGrasp_descend(const Eigen::Isometry3d &incoming_pose) {
     Eigen::Isometry3d approach = incoming_pose * move;
     NiryoPose p = convertToNiryo(approach, "PreGrasp_descend");
     sendTransform(approach, "PreGrasp_descend");
-    // ROS_WARN_STREAM("Pre Grasp Desecend: Incoming pose\n"
-    //<< incoming_pose.matrix() << "\n move\n"
-    //<< move.matrix());
-    // p.first.x = approach.matrix()(0, 3);
-    // if (p.first.x < 0.11) {
-    // ROS_ERROR_STREAM("Recived x value of " << p.first.x
-    //<< "set to 0.1 for safty");
-    // p.first.x = 0.13;
-    //}
-    // p.first.y = approach.matrix()(1, 3);
-    // p.first.z = approach.matrix()(2, 3);
-    // p.first.z = approach.matrix()(2, 3);
-    // if (p.first.z < 0.03) {
-    // ROS_ERROR_STREAM("Recived z value of " << p.first.z
-    //<< "set to 0.04 for safty");
-    // p.first.z = 0.035;
-    //}
-    // ROS_WARN_STREAM("Descend Pose: " << p.first.x << ", " << p.first.y << ",
-    // "
-    //<< p.first.z << ", " << p.second.roll
-    //<< ", " << p.second.pitch << ", "
-    //<< p.second.yaw);
     p.first.z = 0.15; // SAFTY FIRST
     EndEffectorPosition pose1 = pose(p, true);
     return pose1;
@@ -141,53 +80,21 @@ Picking::EndEffectorPosition
 Picking::computeGrasp(const Eigen::Isometry3d &incoming_pose) {
     Eigen::Isometry3d move(Eigen::Matrix4d::Identity(4, 4));
     move.matrix()(0, 3) = -0.07;
-    // TODO: No final offset possible at the end, part of the grasp suggestion
-    // move.matrix()(2, 3) = 0.03;
     Eigen::Isometry3d approach = incoming_pose * move;
     NiryoPose p = convertToNiryo(approach, "Grasp");
     sendTransform(approach, "Grasp");
-    // p.first.x = approach.matrix()(0, 3);
-    // if (p.first.x < 0.11) {
-    // ROS_ERROR_STREAM("Recived x value of " << p.first.x
-    //<< "set to 0.1 for safty");
-    // p.first.x = 0.13;
-    //}
-    // p.first.y = approach.matrix()(1, 3);
-    // p.first.z = approach.matrix()(2, 3);
-    // if (p.first.z < 0.03) {
-    // ROS_ERROR_STREAM("Recived z value of " << p.first.z
-    //<< "set to 0.04 for safty");
-    // p.first.z = 0.035;
-    //}
-    // ROS_WARN_STREAM("Compute Grasp Pose: "
-    //<< p.first.x << ", " << p.first.y << ", " << p.first.z
-    //<< ", " << p.second.roll << ", " << p.second.pitch << ", "
-    //<< p.second.yaw);
     p.first.z = 0.15; // SAFTY FIRST
     EndEffectorPosition pose1 = pose(p, true);
     return pose1;
 }
+
 Picking::EndEffectorPosition
 Picking::Close(const Eigen::Isometry3d &incoming_pose) {
     Eigen::Isometry3d move(Eigen::Matrix4d::Identity(4, 4));
     move.matrix()(0, 3) = -0.07;
-    // TODO: No final offset possible at the end, part of the grasp suggestion
-    // move.matrix()(2, 3) = 0.03;
     Eigen::Isometry3d approach = incoming_pose * move;
     NiryoPose p = convertToNiryo(approach, "Close");
     sendTransform(approach, "Close");
-    // p.first.x = approach.matrix()(0, 3);
-    // if (p.first.x < 0.11) {
-    // ROS_ERROR_STREAM("Recived x value of " << p.first.x
-    //<< "set to 0.1 for safty");
-    // p.first.x = 0.11;
-    //}
-    // p.first.y = approach.matrix()(1, 3);
-    // p.first.z = approach.matrix()(2, 3);
-    ////}
-    // ROS_WARN_STREAM("Close Pose: " << p.first.x << ", " << p.first.y << ", "
-    //<< p.first.z << ", " << p.second.roll << ", "
-    //<< p.second.pitch << ", " << p.second.yaw);
     p.first.z = 0.15; // SAFTY FIRST
     EndEffectorPosition pose1 = pose(p, false);
     return pose1;
@@ -202,14 +109,6 @@ Picking::PostGrasp(const Eigen::Isometry3d &incoming_pose) {
     sendTransform(postGrasp, "PostGrasp");
     EndEffectorPosition pose1 = pose(p, false);
     return pose1;
-}
-
-geometry_msgs::Point Picking::point(float x, float y, float z) {
-    geometry_msgs::Point p;
-    p.x = x;
-    p.y = y;
-    p.z = z;
-    return p;
 }
 
 Picking::EndEffectorPosition Picking::pose(const NiryoPose &p, bool open) {
@@ -296,31 +195,21 @@ void Picking::moveToPosition(const EndEffectorPosition &eef) {
     }
 }
 
-void Picking::moveJoints(const std::vector<double> &position) {
-    niryo_one_msgs::RobotMoveCommand cmd;
-    cmd.cmd_type = 1;
-    cmd.joints = position;
-    niryo_one_msgs::RobotMoveActionGoal action;
-    action.goal.cmd = cmd;
-    robot.sendGoal(action.goal);
-    if (!robot.waitForResult(ros::Duration(MAX_DURATION))) {
-        ROS_WARN("Joints cloud not be moved");
-    }
-}
+//void Picking::moveJoints(const std::vector<double> &position) {
+    //niryo_one_msgs::RobotMoveCommand cmd;
+    //cmd.cmd_type = 1;
+    //cmd.joints = position;
+    //niryo_one_msgs::RobotMoveActionGoal action;
+    //action.goal.cmd = cmd;
+    //robot.sendGoal(action.goal);
+    //if (!robot.waitForResult(ros::Duration(MAX_DURATION))) {
+        //ROS_WARN("Joints cloud not be moved");
+    //}
+//}
 
 void Picking::moveArm(const geometry_msgs::Pose &pose) {
-    // geometry_msgs::Quaternion quat_msg =
-    // tf::createQuaternionMsgFromRollPitchYaw(
-    // pose.second.roll, pose.second.pitch, pose.second.yaw);
-    // Eigen::Quaternion<double> quat;
-    // Eigen::Vector3d linear;
-    // tf::quaternionMsgToEigen(pose.orientation, quat);
-    // tf::pointMsgToEigen(pose.position, linear);
     Eigen::Isometry3d grasp_pose{};
     grasp_pose.matrix() = Eigen::Matrix4d::Identity(4, 4);
-    // grasp_pose.matrix() = Eigen::Matrix4d::Identity(4, 4);
-    // grasp_pose.linear() = quat.toRotationMatrix();
-    // grasp_pose.translation() = linear;
     tf::poseMsgToEigen(pose, grasp_pose);
     ROS_WARN_STREAM("The grap frame is:\n" << grasp_pose.matrix());
     std::chrono::seconds sec(1);
@@ -329,11 +218,8 @@ void Picking::moveArm(const geometry_msgs::Pose &pose) {
     const auto grasp = computeGrasp(grasp_pose);
     const auto close = Close(grasp_pose);
     const auto post_grasp = PostGrasp(grasp_pose);
-    // geometry_msgs::Point p = point(0.1, -0.2, 0.25);
     const auto pre_final = FinalPositions(0.1, -0.2, 0.25, false, "PreFinal");
-    // geometry_msgs::Point p = point(0.1, -0.2, 0.25);
     const auto open = FinalPositions(0.1, -0.2, 0.25, true, "Final");
-    // geometry_msgs::Point p = point(0.3, 0, 0.35);
     const auto rest_position = FinalPositions(0.3, 0, 0.35, false, "Rest");
     std::vector<Picking::EndEffectorPosition> movements = {
         pre_grasp_orientate, pre_grasp_descend, grasp, close,
@@ -344,15 +230,6 @@ void Picking::moveArm(const geometry_msgs::Pose &pose) {
     }
     std::this_thread::sleep_for(sec);
 }
-
-// std::tuple<double, double, double>
-// convertQuaternionToRPY(const geometry_msgs::Quaternion &quat) {
-// tf::Quaternion q(quat.x, quat.y, quat.z, quat.w);
-// tf::Matrix3x3 rotation(q);
-// double roll(0.0), pitch(0.0), yaw(0.0);
-// rotation.getRPY(roll, pitch, yaw);
-// return {roll, pitch, yaw};
-//}
 
 Picking::NiryoPose Picking::convertToNiryo(const Eigen::Isometry3d &frame,
                                            std::string name) {
@@ -386,17 +263,11 @@ std::vector<geometry_msgs::Pose>
 Picking::check(const geometry_msgs::PoseArray &poses) {
     std::vector<geometry_msgs::Pose> grasp_poses;
     for (const auto &pose : poses.poses) {
-        // NiryoPose niryo_pose;
         auto [roll, pitch, yaw] = utils::RPY(pose.orientation);
-        // auto [roll, pitch, yaw] = convertQuaternionToRPY(pose.orientation);
         if (std::abs(roll) > 1e-4) {
             ROS_ERROR_STREAM("Cannot accept roll values, was: " << roll);
             throw std::runtime_error("Cannot accept roll parameters");
         }
-        // niryo_pose.second.roll = 0;
-        // niryo_pose.second.pitch = pitch;
-        // niryo_pose.second.yaw = yaw;
-        // niryo_pose.first = pose.position;
         grasp_poses.push_back(pose);
         ROS_WARN_STREAM("The graping pose is x,y,z"
                         << pose.position.x << ", " << pose.position.y << ", "
