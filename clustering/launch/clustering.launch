@@ -2,5 +2,6 @@
     <node pkg="clustering" type="cluster" name="cluster">
         <param name="topic" value="integrate/integratedCloud"/>
         <param name="segmented" value="segmented"/>
+        <param name="centroids" value="centroids"/>
 </node>
 </launch>

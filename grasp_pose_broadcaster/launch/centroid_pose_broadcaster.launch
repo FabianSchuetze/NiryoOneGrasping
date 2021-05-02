@@ -1,0 +1,6 @@
+<launch>
+    <node pkg="grasp_pose_broadcast" type="centroid_broadcaster" name="centroid_broadcaster">
+        <param name="/centroids" value="/centroids"/>
+        <param name="/outgoing_poses" value="/grasp_pose"/>
+</node>
+</launch>

@@ -9,6 +9,7 @@ static constexpr std::size_t FREQUENCY(40);
 static constexpr std::size_t QUEUE(30);
 static std::string SUCCEEDED("SUCCEEDED");
 
+//TODO: Take from utils
 template <typename... T>
 void readParameters(const ros::NodeHandle &nh, T &... args) {
     auto read_parameters = [&](auto &t) {

@@ -18,6 +18,7 @@
 #include "ros/ros.h"
 constexpr static int TOOL_ID(13);
 
+//TODO: This should all be removed and only the 6d pick place should remain
 int main(int argc, char **argv) {
     ros::init(argc, argv, "pick_place");
     ros::AsyncSpinner spinner(3);

@@ -16,43 +16,16 @@ constexpr std::size_t QUEUE(10);
 constexpr double BEND_ARM(1.5);
 constexpr double HAND_LENGTH(0.08);
 
-//utils::DOF 
-//generateGraspPose(const geometry_msgs::TransformStamped &ros_transform,
-                  //const std::string &name, double yaw) {
-    //open3d::geometry::TriangleMesh mesh;
-    //if (!open3d::io::ReadTriangleMesh(name, mesh)) {
-        //ROS_ERROR_STREAM("Could not read mesh file " << name);
-        //throw std::runtime_error("Couldd not read mesh file");
-    //}
-    //Eigen::Isometry3d transform = tf2::transformToEigen(ros_transform);
-    //ROS_WARN_STREAM("The incoming transform is:\n " << transform.matrix());
-    //auto [r, y, p] = utils::RPY(transform);
-    //ROS_WARN_STREAM("The r,p, y: " << r << ", " << p << ", " << y);
-    //mesh.Transform(transform.matrix());
-    //const Eigen::Vector3d center = mesh.GetCenter();
-    //const Eigen::Vector3d bound = mesh.GetMaxBound();
-    //utils::DOF dof(center(0), center(1), bound(2), 0, BEND_ARM, yaw);
-    //return dof;
-//}
-
 utils::DOF 
 centroidGraspPose(const geometry_msgs::TransformStamped &ros_transform,
                   const std::string &name, double yaw) {
-    open3d::geometry::TriangleMesh mesh;
-    //if (!open3d::io::ReadTriangleMesh(name, mesh)) {
-        //ROS_ERROR_STREAM("Could not read mesh file " << name);
-        //throw std::runtime_error("Couldd not read mesh file");
-    //}
     Eigen::Isometry3d transform = tf2::transformToEigen(ros_transform);
     ROS_WARN_STREAM("The incoming transform is:\n " << transform.matrix());
     auto [r, p, yw] = utils::RPY(transform);
     ROS_WARN_STREAM("The r,p, y: " << r << ", " << p << ", " << yw);
-    //mesh.Transform(transform.matrix());
     double x = transform(0,3);
     double y = transform(1,3);
     double z = transform(2,3) + HAND_LENGTH;
-    //const Eigen::Vector3d center = mesh.GetCenter();
-    //const Eigen::Vector3d bound = mesh.GetMaxBound();
     utils::DOF dof(x, y, z, 0, BEND_ARM, yaw);
     return dof;
 }
@@ -62,6 +35,7 @@ std::string shortName(const std::string &input_name,
     const std::string fn = std::filesystem::path(input_name).filename();
     std::string delimiter = "_";
     std::string token = fn.substr(0, fn.find(delimiter));
+    ROS_WARN_STREAM("Incoming: " << input_name << ", " << "token: " << token);
     return token + extension;
 }
 
@@ -82,7 +56,8 @@ class SubscribeAndPublish {
             geometry_msgs::Pose pose = msg.poses.poses[i];
             const std::string &name = msg.objects[i];
             auto [roll, pitch, yaw] = utils::RPY(pose.orientation);
-            utils::DOF dof(pose.position.x, pose.position.y, 0, 0, 0, yaw);
+            //TODO: The positive z axis also differs fro the other program!
+            utils::DOF dof(pose.position.x, pose.position.y, pose.position.z, 0, 0, yaw);
             auto transformStamped = dof.transformStamped();
             //TODO: Only diff to other grasp pose is this func -> HARMOIZE!!!
             utils::DOF dof_out = centroidGraspPose(transformStamped, name, yaw);

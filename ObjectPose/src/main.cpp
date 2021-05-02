@@ -5,6 +5,7 @@
 static constexpr std::size_t QUEUE(10);
 using param = std::pair<std::string, std::string>;
 
+//TODO: Replace with utils
 template <typename... T>
 void readParameters(const ros::NodeHandle &nh, T &... args) {
     auto read_parameters = [&](auto &t) {
