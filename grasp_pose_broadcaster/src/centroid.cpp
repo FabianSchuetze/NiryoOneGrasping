@@ -95,8 +95,8 @@ int main(int argc, char **argv) {
     ros::init(argc, argv, "centroid_broadcaster");
     ros::NodeHandle nh;
     // TODO: Provide new launch file
-    param incoming_poses("grasp_pose_broadcaster/centroids", "");
-    param outgoing_poses("grasp_pose_broadcaster/outgoing_poses", "");
+    param incoming_poses("centroid_broadcaster/centroids", "");
+    param outgoing_poses("centroid_broadcaster/outgoing_poses", "");
     utils::readParameters(nh, incoming_poses, outgoing_poses);
     SubscribeAndPublish interaction(nh, outgoing_poses.second);
     ros::Subscriber sub =
