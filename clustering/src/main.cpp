@@ -150,7 +150,7 @@ int main(int argc, char **argv) {
             ROS_WARN_STREAM("No points remain after segmentation");
             continue;
         }
-        writer.write<pcl::PointXYZRGB>("segmented.pcd", *segmented, false);
+        //writer.write<pcl::PointXYZRGB>("segmented.pcd", *segmented, false);
         std::vector<PointCloud::Ptr> clusters;
         cluster_algo.cluster(segmented, clusters);
         segmented->header.frame_id = "base_link";

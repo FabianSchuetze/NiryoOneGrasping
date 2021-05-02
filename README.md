@@ -10,12 +10,14 @@ Image Matching
 --------------
 
 
-Clustering
+Centroid Estimation
 ----------
-The advantage of clustering is that (in contrast to the three other techniques
-presented) it allows grasping object without having a template of the object.
-Whilst this provides more freedom, it also does not allow a full pose
-estimation of the object. IS THIS ACTUALLY CORRECT?
+The advantage of estimating the centroid of segmented object lies in its
+flexibility: Whilst the other techniques presented require a template of the
+object, the centroid of a clustered object can be found for all kinds of
+objects. The disadvantage of the approach however is that the centroid
+represents only a point but no orientation. Thus objects without a pronounced
+yaw can be grasped well, but other objects are often not grapsed well.
 
 
 
@@ -50,4 +52,5 @@ roslaunch gpd gpd_interaction.launch
 ```
 
 INCLUDE THE GPD code here as well.
+
 
