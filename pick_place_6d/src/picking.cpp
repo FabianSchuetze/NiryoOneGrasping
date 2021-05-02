@@ -28,16 +28,18 @@ void Picking::connectToRobot(ros::NodeHandle &node) {
 }
 
 //// namespace Picking {
+// TODO: Add broadcasting to the frame
 Picking::EndEffectorPosition Picking::FinalPositions(double x, double y,
                                                      double z,
                                                      bool open_gripper,
-                                                     std::string) {
+                                                     std::string name) {
     NiryoPose _pose;
     _pose.first.x = x;
     _pose.first.y = y;
     _pose.first.z = z;
     EndEffectorPosition pose1 = pose(_pose, open_gripper);
     pose1.pose.second.pitch = HALF_ANGLE;
+    //sendTransform(frame, name);
     return pose1;
 }
 
@@ -316,8 +318,8 @@ void Picking::moveArm(const geometry_msgs::Pose &pose) {
     // Eigen::Vector3d linear;
     // tf::quaternionMsgToEigen(pose.orientation, quat);
     // tf::pointMsgToEigen(pose.position, linear);
-    Eigen::Isometry3d grasp_pose{};
-    grasp_pose.matrix() = Eigen::Matrix4d::Identity(4, 4);
+    Eigen::Isometry3d grasp_pose(Eigen::Matrix4d::Identity(4,4));
+    //grasp_pose.matrix() = Eigen::Matrix4d::Identity(4, 4);
     // grasp_pose.matrix() = Eigen::Matrix4d::Identity(4, 4);
     // grasp_pose.linear() = quat.toRotationMatrix();
     // grasp_pose.translation() = linear;
