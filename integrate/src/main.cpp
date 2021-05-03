@@ -61,4 +61,6 @@ int main(int argc, char **argv) {
     auto scene = integrate.createScene();
     o3d::visualization::DrawGeometries({scene}, "Cluster");
     integrate.publishCloud(scene);
+    sub.shutdown();
+    return 0;
 }

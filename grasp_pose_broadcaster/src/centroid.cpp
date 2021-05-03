@@ -45,7 +45,6 @@ class SubscribeAndPublish {
         // ROS_WARN_STREAM("The publication is" << publication);
         pub_ = n_.advertise<geometry_msgs::PoseArray>(publication, 1, true);
     }
-    //TODO Differnt type
     void callback(const object_pose::positions &msg) {
         const auto now = ros::Time::now();
         std::vector<geometry_msgs::TransformStamped> transforms;

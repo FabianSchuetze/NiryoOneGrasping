@@ -3,6 +3,6 @@
         <param name="/location_meshes"
 value="/home/fabian/Documents/work/transforms/src/ObjectPose/data/meshes.txt"/>
         <param name="/segmented" value="/segmented"/>
-        <param name="/estimated_poses" value="estimated_poses"/>
+        <param name="/estimated_poses" value="/geometric"/>
 </node>
 </launch>

@@ -4,16 +4,12 @@
 
 static std::string BASE_LINK("base_link");
 typedef pcl::PointCloud<pcl::PointXYZRGB> PointCloud;
-static constexpr std::size_t QUEUE(10);
-static constexpr std::size_t RATE(1);
-// TODO: For testing experiments larger than I think is actually possible
 static constexpr float RADIUS(0.45);
 static constexpr float MIN_DISTANCE(0.1);
 static constexpr std::size_t MIN_POINTS(300);
 static constexpr std::size_t MAX_POINTS(50000);
 static constexpr float MIN_RADIUS(0.02);
 static constexpr std::size_t MAX_ITERATION(1000);
-// TODO: Check if DISTANCE can be equal to MIN_RADIUS
 static constexpr float DISTANCE(0.01);
 namespace Clustering {
 
@@ -56,11 +52,10 @@ pcl::PointXYZRGB centroid(const PointCloud::ConstPtr &input) {
     }
     pcl::PointXYZRGB out;
     center.get(out);
-    // std::cout << out.x << ", " << out.y << ", " << out.z << std::endl;
     return out;
 }
 
-// TODO: I do not think this is needed anymore, as the  workspace function
+// iODO: I do not think this is needed anymore, as the  workspace function
 // restricts the size
 bool validCenter(const pcl::PointXYZRGB &point) {
     auto squared =
@@ -138,14 +133,13 @@ bool Clustering::extractFrame(
 Clustering::Clustering(const std::string &segmentedTopic,
                        const std::string &estimated_poses, ros::NodeHandle &nh)
     : last_callback(0, 0), cluster_algo(MIN_POINTS, MAX_POINTS, MIN_RADIUS),
-      segmentation(MAX_ITERATION, DISTANCE),
-      iteration(0) {
+      segmentation(MAX_ITERATION, DISTANCE), iteration(0) {
     publishSegmentation = nh.advertise<pcl::PointCloud<pcl::PointXYZRGB>>(
         segmentedTopic, 1, true);
     publishCluster =
         nh.advertise<object_pose::positions>(estimated_poses, 1, true);
 }
-// last_callback = std::chrono::system_clock::now();
+
 void Clustering::extractInfo(const PointCloud::Ptr &cloud) {
     writer.write<pcl::PointXYZRGB>("input_cloud.pcd", *cloud, false);
     PointCloud::Ptr workspace(new PointCloud), segmented(new PointCloud);
@@ -159,7 +153,7 @@ void Clustering::extractInfo(const PointCloud::Ptr &cloud) {
         ROS_WARN_STREAM("No points remain after segmentation");
         return;
     }
-    // writer.write<pcl::PointXYZRGB>("segmented.pcd", *segmented, false);
+    writer.write<pcl::PointXYZRGB>("segmented.pcd", *segmented, false);
     std::vector<PointCloud::Ptr> clusters{};
     cluster_algo.cluster(segmented, clusters);
     segmented->header.frame_id = "base_link";
@@ -178,29 +172,5 @@ void Clustering::callback(const PointCloud::ConstPtr &input) {
         return;
     }
     extractInfo(cloud);
-    // std::string frame = input->header.frame_id;
-    ////const std::lock_guard<std::mutex> lock(mutex_);
-    // if (!(frame == BASE_LINK)) {
-    // const std::string target("base_link");
-    // if (!pcl_ros::transformPointCloud(target, *input, *cloud, listener)) {
-    // ROS_WARN_STREAM("Cannot transform pointcloud");
-    // return;
-    //}
-    //} else {
-    //*cloud = *input;
-    //}
-    // last_callback = std::chrono::system_clock::now();
 }
-
-// bool Scene::pointCloud(pcl::PointCloud<pcl::PointXYZRGB>::Ptr &out) {
-// const std::lock_guard<std::mutex> lock(mutex_);
-// const auto diff = std::chrono::system_clock::now() - last_callback;
-// const auto sec = std::chrono::duration_cast<std::chrono::seconds>(diff);
-// if (sec.count() > TIME_THRESHOLD) {
-// ROS_DEBUG_STREAM("Last callback too old");
-// return false;
-//}
-// out = cloud;
-// return true;
-//
 } // namespace Clustering
