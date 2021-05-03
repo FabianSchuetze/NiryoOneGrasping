@@ -8,6 +8,10 @@
 static constexpr uint QUEUE = 10;
 static constexpr char listen[] = "/grasp_position"; // NOLINT
 
+//TODO: Correct the transform to get at better yaw. 
+//TODO: Make this part of the original code
+//TODO: Publishe this as object_pose, as the other
+//TODO: MAke sure that broadcast_action_sever is irrelevant
 void poseCallback(const geometry_msgs::Point &msg) {
     static tf2_ros::TransformBroadcaster br;
     geometry_msgs::TransformStamped transformStamped;

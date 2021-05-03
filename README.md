@@ -8,6 +8,13 @@ The easiest way to work with the repo is to install the docker container.
 
 Image Matching
 --------------
+Image matching produces fast a relatively robust results. In constrast to the
+three other techniques presented, image matching does not need to integrate
+different RGBD frames into a global scene, but can instead work with one RGB
+image. However, the feature detection algorithms are not as robust as the
+geometric registration algorithms below, so the quality of the grasp pose is a
+bit lower.
+
 
 
 Centroid Estimation
@@ -52,5 +59,3 @@ roslaunch gpd gpd_interaction.launch
 ```
 
 INCLUDE THE GPD code here as well.
-
-
