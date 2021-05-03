@@ -9,6 +9,7 @@
 #include <pcl_ros/transforms.h>
 #include <tf/transform_listener.h>
 #include <vector>
+#include <ros/ros.h>
 
 namespace o3d = open3d;
 namespace integration {
@@ -27,15 +28,15 @@ class Integration {
     explicit Integration(const std::filesystem::path &,
                          const std::string &cameraFrame,
                          const std::string &publishTopic,
-                         bool debug);
+                         bool debug,
+                         ros::NodeHandle&);
     void initializePoseGraph();
     std::shared_ptr<o3d::geometry::PointCloud> integrate();
     RGBDRegistration registerImmediateRGBDPair(std::size_t);
     std::shared_ptr<o3d::geometry::PointCloud> createScene();
     void callback(const PointCloud::Ptr &);
     // void startingPose(ros::NodeHandle &);
-    void publishCloud(ros::NodeHandle &,
-                      const std::shared_ptr<o3d::geometry::PointCloud> &);
+    void publishCloud(const std::shared_ptr<o3d::geometry::PointCloud> &);
     void convertPointCloudsToRGBD();
 
   private:
@@ -45,6 +46,7 @@ class Integration {
     std::vector<tf::StampedTransform> transforms;
     o3d::camera::PinholeCameraIntrinsic intrinsic;
     o3d::pipelines::registration::PoseGraph pose_graph;
+    ros::Publisher pub;
     bool debug_;
     // Eigen::Affine3f starting_pose;
     Paths paths;

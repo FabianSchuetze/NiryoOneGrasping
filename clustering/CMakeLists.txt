@@ -59,7 +59,7 @@ catkin_package(
 set(${PROJECT_NAME}_SRC
     src/cluster.cpp
     src/segmentation.cpp
-    src/scene.cpp
+    src/clustering.cpp
 )
 include_directories(SYSTEM ${catkin_INCLUDE_DIRS} ${EIGEN3_INCLUDE_DIRS}
                            ${PCL_INCLUDE_DIRS})
