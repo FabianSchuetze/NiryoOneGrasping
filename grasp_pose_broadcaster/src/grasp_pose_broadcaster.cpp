@@ -99,8 +99,6 @@ void GraspPoseBroadcaster::callback(const object_pose::positions &msg) {
                         << " is\n: x, y, z, yaw: " << grasp_pose.position.x
                         << ", " << grasp_pose.position.y << ", "
                         << grasp_pose.position.z << ", " << yaw);
-        // ROS_WARN_STREAM(
-        //"The child_frame_id is: " << transformStamped.child_frame_id);
         poses.poses.push_back(grasp_pose);
         transforms.push_back(transformStamped);
         transforms.push_back(tf_out);
