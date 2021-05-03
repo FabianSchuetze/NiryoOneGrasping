@@ -2,12 +2,15 @@
 #include "scene.hpp"
 #include "segmentation.hpp"
 //#include <chrono>
+#include <object_pose/positions.h>
 #include <pcl/common/centroid.h>
 #include <pcl/io/pcd_io.h>
 #include <pcl/search/search.h>
 #include <ros/ros.h>
 #include <tf2_ros/transform_broadcaster.h>
+#include <utils/utils.hpp>
 #include <vector>
+using param = std::pair<std::string, std::string>;
 
 using namespace Clustering;
 
@@ -25,18 +28,18 @@ static constexpr float DISTANCE(0.01);
 
 typedef pcl::PointCloud<pcl::PointXYZRGB> PointCloud;
 
-template <typename... T>
-void readParameters(const ros::NodeHandle &nh, T &... args) {
-    auto read_parameters = [&](auto &t) {
-        nh.getParam(t.first, t.second);
-        if (t.second.empty()) {
-            ROS_WARN_STREAM("Rosparam " << t.first << " not identified");
-            throw std::runtime_error("Could not read all parameters");
-        }
-        ROS_WARN_STREAM("The parameters for " << t.first << " is " << t.second);
-    };
-    (..., read_parameters(args));
-}
+// template <typename... T>
+// void readParameters(const ros::NodeHandle &nh, T &... args) {
+// auto read_parameters = [&](auto &t) {
+// nh.getParam(t.first, t.second);
+// if (t.second.empty()) {
+// ROS_WARN_STREAM("Rosparam " << t.first << " not identified");
+// throw std::runtime_error("Could not read all parameters");
+//}
+// ROS_WARN_STREAM("The parameters for " << t.first << " is " << t.second);
+//};
+//(..., read_parameters(args));
+//}
 
 bool extractWorkspace(const PointCloud::ConstPtr &cloud,
                       PointCloud::Ptr &cluster) {
@@ -94,38 +97,62 @@ bool validCenter(const pcl::PointXYZRGB &point) {
     return true;
 }
 
-void broadcastPosition(const pcl::PointXYZRGB &point) {
-    static tf2_ros::TransformBroadcaster br;
-    geometry_msgs::TransformStamped transformStamped;
-    transformStamped.header.stamp = ros::Time::now();
-    transformStamped.header.frame_id = "base_link";
-    transformStamped.child_frame_id = "object";
-    transformStamped.transform.translation.x = point.x;
-    transformStamped.transform.translation.y = point.y;
-    transformStamped.transform.translation.z = point.z;
+geometry_msgs::Pose convertToPose(const pcl::PointXYZRGB &centroid) {
+    geometry_msgs::Pose pose;
     tf2::Quaternion q;
     q.setRPY(0, 0, 0);
-    transformStamped.transform.rotation.x = q.x();
-    transformStamped.transform.rotation.y = q.y();
-    transformStamped.transform.rotation.z = q.z();
-    transformStamped.transform.rotation.w = q.w();
-    br.sendTransform(transformStamped);
+    //geometry_msgs::Quaternion quat;
+    pose.position.x = centroid.x;
+    pose.position.y = centroid.y;
+    pose.position.z = centroid.z;
+    pose.orientation.x = q.x();
+    pose.orientation.y = q.y();
+    pose.orientation.z = q.z();
+    pose.orientation.w = q.w();
+    return pose;
 }
 
+void broadcastClusters(const std::vector<PointCloud::Ptr> &clusters,
+                       ros::Publisher &publisher, pcl::PCDWriter &writer) {
+    object_pose::positions positions;
+    std_msgs::Header header;
+    header.frame_id = "base_link";
+    header.seq = 0;
+    positions.poses.header = header;
+    int j(0);
+    for (auto const &cluster : clusters) {
+        auto point = centroid(cluster);
+        if (validCenter(point)) {
+            std::stringstream ss;
+            ss << "cloud_cluster_" << j << ".pcd";
+            writer.write<pcl::PointXYZRGB>(ss.str(), *cluster, false);
+            geometry_msgs::Pose pose = convertToPose(point);
+            std::string name = "object" + std::to_string(j);
+            positions.objects.push_back(name);
+            positions.poses.poses.push_back(pose);
+            ++j;
+        }
+    }
+    publisher.publish(positions);
+}
+
+// TODO: Should be written as a callback
 int main(int argc, char **argv) {
     ros::init(argc, argv, "cluster");
     ros::NodeHandle nh;
     Scene scene;
     ros::Rate rate(1);
-    std::pair<std::string, std::string> _topic("/cluster/topic", "");
-    std::pair<std::string, std::string> segmentedTopic("/cluster/segmented",
-                                                       "");
-    readParameters(nh, _topic, segmentedTopic);
+    param _topic("/cluster/topic", "");
+    param segmentedTopic("/cluster/segmented", "");
+    param estimated_poses("/cluster/centroids", "");
+    utils::readParameters(nh, _topic, segmentedTopic, estimated_poses);
     ros::Subscriber sub =
         nh.subscribe(_topic.second, QUEUE, &Scene::callback, &scene);
     ros::Publisher publishSegmentation =
         nh.advertise<pcl::PointCloud<pcl::PointXYZRGB>>(segmentedTopic.second,
                                                         QUEUE, true);
+    ros::Publisher clusterPublisher =
+        nh.advertise<object_pose::positions>(estimated_poses.second, 1, true);
     PointCloud::Ptr cloud(new PointCloud), workspace(new PointCloud),
         segmented(new PointCloud);
     ClusterAlgorithm<pcl::PointXYZRGB> cluster_algo(MIN_POINTS, MAX_POINTS,
@@ -135,6 +162,7 @@ int main(int argc, char **argv) {
     while (ros::ok()) {
         rate.sleep();
         ros::spinOnce();
+        // ROS_WARN_STREAM("Inside here");
         if ((!scene.pointCloud(cloud)) or (cloud->empty())) {
             ROS_DEBUG_STREAM("No valid data arrived");
             continue;
@@ -150,8 +178,8 @@ int main(int argc, char **argv) {
             ROS_WARN_STREAM("No points remain after segmentation");
             continue;
         }
-        writer.write<pcl::PointXYZRGB>("segmented.pcd", *segmented, false);
-        std::vector<PointCloud::Ptr> clusters;
+        // writer.write<pcl::PointXYZRGB>("segmented.pcd", *segmented, false);
+        std::vector<PointCloud::Ptr> clusters{};
         cluster_algo.cluster(segmented, clusters);
         segmented->header.frame_id = "base_link";
         publishSegmentation.publish(*segmented);
@@ -160,19 +188,7 @@ int main(int argc, char **argv) {
             ROS_WARN_STREAM("Could not find any clusters");
             continue;
         }
-        int j(0);
-        for (const auto &cluster : clusters) {
-            auto point = centroid(cluster);
-            if (validCenter(point)) {
-                std::cout << "Found a valid point at " << point.x << ", "
-                          << point.y << ", " << point.z << std::endl;
-                broadcastPosition(point);
-                std::stringstream ss;
-                ss << "cloud_cluster_" << j << ".pcd";
-                writer.write<pcl::PointXYZRGB>(ss.str(), *cluster, false);
-                ++j;
-            }
-        }
+        broadcastClusters(clusters, clusterPublisher, writer);
     }
     sub.shutdown();
     return 0;

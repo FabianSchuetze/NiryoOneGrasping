@@ -25,13 +25,10 @@ class Picking {
     EndEffectorPosition computeGrasp(const Eigen::Isometry3d &);
     EndEffectorPosition Close(const Eigen::Isometry3d &);
     EndEffectorPosition PostGrasp(const Eigen::Isometry3d &);
-    //static EndEffectorPosition PreFinal();
-    //static EndEffectorPosition Final();
-    //static EndEffectorPosition Rest();
     EndEffectorPosition FinalPositions(double x, double y, double z, bool, std::string);
     void setGripper(ros::NodeHandle &);
     void moveToPosition(const EndEffectorPosition &);
-    void moveJoints(const std::vector<double> &);
+    //void moveJoints(const std::vector<double> &);
     void callback(const geometry_msgs::PoseArray &);
     void moveArm(const geometry_msgs::Pose &);
 
@@ -40,8 +37,7 @@ class Picking {
     NiryoClient robot;
     template <typename T>
     void establish_connection(const T &, const std::string &);
-    static niryo_one_msgs::RPY rotation();
-    static geometry_msgs::Point point(float, float, float);
+    //static niryo_one_msgs::RPY rotation();
     static EndEffectorPosition pose(const NiryoPose &, bool);
     bool GripperAperture(bool);
     bool MoveEEF(const NiryoPose &);

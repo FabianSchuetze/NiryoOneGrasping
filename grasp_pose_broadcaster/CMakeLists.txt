@@ -40,3 +40,8 @@ add_executable(grasp_pose_broadcaster src/main.cpp)
 add_dependencies(grasp_pose_broadcaster ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 target_link_libraries(grasp_pose_broadcaster ${catkin_LIBRARIES}
     ${Open3D_LIBRARIES})
+
+add_executable(centroid_broadcaster src/centroid.cpp)
+add_dependencies(centroid_broadcaster ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+target_link_libraries(centroid_broadcaster ${catkin_LIBRARIES}
+    ${Open3D_LIBRARIES})

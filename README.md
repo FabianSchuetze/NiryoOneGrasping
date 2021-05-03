@@ -9,16 +9,30 @@ The easiest way to work with the repo is to install the docker container.
 Image Matching
 --------------
 
-Clustering
+
+Centroid Estimation
 ----------
-The advantage of clustering is that (in contrast to the three other techniques
-presented) it allows grasping object without having a template of the object.
-Whilst this provides more freedom, it also does not allow a full pose
-estimation of the object. IS THIS ACTUALLY CORRECT?
+The advantage of estimating the centroid of segmented object lies in its
+flexibility: Whilst the other techniques presented require a template of the
+object, the centroid of a clustered object can be found for all kinds of
+objects. The disadvantage of the approach however is that the centroid
+represents only a point but no orientation. Thus objects without a pronounced
+yaw can be grasped well, but other objects are often not grapsed well.
+
 
 
 Geomertic Matching (Point Cloud Registration)
 ---------------------------------------------
+This approach allows computing grasp poses based in geometric matching of a 3D
+template with the segmented scene through ICP. The grasps position are in the
+center of the object and the grasp are approached in the negative x-direction
+of the grasp frame and the positive z-direction of the graps frame. Grasp
+orientations are indenpendet of the object shape and the gripper always grasps
+the obejct "from above". This makes grasping robust and leds to few collisions
+with other objects and the gripper when attempting to grasp a particular
+object. However, for objects which are not rectangular, the clusure from above
+might not be very firm, and object might slip out of the gripper's hand.
+
 
 
 GPD
@@ -38,3 +52,5 @@ roslaunch gpd gpd_interaction.launch
 ```
 
 INCLUDE THE GPD code here as well.
+
+
