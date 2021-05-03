@@ -60,11 +60,13 @@ void Integration::readCameraIntrinsics(const fs::path &path) {
 Integration::Integration(const fs::path &camera,
                          const std::string &_cameraFrame,
                          const std::string &_publishTopic,
-                         bool debug)
+                         bool debug,
+                         ros::NodeHandle& nh)
     : cameraFrame(_cameraFrame), publishTopic(_publishTopic), debug_(debug) {
     readCameraIntrinsics(camera);
     paths = open_folder(
         "/home/fabian/Documents/work/transforms/src/integrate/data");
+    pub = nh.advertise<PointCloud>("integrate/integratedCloud", 1, true);
 }
 
 std::shared_ptr<o3d::geometry::RGBDImage>

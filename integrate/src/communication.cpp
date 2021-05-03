@@ -198,22 +198,20 @@ PointCloud::Ptr Integration::toPclPointCloud(
 }
 
 void Integration::publishCloud(
-    ros::NodeHandle &nh,
     const std::shared_ptr<o3d::geometry::PointCloud> &cloud) {
     auto pcl_cloud = toPclPointCloud(cloud);
     pcl_ros::transformPointCloud(*pcl_cloud, *pcl_cloud,
                                  transforms[0].inverse());
-    ros::Publisher pub =
-        nh.advertise<PointCloud>("integrate/integratedCloud", 1);
+    //ros::Publisher pub = nh.advertise<PointCloud>("integrate/integratedCloud", 1);
     pcl_cloud->header.frame_id = "base_link";
     ros::Rate loop_rate(4);
     pcl::io::savePCDFileASCII("final_cloud.pcd", *pcl_cloud);
-    while (nh.ok()) {
-        pcl_conversions::toPCL(ros::Time::now(), pcl_cloud->header.stamp);
-        pub.publish(pcl_cloud);
-        ros::spinOnce();
-        loop_rate.sleep();
-    }
+    //while (nh.ok()) {
+    pcl_conversions::toPCL(ros::Time::now(), pcl_cloud->header.stamp);
+    pub.publish(pcl_cloud);
+    //ros::spinOnce();
+    //loop_rate.sleep();
+    //}
 }
 
 } // namespace integration

@@ -43,7 +43,8 @@ int main(int argc, char **argv) {
     ac.waitForServer();
     ROS_WARN_STREAM("Connected to action server.");
     integration::Integration integrate(camera.second, cameraFrame.second,
-                                       publishTopic.second, debug.second);
+                                       publishTopic.second, debug.second,
+                                       nh);
     ros::Subscriber sub =
         nh.subscribe("/camera/depth_registered/points", QUEUE,
                      &integration::Integration::callback, &integrate);
@@ -59,5 +60,5 @@ int main(int argc, char **argv) {
     integrate.convertPointCloudsToRGBD();
     auto scene = integrate.createScene();
     o3d::visualization::DrawGeometries({scene}, "Cluster");
-    integrate.publishCloud(nh, scene);
+    integrate.publishCloud(scene);
 }
