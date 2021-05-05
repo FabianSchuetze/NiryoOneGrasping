@@ -1,0 +1,6 @@
+<launch>
+    <node pkg="grasp_pose_broadcast" type="grasp_pose_broadcaster" name="grasp_pose_broadcaster">
+        <param name="/estimated_poses" value="/visual"/>
+        <param name="/outgoing_poses" value="/grasp_pose"/>
+</node>
+</launch>
