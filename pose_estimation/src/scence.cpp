@@ -1,13 +1,20 @@
-#include <opencv2/features2d.hpp>
+#include <Eigen/Geometry>
 #include <cv_bridge/cv_bridge.h>
+#include <fstream>
+#include <opencv2/features2d.hpp>
 
+#include <eigen_conversions/eigen_msg.h>
 #include <pcl_conversions/pcl_conversions.h>
 #include <ros/ros.h>
 #include <sensor_msgs/Image.h>
+#include <tf/transform_listener.h>
+#include <tf2_eigen/tf2_eigen.h>
+#include <tf_conversions/tf_eigen.h>
 
 #include <cmath>
 #include <filesystem>
 #include <iostream>
+#include <opencv2/core/eigen.hpp>
 #include <opencv2/highgui.hpp>
 #include <opencv2/imgcodecs.hpp>
 #include <opencv2/opencv.hpp>
@@ -15,7 +22,6 @@
 #include "scene.hpp"
 
 using namespace PoseEstimation;
-
 
 // constexpr int TO_DEPTH = 100;
 constexpr int TOMM = 1000;
@@ -54,10 +60,10 @@ void Scene::decipherDepth(const PointCloud::Ptr &cloud) {
 void Scene::callback(const PointCloud::Ptr &point_cloud) {
     decipherImage(point_cloud);
     decipherDepth(point_cloud);
-    if (!img().empty()) {
-        cv::imshow("test", img());
-        cv::waitKey(1);
-    }
+    //if (!img().empty()) {
+        //cv::imshow("test", img());
+        //cv::waitKey(1);
+    //}
 }
 
 void Scene::deserialize(const fs::path &color_pth, const fs::path &depth_pth) {
@@ -94,9 +100,61 @@ void Scene::create_points() {
     }
 }
 
+template <typename T> void writeToFile(const T &mat, const std::string &fn) {
+    std::ofstream file(fn);
+    if (file.is_open()) {
+        file << mat;
+    }
+}
+
 void Scene::estimateFeatures(const cv::Ptr<cv::SIFT> &estimator) {
     kps_.clear();
     estimator->detectAndCompute(img_, cv::noArray(), kps_, descriptors_);
     create_points();
+    Eigen::Affine3d points3d, points3d_out;
+    std::size_t rows = points3d_.rows;
+    Eigen::MatrixXd eigen_mat(Eigen::MatrixXd::Zero(rows, 3));
+    cv::cv2eigen(points3d_, eigen_mat);
+    // points3d.linear() = eigen_mat.block<3, 3>(0, 0);
+    // points3d.translation() = eigen_mat.block<3, 1>(0, 3);
+    // eigen_mat.colwise().homogeneous();
+    geometry_msgs::TransformStamped transform;
+    tf2_ros::Buffer tfBuffer;
+    tf2_ros::TransformListener tfListener(tfBuffer);
+    int i(0);
+    while (i < 100) {
+        try {
+            transform = tfBuffer.lookupTransform("base_link", "camera_depth_optical_frame",
+                                                 ros::Time(0));
+            break;
+        } catch (tf::TransformException ex) {
+            ROS_WARN("%s", ex.what());
+            ros::Duration(0.1).sleep();
+            ++i;
+        }
+        //std::cout << "x: " << transform.transform.translation.x << std::endl;
+    }
+    if (i == 100) {
+        std::runtime_error("Could not find transfrom");
+    }
+    //ROS_ERROR("COmpleted");
+    Eigen::Isometry3d trans(Eigen::Matrix4d::Identity(4, 4));
+    Eigen::Affine3d tmp_ = tf2::transformToEigen(transform.transform);
+    trans.matrix() = tmp_.matrix();
+    //std::cout << "tmp\n" << tmp_.matrix() << std::endl;
+    // std::cout << "mat\n" << eigen_mat.transpose().colwise().homogeneous() <<
+    // std::endl;
+    Eigen::MatrixXd out = trans * eigen_mat.transpose().colwise().homogeneous();
+    Eigen::MatrixXd tmp = out.transpose();
+    // std::cout << "incoming points\n" << points3d_ << std::endl;
+    // std::cout << "incoming points\n" << eigen_mat.matrix() << std::endl;
+    writeToFile(eigen_mat, "incoming_points.txt");
+    // std::cout << "transform\n" << trans.matrix() << std::endl;
+    writeToFile(trans.matrix(), "transform.txt");
+    // std::cout << "out\n" << out.transpose().matrix() << std::endl;
+    writeToFile(tmp, "out.txt");
+    cv::eigen2cv(tmp, points3d_);
+    // std::cout << "transformed points\n" << points3d_ << std::endl;
+    // tf2::doTransform(points3d, points3d, transform);
 }
 

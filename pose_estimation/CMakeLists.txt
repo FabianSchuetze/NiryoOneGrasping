@@ -12,6 +12,9 @@ find_package(catkin REQUIRED COMPONENTS
     pcl_ros
     actionlib_msgs
     cv_bridge
+    utils
+    tf_conversions
+    object_pose
 )
 
 find_package(OpenCV REQUIRED PATHS /usr/local/lib/cmake/opencv4
@@ -42,6 +45,9 @@ catkin_package(
     tf2_geometry_msgs
     actionlib_msgs
     cv_bridge
+    utils
+    tf_conversions
+    object_pose
   DEPENDS
     EIGEN3
     OpenCV

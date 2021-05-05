@@ -99,6 +99,7 @@ void Integration::save_transform(const tf::StampedTransform &transform,
     file.close();
 }
 
+//TODO: Combine wiht pose_estimation
 std::shared_ptr<Image>
 Integration::decipherDepth(const PointCloud::Ptr &cloud) {
     if (cloud->height != HEIGHT) {

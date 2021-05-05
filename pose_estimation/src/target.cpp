@@ -34,7 +34,8 @@ cv::FileStorage openStorage(const fs::path &path) {
     return storage;
 }
 Target::Target(const fs::path &_model_description,
-               const fs::path &_img_location) {
+               const fs::path &_img_location)
+    : name_(_img_location) {
     const cv::FileStorage fs = openStorage(_model_description);
     getParameter(descriptors_, "descriptors", fs);
     descriptors_.convertTo(descriptors_, CV_8U);

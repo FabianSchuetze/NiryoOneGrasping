@@ -10,6 +10,8 @@ namespace fs = std::filesystem;
 class Target : public Model {
   public:
     Target(const fs::path &, const fs::path &);
-    ~Target() override = default;
+    std::string name() {return name_;}
+  private:
+    std::string name_;
 };
 #endif

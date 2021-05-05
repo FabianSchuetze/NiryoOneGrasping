@@ -62,6 +62,8 @@ GraspPoseBroadcaster::GraspPoseBroadcaster(ros::NodeHandle &n_,
         grasping_func = &GraspingFunction::centroidGraspPose;
     } else if (type == "/geometric") {
         grasping_func = &GraspingFunction::generateGraspPose;
+    } else if (type == "/visual") {
+        grasping_func = &GraspingFunction::centroidGraspPose;
     } else {
         ROS_ERROR_STREAM("type must be /centroids | /geometric, got: " << type);
         throw std::runtime_error("type must be Clustering or Geometric");
