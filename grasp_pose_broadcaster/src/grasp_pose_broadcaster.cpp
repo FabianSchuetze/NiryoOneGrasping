@@ -43,16 +43,6 @@ generateGraspPose(const geometry_msgs::TransformStamped &ros_transform,
 }
 } // namespace GraspingFunction
 
-//std::string GraspPoseBroadcaster::shortName(const std::string &input_name,
-                                            //const std::string &extension) {
-    //const std::string fn = std::filesystem::path(input_name).filename();
-    //std::string delimiter = "_";
-    //std::string token = fn.substr(0, fn.find(delimiter));
-    //ROS_WARN_STREAM("Incoming: " << input_name << ", "
-                                 //<< "token: " << token);
-    //return token + extension;
-//}
-
 GraspPoseBroadcaster::GraspPoseBroadcaster(ros::NodeHandle &n_,
                                            const std::string &publication,
                                            const std::string &type)
@@ -63,8 +53,6 @@ GraspPoseBroadcaster::GraspPoseBroadcaster(ros::NodeHandle &n_,
         grasping_func = &GraspingFunction::centroidGraspPose;
     } else if (type == "/geometric") {
         grasping_func = &GraspingFunction::generateGraspPose;
-    //} else if (type == "/visual") {
-        //grasping_func = &GraspingFunction::centroidGraspPose;
     } else {
         ROS_ERROR_STREAM("type must be /centroids | /geometric, got: " << type);
         throw std::runtime_error("type must be Clustering or Geometric");

@@ -267,7 +267,7 @@ Picking::check(const geometry_msgs::PoseArray &poses) {
 }
 
 void Picking::callback(const geometry_msgs::PoseArray &poses) {
-    ROS_WARN_STREAM("Inside the callback");
+    ROS_WARN_STREAM("Recived sequence: " << poses.header.seq);
     std::vector<geometry_msgs::Pose> niryo_poses = check(poses);
     for (const auto &pose : niryo_poses) {
         moveArm(pose);
