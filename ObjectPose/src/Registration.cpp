@@ -35,26 +35,27 @@
 #include <open3d/utility/Helper.h>
 #include <tf/transform_datatypes.h>
 #include <tf_conversions/tf_eigen.h>
+#include <utils/utils.hpp>
 
 using namespace open3d;
 using namespace open3d::pipelines;
 using namespace open3d::pipelines::registration;
 
-std::tuple<double, double, double>
-convertQuaternionToRPY(const Eigen::Matrix4d &transformation) {
-    // Eigen::Matrix4d result;
-    Eigen::Isometry3d result;
-    result.matrix() = transformation;
-    // Eigen::Quaterniond quat;
-    // quat = result.linear();
-    tf::Matrix3x3 rotation;
-    tf::matrixEigenToTF(result.linear(), rotation);
-    // tf::Quaternion q(quat.x, quat.y, quat.z, quat.w);
-    // tf::Matrix3x3 rotation(q);
-    double roll(0.0), pitch(0.0), yaw(0.0);
-    rotation.getRPY(roll, pitch, yaw);
-    return {roll, pitch, yaw};
-}
+//std::tuple<double, double, double>
+//convertQuaternionToRPY(const Eigen::Matrix4d &transformation) {
+    //// Eigen::Matrix4d result;
+    //Eigen::Isometry3d result;
+    //result.matrix() = transformation;
+    //// Eigen::Quaterniond quat;
+    //// quat = result.linear();
+    //tf::Matrix3x3 rotation;
+    //tf::matrixEigenToTF(result.linear(), rotation);
+    //// tf::Quaternion q(quat.x, quat.y, quat.z, quat.w);
+    //// tf::Matrix3x3 rotation(q);
+    //double roll(0.0), pitch(0.0), yaw(0.0);
+    //rotation.getRPY(roll, pitch, yaw);
+    //return {roll, pitch, yaw};
+//}
 
 static RegistrationResult EvaluateRANSACBasedOnCorrespondence(
     const geometry::PointCloud &source, const geometry::PointCloud &target,
@@ -134,8 +135,7 @@ RegistrationResult ModifiedRegistrationRANSACBasedOnCorrespondence(
                 if (!check) {
                     continue;
                 }
-                auto [roll, pitch, yaw] =
-                    convertQuaternionToRPY(transformation);
+                auto [roll, pitch, yaw] = utils::RPY(transformation);
                 // double yaw = ObjectPose::calculateYaw(transformation);
                 // double roll = ObjectPose::calculateRoll(transformation);
                 // double pitch = ObjectPose::calculatePitch(transformation);

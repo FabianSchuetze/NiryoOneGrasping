@@ -8,5 +8,5 @@
         <param name="/debug" value="false" type="bool"/>
 </node>
 <include file="$(find clustering)/launch/clustering.launch"/>
-<include file="$(find grasp_pose_broadcast)/launch/centroid_pose_broadcaster.launch"/>
+<!--<include file="$(find grasp_pose_broadcast)/launch/centroid_pose_broadcaster.launch"/>-->
 </launch>

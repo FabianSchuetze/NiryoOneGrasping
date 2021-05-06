@@ -43,6 +43,11 @@ std::tuple<double, double, double> RPY(const tf::Quaternion &quat) {
     return {roll, pitch, yaw};
 }
 
+std::tuple<double, double, double> RPY(const Eigen::Matrix4d& mat) {
+    Eigen::Isometry3d trans(Eigen::Matrix4d::Identity(4,4));
+    trans.matrix() = mat;
+    return RPY(trans);
+}
 std::tuple<double, double, double> RPY(const Eigen::Isometry3d &transform) {
     Eigen::Matrix3d tmp = transform.linear();
     Eigen::Quaternion<double> quat(tmp);

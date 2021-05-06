@@ -13,10 +13,10 @@ three other techniques presented, image matching does not need to integrate
 different RGBD frames into a global scene, but can instead work with one RGB
 image. However, the feature detection algorithms are not as robust as the
 geometric registration algorithms below, so the quality of the grasp pose is a
-bit lower.
+bit lower, in particular the estimates of the yaw angle are not great.
 
 
-
+o
 Centroid Estimation
 ----------
 The advantage of estimating the centroid of segmented object lies in its
@@ -59,3 +59,4 @@ roslaunch gpd gpd_interaction.launch
 ```
 
 INCLUDE THE GPD code here as well.
+

@@ -31,6 +31,7 @@ class DOF{
 //geometry_msgs::TransformStamped generateTransformation(const DOF &);
 std::tuple<double, double, double> RPY(const tf::Quaternion & quat);
 std::tuple<double, double, double> RPY(const Eigen::Isometry3d &);
+std::tuple<double, double, double> RPY(const Eigen::Matrix4d &);
 std::tuple<double, double, double> RPY(const geometry_msgs::Quaternion &);
 std::string shortName(const std::string &, const std::string &);
 
