@@ -24,6 +24,7 @@ find_package(catkin REQUIRED COMPONENTS
   cv_bridge
   eigen_conversions
   message_generation
+  utils
 )
 
 add_message_files(
@@ -64,6 +65,7 @@ catkin_package(
       cv_bridge
       eigen_conversions
       message_runtime
+      utils
   DEPENDS 
     EIGEN3
     OpenCV

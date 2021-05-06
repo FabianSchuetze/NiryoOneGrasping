@@ -1,4 +1,5 @@
 #include "utils/utils.hpp"
+#include <filesystem>
 #include <tf/LinearMath/Matrix3x3.h>
 #include <tf2/LinearMath/Quaternion.h>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
@@ -59,5 +60,14 @@ std::tuple<double, double, double> RPY(const geometry_msgs::Quaternion &quat) {
     // double roll(0.0), pitch(0.0), yaw(0.0);
     // rotation.getRPY(roll, pitch, yaw);
     // return {roll, pitch, yaw};
+}
+std::string shortName(const std::string &input_name,
+                      const std::string &extension) {
+    const std::string fn = std::filesystem::path(input_name).filename();
+    std::string delimiter = "_";
+    std::string token = fn.substr(0, fn.find(delimiter));
+    // ROS_WARN_STREAM("Incoming: " << input_name << ", "
+    //<< "token: " << token);
+    return token + extension;
 }
 } // namespace utils

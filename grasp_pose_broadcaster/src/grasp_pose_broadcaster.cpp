@@ -1,5 +1,5 @@
 #include "grasp_pose_broadcaster.hpp"
-#include <filesystem>
+//#include <filesystem>
 #include <open3d/Open3D.h>
 #include <tf2_eigen/tf2_eigen.h>
 constexpr std::size_t QUEUE(10);
@@ -38,32 +38,33 @@ generateGraspPose(const geometry_msgs::TransformStamped &ros_transform,
     double x = center(0);
     double y = center(1);
     double z = bound(2) + 0.05;
-    utils::DOF dof(x, y, z , 0, BEND_ARM, yaw);
+    utils::DOF dof(x, y, z, 0, BEND_ARM, yaw);
     return dof;
 }
 } // namespace GraspingFunction
 
-std::string GraspPoseBroadcaster::shortName(const std::string &input_name,
-                                            const std::string &extension) {
-    const std::string fn = std::filesystem::path(input_name).filename();
-    std::string delimiter = "_";
-    std::string token = fn.substr(0, fn.find(delimiter));
-    ROS_WARN_STREAM("Incoming: " << input_name << ", "
-                                 << "token: " << token);
-    return token + extension;
-}
+//std::string GraspPoseBroadcaster::shortName(const std::string &input_name,
+                                            //const std::string &extension) {
+    //const std::string fn = std::filesystem::path(input_name).filename();
+    //std::string delimiter = "_";
+    //std::string token = fn.substr(0, fn.find(delimiter));
+    //ROS_WARN_STREAM("Incoming: " << input_name << ", "
+                                 //<< "token: " << token);
+    //return token + extension;
+//}
 
 GraspPoseBroadcaster::GraspPoseBroadcaster(ros::NodeHandle &n_,
                                            const std::string &publication,
-                                           const std::string &type) {
+                                           const std::string &type)
+    : current_iteration(0) {
     // ROS_WARN_STREAM("The publication is" << publication);
     pub_ = n_.advertise<geometry_msgs::PoseArray>(publication, 1, true);
-    if (type == "/centroids") {
+    if ((type == "/centroids") or (type == "/visual")) {
         grasping_func = &GraspingFunction::centroidGraspPose;
     } else if (type == "/geometric") {
         grasping_func = &GraspingFunction::generateGraspPose;
-    } else if (type == "/visual") {
-        grasping_func = &GraspingFunction::centroidGraspPose;
+    //} else if (type == "/visual") {
+        //grasping_func = &GraspingFunction::centroidGraspPose;
     } else {
         ROS_ERROR_STREAM("type must be /centroids | /geometric, got: " << type);
         throw std::runtime_error("type must be Clustering or Geometric");
@@ -77,6 +78,13 @@ void GraspPoseBroadcaster::callback(const object_pose::positions &msg) {
     geometry_msgs::PoseArray poses;
     poses.header.frame_id = msg.poses.header.frame_id;
     poses.header.stamp = now;
+    if (msg.poses.header.seq < current_iteration) {
+        ROS_ERROR_STREAM("Got pose with seq id: " << msg.poses.header.seq <<
+                ", but have already processed " << current_iteration <<
+                ", sequence. Abort!");
+        return;
+    }
+    //poses.header.seq = current_iteration;
     ROS_WARN_STREAM("Inside the callback");
     for (std::size_t i = 0; i < msg.objects.size(); ++i) {
         geometry_msgs::Pose pose = msg.poses.poses[i];
@@ -92,8 +100,8 @@ void GraspPoseBroadcaster::callback(const object_pose::positions &msg) {
         transformStamped.header.stamp = now;
         transformStamped.header.frame_id = msg.poses.header.frame_id;
         tf_out.header.frame_id = msg.poses.header.frame_id;
-        std::string sho = shortName(name, "_in");
-        std::string sho_out = shortName(name, "_grasp");
+        std::string sho = utils::shortName(name, "_in");
+        std::string sho_out = utils::shortName(name, "_grasp");
         transformStamped.child_frame_id = sho;
         tf_out.child_frame_id = sho_out;
         ROS_WARN_STREAM("Grasp pose for "
@@ -107,5 +115,5 @@ void GraspPoseBroadcaster::callback(const object_pose::positions &msg) {
     }
     pub_.publish(poses);
     br.sendTransform(transforms);
+    ++current_iteration;
 }
-

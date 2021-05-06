@@ -21,9 +21,10 @@ class GraspPoseBroadcaster {
     void callback(const object_pose::positions &msg);
 
   private:
-    static std::string shortName(const std::string &, const std::string &);
+    //static std::string shortName(const std::string &, const std::string &);
     ros::Publisher pub_;
     tf2_ros::StaticTransformBroadcaster br;
+    std::size_t current_iteration;
     utils::DOF (*grasping_func)(const geometry_msgs::TransformStamped &,
                                 const std::string &, double);
 };

@@ -196,31 +196,8 @@ void Picking::moveToPosition(const EndEffectorPosition &eef) {
     }
 }
 
-//void Picking::moveJoints(const std::vector<double> &position) {
-    //niryo_one_msgs::RobotMoveCommand cmd;
-    //cmd.cmd_type = 1;
-    //cmd.joints = position;
-    //niryo_one_msgs::RobotMoveActionGoal action;
-    //action.goal.cmd = cmd;
-    //robot.sendGoal(action.goal);
-    //if (!robot.waitForResult(ros::Duration(MAX_DURATION))) {
-        //ROS_WARN("Joints cloud not be moved");
-    //}
-//}
-
 void Picking::moveArm(const geometry_msgs::Pose &pose) {
-    // geometry_msgs::Quaternion quat_msg =
-    // tf::createQuaternionMsgFromRollPitchYaw(
-    // pose.second.roll, pose.second.pitch, pose.second.yaw);
-    // Eigen::Quaternion<double> quat;
-    // Eigen::Vector3d linear;
-    // tf::quaternionMsgToEigen(pose.orientation, quat);
-    // tf::pointMsgToEigen(pose.position, linear);
     Eigen::Isometry3d grasp_pose(Eigen::Matrix4d::Identity(4,4));
-    //grasp_pose.matrix() = Eigen::Matrix4d::Identity(4, 4);
-    // grasp_pose.matrix() = Eigen::Matrix4d::Identity(4, 4);
-    // grasp_pose.linear() = quat.toRotationMatrix();
-    // grasp_pose.translation() = linear;
     tf::poseMsgToEigen(pose, grasp_pose);
     ROS_WARN_STREAM("The grap frame is:\n" << grasp_pose.matrix());
     std::chrono::seconds sec(1);
@@ -243,7 +220,7 @@ void Picking::moveArm(const geometry_msgs::Pose &pose) {
 }
 
 Picking::NiryoPose Picking::convertToNiryo(const Eigen::Isometry3d &frame,
-                                           std::string name) {
+                                           const std::string& name) {
     auto [roll, pitch, yaw] = utils::RPY(frame);
     NiryoPose pose;
     pose.first.x = frame(0, 3);

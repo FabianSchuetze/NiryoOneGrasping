@@ -67,6 +67,6 @@ include_directories(SYSTEM ${catkin_INCLUDE_DIRS} ${EIGEN3_INCLUDE_DIRS} ${OpenC
 include_directories(include)
 add_library(${PROJECT_NAME} SHARED ${${PROJECT_NAME}_SRC})
 
-add_executable(detect_pose src/main.cpp )
-target_link_libraries(detect_pose ${OpenCV_LIBS} 
+add_executable(visual_pose src/main.cpp )
+target_link_libraries(visual_pose ${OpenCV_LIBS} 
     ${catkin_LIBRARIES} ${PROJECT_NAME} realsense2 ${PCL_LIBRARIES})
