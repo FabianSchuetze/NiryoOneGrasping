@@ -49,14 +49,17 @@ different repos, the core [GPD module](https://github.com/atenpas/gpd), and the
 [GPD-ROS](https://github.com/atenpas/gpd_ros) repo. GPD provides advantageous
 graps poses directly on the point cloud of objects. In contrast, the techniques
 above grasp objects only from above, this technique can pick an object from
-other directions, if these directions are assumed to be more felicitious. To
+any direction, if these directions are assumed to be more felicitious. To
 run GPD launch the following files:
 
 ```shell
 roslaunch generate_images broadcast_transform.launch
 roslaunch integration integration_and_pose_estimation.launch
-roslaunch gpd gpd_interaction.launch
+roslaunch new_pick_place picking.launch
 ```
+A vide of the result can be seen below:
+![Alt Text](assets/gpd.gif)
 
-INCLUDE THE GPD code here as well.
+
+
 
