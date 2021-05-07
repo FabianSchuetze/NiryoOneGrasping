@@ -52,9 +52,31 @@ void Picking::sendTransform(const Eigen::Isometry3d &frame,
 }
 
 Picking::EndEffectorPosition
+Picking::StartingPose() {
+    NiryoPose _pose;
+    _pose.first.x = 0.15;
+    _pose.first.y = 0;
+    _pose.first.z = 0.15;
+    EndEffectorPosition pose1 = pose(_pose, true);
+    pose1.pose.second.pitch = 0;
+    return pose1;
+}
+
+Picking::EndEffectorPosition
+Picking::StartingPose1() {
+    NiryoPose _pose;
+    _pose.first.x = 0.15;
+    _pose.first.y = 0;
+    _pose.first.z = 0.30;
+    EndEffectorPosition pose1 = pose(_pose, true);
+    pose1.pose.second.pitch = 0;
+    return pose1;
+}
+
+Picking::EndEffectorPosition
 Picking::PreGrasp_orientate(const Eigen::Isometry3d &incoming_pose) {
     Eigen::Isometry3d move(Eigen::Matrix4d::Identity(4, 4));
-    move.matrix()(0, 3) = -0.14;
+    move.matrix()(0, 3) = -0.24;
     move.matrix()(2, 3) = 0.2;
     Eigen::Isometry3d approach = incoming_pose * move;
     NiryoPose p = convertToNiryo(approach, "PreGrasp_orientate");
@@ -72,7 +94,7 @@ Picking::PreGrasp_descend(const Eigen::Isometry3d &incoming_pose) {
     Eigen::Isometry3d approach = incoming_pose * move;
     NiryoPose p = convertToNiryo(approach, "PreGrasp_descend");
     sendTransform(approach, "PreGrasp_descend");
-    p.first.z = 0.15; // SAFTY FIRST
+    p.first.z = 0.10; // SAFTY FIRST
     EndEffectorPosition pose1 = pose(p, true);
     return pose1;
 }
@@ -84,7 +106,7 @@ Picking::computeGrasp(const Eigen::Isometry3d &incoming_pose) {
     Eigen::Isometry3d approach = incoming_pose * move;
     NiryoPose p = convertToNiryo(approach, "Grasp");
     sendTransform(approach, "Grasp");
-    p.first.z = 0.15; // SAFTY FIRST
+    p.first.z = 0.10; // SAFTY FIRST
     EndEffectorPosition pose1 = pose(p, true);
     return pose1;
 }
@@ -96,7 +118,7 @@ Picking::Close(const Eigen::Isometry3d &incoming_pose) {
     Eigen::Isometry3d approach = incoming_pose * move;
     NiryoPose p = convertToNiryo(approach, "Close");
     sendTransform(approach, "Close");
-    p.first.z = 0.15; // SAFTY FIRST
+    p.first.z = 0.10; // SAFTY FIRST
     EndEffectorPosition pose1 = pose(p, false);
     return pose1;
 }
@@ -201,17 +223,24 @@ void Picking::moveArm(const geometry_msgs::Pose &pose) {
     tf::poseMsgToEigen(pose, grasp_pose);
     ROS_WARN_STREAM("The grap frame is:\n" << grasp_pose.matrix());
     std::chrono::seconds sec(1);
-    const auto pre_grasp_orientate = PreGrasp_orientate(grasp_pose);
-    const auto pre_grasp_descend = PreGrasp_descend(grasp_pose);
-    const auto grasp = computeGrasp(grasp_pose);
-    const auto close = Close(grasp_pose);
-    const auto post_grasp = PostGrasp(grasp_pose);
-    const auto pre_final = FinalPositions(0.1, -0.2, 0.25, false, "PreFinal");
-    const auto open = FinalPositions(0.1, -0.2, 0.25, true, "Final");
-    const auto rest_position = FinalPositions(0.3, 0, 0.35, false, "Rest");
-    std::vector<Picking::EndEffectorPosition> movements = {
-        pre_grasp_orientate, pre_grasp_descend, grasp, close,
-        post_grasp,          pre_final,         open,  rest_position};
+    std::vector<Picking::EndEffectorPosition> movements;
+    auto [roll, pitch, yaw]  = utils::RPY(grasp_pose);
+    if (std::abs(pitch) < 1.0) {
+        //const auto starting_pose = StartingPose();
+        movements.push_back(StartingPose1());
+        movements.push_back(StartingPose());
+    }
+    movements.push_back( PreGrasp_orientate(grasp_pose));
+    movements.push_back( PreGrasp_descend(grasp_pose));
+    movements.push_back( computeGrasp(grasp_pose));
+    movements.push_back( Close(grasp_pose));
+    movements.push_back( PostGrasp(grasp_pose));
+    movements.push_back( FinalPositions(0.1, -0.2, 0.25, false, "PreFinal"));
+    movements.push_back( FinalPositions(0.1, -0.2, 0.25, true, "Final"));
+    movements.push_back( FinalPositions(0.3, 0, 0.35, false, "Rest"));
+    //std::vector<Picking::EndEffectorPosition> movements = {
+        //pre_grasp_orientate, pre_grasp_descend, grasp, close,
+        //post_grasp,          pre_final,         open,  rest_position};
     for (const auto &movement : movements) {
         moveToPosition(movement);
         std::this_thread::sleep_for(sec);
