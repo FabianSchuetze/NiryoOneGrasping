@@ -266,6 +266,18 @@ Picking::check(const geometry_msgs::PoseArray &poses) {
     return grasp_poses;
 }
 
+void Picking::moveJoints(const std::vector<double> &position) {
+    niryo_one_msgs::RobotMoveCommand cmd;
+    cmd.cmd_type = 1;
+    cmd.joints = position;
+    niryo_one_msgs::RobotMoveActionGoal action;
+    action.goal.cmd = cmd;
+    robot.sendGoal(action.goal);
+    if (!robot.waitForResult(ros::Duration(MAX_DURATION))) {
+        ROS_WARN("Joints cloud not be moved");
+    }
+}
+
 void Picking::callback(const geometry_msgs::PoseArray &poses) {
     ROS_WARN_STREAM("Recived sequence: " << poses.header.seq);
     std::vector<geometry_msgs::Pose> niryo_poses = check(poses);

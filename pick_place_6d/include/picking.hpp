@@ -28,7 +28,7 @@ class Picking {
     EndEffectorPosition FinalPositions(double x, double y, double z, bool, std::string);
     void setGripper(ros::NodeHandle &);
     void moveToPosition(const EndEffectorPosition &);
-    //void moveJoints(const std::vector<double> &);
+    void moveJoints(const std::vector<double> &);
     void callback(const geometry_msgs::PoseArray &);
     void moveArm(const geometry_msgs::Pose &);
 
