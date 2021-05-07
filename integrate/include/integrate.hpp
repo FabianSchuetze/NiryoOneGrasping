@@ -23,11 +23,9 @@ class Integration {
     };
     using PointCloud = pcl::PointCloud<pcl::PointXYZRGB>;
     using RGBDRegistration = std::tuple<bool, Eigen::Matrix4d, Eigen::Matrix6d>;
-    // explicit Integration(const std::filesystem::path &,
-    // const std::filesystem::path &);
     explicit Integration(const std::filesystem::path &,
-                         const std::string &cameraFrame,
-                         const std::string &publishTopic,
+                         std::string cameraFrame,
+                         std::string publishTopic,
                          bool debug,
                          ros::NodeHandle&);
     void initializePoseGraph();
@@ -35,7 +33,6 @@ class Integration {
     RGBDRegistration registerImmediateRGBDPair(std::size_t);
     std::shared_ptr<o3d::geometry::PointCloud> createScene();
     void callback(const PointCloud::Ptr &);
-    // void startingPose(ros::NodeHandle &);
     void publishCloud(const std::shared_ptr<o3d::geometry::PointCloud> &);
     void convertPointCloudsToRGBD();
 
@@ -48,9 +45,7 @@ class Integration {
     o3d::pipelines::registration::PoseGraph pose_graph;
     ros::Publisher pub;
     bool debug_;
-    // Eigen::Affine3f starting_pose;
     Paths paths;
-    // std::size_t i;
     const std::string cameraFrame, publishTopic;
     tf::TransformListener listener;
     static o3d::geometry::PointCloud

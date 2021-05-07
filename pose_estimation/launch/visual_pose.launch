@@ -1,0 +1,7 @@
+<launch>
+    <node pkg="pose_detection" type="visual_pose" name="visual_pose">
+        <param name="/input_files"
+value="/home/fabian/Documents/work/transforms/src/pose_estimation/data/meshes.txt"/>
+        <param name="/estimated_poses" value="/visual"/>
+</node>
+</launch>

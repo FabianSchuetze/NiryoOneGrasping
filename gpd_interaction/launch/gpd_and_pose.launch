@@ -1,7 +1,7 @@
 <launch>
     <node pkg="gpd" type="gpd_interaction" name="gpd_interaction">
         <!--launch-prefix="xterm -e gdb args">-->
-        <param name="/estimated_poses" value="/estimated_poses"/>
+        <param name="/estimated_poses" value="/geometric"/>
         <param name="/outgoing_poses" value="/grasp_pose"/>
 </node>
 <include file="$(find object_pose)/launch/estimate_pose.launch"/>
