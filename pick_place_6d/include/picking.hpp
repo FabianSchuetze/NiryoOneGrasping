@@ -10,6 +10,7 @@
 #include <vector>
 
 class Picking {
+//<<<<<<< HEAD
 public:
   using NiryoClient =
       actionlib::SimpleActionClient<niryo_one_msgs::RobotMoveAction>;
@@ -31,9 +32,32 @@ public:
   EndEffectorPosition StartingPose();
   void setGripper(ros::NodeHandle &);
   void moveToPosition(const EndEffectorPosition &);
-  // void moveJoints(const std::vector<double> &);
+   void moveJoints(const std::vector<double> &);
   void callback(const geometry_msgs::PoseArray &);
   void moveArm(const geometry_msgs::Pose &);
+//=======
+  //public:
+    //using NiryoClient =
+        //actionlib::SimpleActionClient<niryo_one_msgs::RobotMoveAction>;
+    //using NiryoPose = std::pair<geometry_msgs::Point, niryo_one_msgs::RPY>;
+    //struct EndEffectorPosition {
+        //NiryoPose pose;
+        //bool open;
+    //};
+    //Picking();
+    //void connectToRobot(ros::NodeHandle &);
+    //EndEffectorPosition PreGrasp_orientate(const Eigen::Isometry3d &);
+    //EndEffectorPosition PreGrasp_descend(const Eigen::Isometry3d &);
+    //EndEffectorPosition computeGrasp(const Eigen::Isometry3d &);
+    //EndEffectorPosition Close(const Eigen::Isometry3d &);
+    //EndEffectorPosition PostGrasp(const Eigen::Isometry3d &);
+    //EndEffectorPosition FinalPositions(double x, double y, double z, bool, std::string);
+    //void setGripper(ros::NodeHandle &);
+    //void moveToPosition(const EndEffectorPosition &);
+    //void moveJoints(const std::vector<double> &);
+    //void callback(const geometry_msgs::PoseArray &);
+    //void moveArm(const geometry_msgs::Pose &);
+//>>>>>>> 49c0d8e35be1725cd819dd3e11767ca2d6bc7dfa
 
 private:
   tf2_ros::StaticTransformBroadcaster br;

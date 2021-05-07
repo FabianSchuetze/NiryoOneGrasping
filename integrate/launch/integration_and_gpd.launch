@@ -1,0 +1,13 @@
+<launch>
+    <node pkg="integration" type="integrate" name="integrate">
+        <param name="/root" value="/home/fabian/2021-04-03-16-39"/>
+        <param name="/camera" value="/home/fabian/2021-04-03-16-39/camera_intrinsic.json"/>
+        <param name="/move_joints_server" value="/pick_place/move_joints"/>
+        <param name="/cameraFrame" value="/camera_depth_optical_frame"/>
+        <param name="/publishTopic" value="reconstructed_scene"/>
+        <param name="/debug" value="false" type="bool"/>
+</node>
+<include file="$(find clustering)/launch/clustering.launch"/>
+<include file="$(find object_pose)/launch/estimate_pose.launch"/>
+<include file="$(find gpd)/launch/gpd_interaction.launch"/>
+</launch>

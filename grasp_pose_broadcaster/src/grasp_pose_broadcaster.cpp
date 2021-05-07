@@ -1,5 +1,4 @@
 #include "grasp_pose_broadcaster.hpp"
-//#include <filesystem>
 #include <open3d/Open3D.h>
 #include <tf2_eigen/tf2_eigen.h>
 constexpr std::size_t QUEUE(10);
@@ -47,7 +46,6 @@ GraspPoseBroadcaster::GraspPoseBroadcaster(ros::NodeHandle &n_,
                                            const std::string &publication,
                                            const std::string &type)
     : current_iteration(0) {
-    // ROS_WARN_STREAM("The publication is" << publication);
     pub_ = n_.advertise<geometry_msgs::PoseArray>(publication, 1, true);
     if ((type == "/centroids") or (type == "/visual")) {
         grasping_func = &GraspingFunction::centroidGraspPose;
@@ -72,7 +70,6 @@ void GraspPoseBroadcaster::callback(const object_pose::positions &msg) {
                 ", sequence. Abort!");
         return;
     }
-    //poses.header.seq = current_iteration;
     ROS_WARN_STREAM("Inside the callback");
     for (std::size_t i = 0; i < msg.objects.size(); ++i) {
         geometry_msgs::Pose pose = msg.poses.poses[i];

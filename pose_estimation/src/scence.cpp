@@ -24,10 +24,12 @@
 using namespace PoseEstimation;
 
 // constexpr int TO_DEPTH = 100;
-constexpr int TOMM = 1000;
-constexpr uint HEIGHT = 480;
-constexpr uint WIDTH = 640;
-constexpr uint MIN_VALUES = 100;
+static constexpr int TOMM = 1000;
+static constexpr uint HEIGHT = 480;
+static constexpr uint WIDTH = 640;
+static constexpr uint MIN_VALUES = 100;
+static constexpr uint MAX_ATTMEPTS = 100;
+static constexpr double SLEEP(0.1);
 
 void Scene::decipherImage(const PointCloud::Ptr &cloud) {
     sensor_msgs::Image ros_img;
@@ -115,46 +117,32 @@ void Scene::estimateFeatures(const cv::Ptr<cv::SIFT> &estimator) {
     std::size_t rows = points3d_.rows;
     Eigen::MatrixXd eigen_mat(Eigen::MatrixXd::Zero(rows, 3));
     cv::cv2eigen(points3d_, eigen_mat);
-    // points3d.linear() = eigen_mat.block<3, 3>(0, 0);
-    // points3d.translation() = eigen_mat.block<3, 1>(0, 3);
-    // eigen_mat.colwise().homogeneous();
     geometry_msgs::TransformStamped transform;
     tf2_ros::Buffer tfBuffer;
     tf2_ros::TransformListener tfListener(tfBuffer);
-    int i(0);
-    while (i < 100) {
+    std::size_t i(0);
+    while (i < MAX_ATTMEPTS) {
         try {
             transform = tfBuffer.lookupTransform("base_link", "camera_depth_optical_frame",
                                                  ros::Time(0));
             break;
-        } catch (tf::TransformException ex) {
+        } catch (const tf::TransformException& ex) {
             ROS_WARN("%s", ex.what());
-            ros::Duration(0.1).sleep();
+            ros::Duration(SLEEP).sleep();
             ++i;
         }
-        //std::cout << "x: " << transform.transform.translation.x << std::endl;
     }
-    if (i == 100) {
-        std::runtime_error("Could not find transfrom");
+    if (i == MAX_ATTMEPTS) {
+        throw std::runtime_error("Could not find transfrom");
     }
-    //ROS_ERROR("COmpleted");
     Eigen::Isometry3d trans(Eigen::Matrix4d::Identity(4, 4));
     Eigen::Affine3d tmp_ = tf2::transformToEigen(transform.transform);
     trans.matrix() = tmp_.matrix();
-    //std::cout << "tmp\n" << tmp_.matrix() << std::endl;
-    // std::cout << "mat\n" << eigen_mat.transpose().colwise().homogeneous() <<
-    // std::endl;
     Eigen::MatrixXd out = trans * eigen_mat.transpose().colwise().homogeneous();
     Eigen::MatrixXd tmp = out.transpose();
-    // std::cout << "incoming points\n" << points3d_ << std::endl;
-    // std::cout << "incoming points\n" << eigen_mat.matrix() << std::endl;
-    writeToFile(eigen_mat, "incoming_points.txt");
-    // std::cout << "transform\n" << trans.matrix() << std::endl;
-    writeToFile(trans.matrix(), "transform.txt");
-    // std::cout << "out\n" << out.transpose().matrix() << std::endl;
-    writeToFile(tmp, "out.txt");
+    //writeToFile(eigen_mat, "incoming_points.txt");
+    //writeToFile(trans.matrix(), "transform.txt");
+    //writeToFile(tmp, "out.txt");
     cv::eigen2cv(tmp, points3d_);
-    // std::cout << "transformed points\n" << points3d_ << std::endl;
-    // tf2::doTransform(points3d, points3d, transform);
 }
 

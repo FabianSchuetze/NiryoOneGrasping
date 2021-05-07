@@ -9,9 +9,9 @@ namespace o3d = open3d;
 namespace ObjectPose {
 typedef o3d::geometry::PointCloud Pointcloud;
 using Ptr = std::shared_ptr<o3d::geometry::PointCloud>;
-double calculateYaw(const Eigen::Matrix4d&);
-double calculateRoll(const Eigen::Matrix4d&);
-double calculatePitch(const Eigen::Matrix4d&);
+//double calculateYaw(const Eigen::Matrix4d&);
+//double calculateRoll(const Eigen::Matrix4d&);
+//double calculatePitch(const Eigen::Matrix4d&);
 void VisualizeRegistration(const open3d::geometry::PointCloud &,
                            const open3d::geometry::PointCloud &,
                            const o3d::pipelines::registration::RegistrationResult &);

@@ -20,7 +20,7 @@ find_package(catkin REQUIRED COMPONENTS
   tf2_eigen
   tf2
   tf2_geometry_msgs
-  cv_bridge
+  #cv_bridge
   pose_detection
   eigen_conversions
   utils
@@ -53,14 +53,14 @@ catkin_package(
       tf2_ros
       tf2
       genmsg
-      pcl_ros
-      cv_bridge
+      #pcl_ros
+      #cv_bridge
       pose_detection
       eigen_conversions
       utils
   DEPENDS 
     EIGEN3
-    OpenCV
+    #OpenCV
 )
 
 
@@ -70,15 +70,13 @@ catkin_package(
 set(${PROJECT_NAME}_SRC
     src/picking.cpp
 )
-find_package(OpenCV REQUIRED PATHS /usr/local/lib/cmake/opencv4
-             NO_DEFAULT_PATH)
-include_directories(/usr/local/include/opencv4)
-include_directories(SYSTEM ${catkin_INCLUDE_DIRS} ${EIGEN3_INCLUDE_DIRS}
-    ${PCL_INCLUDE_DIRS} ${OpenCV_INCLUDE_DIRS})
-#include_directories("/root/generate_samples/devel/include/")
+#find_package(OpenCV REQUIRED PATHS /usr/local/lib/cmake/opencv4
+             #NO_DEFAULT_PATH)
+#include_directories(/usr/local/include/opencv4)
+include_directories(SYSTEM ${catkin_INCLUDE_DIRS} ${EIGEN3_INCLUDE_DIRS})
 include_directories(include)
-find_package(PCL REQUIRED)
-find_package(realsense2 REQUIRED)
+#find_package(PCL REQUIRED)
+#find_package(realsense2 REQUIRED)
 
 
 add_library(${PROJECT_NAME} SHARED ${${PROJECT_NAME}_SRC})
@@ -94,3 +92,9 @@ include_directories(
 
 add_executable(new_pick_place_exe src/main.cpp)
 target_link_libraries(new_pick_place_exe ${catkin_LIBRARIES} ${PROJECT_NAME})
+
+add_executable(simple_pick_place src/simple_pick_place.cpp)
+target_link_libraries(simple_pick_place ${catkin_LIBRARIES})
+
+add_executable(move_joints src/move_joints.cpp)
+target_link_libraries(move_joints ${catkin_LIBRARIES} ${PROJECT_NAME})

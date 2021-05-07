@@ -6,6 +6,7 @@
 #include <object_pose/positions.h>
 #include <sstream>
 #include <std_msgs/Header.h>
+#include <utils/utils.hpp>
 // test
 
 static constexpr std::size_t N_POINTS(1000);
@@ -41,45 +42,46 @@ void VisualizeRegistration(const open3d::geometry::PointCloud &source,
     sourcep->Transform(result.transformation_);
     std::stringstream ss;
     // TODO: replace with RPY calculation!
-    double roll = ObjectPose::calculateRoll(result.transformation_);
-    double yaw = ObjectPose::calculateYaw(result.transformation_);
-    double pitch = ObjectPose::calculatePitch(result.transformation_);
+    auto [roll, pitch, yaw] = utils::RPY(result.transformation_);
+    //double roll = ObjectPose::calculateRoll(result.transformation_);
+    //double yaw = ObjectPose::calculateYaw(result.transformation_);
+    //double pitch = ObjectPose::calculatePitch(result.transformation_);
     ss << "Registration Result, fitness, roll, pitch, yaw " << result.fitness_
        << ", " << roll << ", " << pitch << ", " << yaw;
     o3d::visualization::DrawGeometries({sourcep, targetp, origp, framep},
                                        ss.str());
 }
 
-//TODO: Replace with RPY
-double calculateRoll(const Eigen::Matrix4d &transformation) {
+////TODO: Replace with RPY
+//double calculateRoll(const Eigen::Matrix4d &transformation) {
 
-    Eigen::Matrix3d tmp = transformation.block(0, 0, 3, 3);
-    Eigen::Quaternion<double> quat(tmp);
-    double first = 2 * (quat.w() * quat.x() + quat.y() * quat.z());
-    double second = 1 - 2 * (quat.x() * quat.x() + quat.z() * quat.z());
-    double roll = std::atan2(first, second);
-    return roll;
-}
-//TODO: Replace with RPY
-double calculateYaw(const Eigen::Matrix4d &transformation) {
+    //Eigen::Matrix3d tmp = transformation.block(0, 0, 3, 3);
+    //Eigen::Quaternion<double> quat(tmp);
+    //double first = 2 * (quat.w() * quat.x() + quat.y() * quat.z());
+    //double second = 1 - 2 * (quat.x() * quat.x() + quat.z() * quat.z());
+    //double roll = std::atan2(first, second);
+    //return roll;
+//}
+////TODO: Replace with RPY
+//double calculateYaw(const Eigen::Matrix4d &transformation) {
 
-    Eigen::Matrix3d tmp = transformation.block(0, 0, 3, 3);
-    Eigen::Quaternion<double> quat(tmp);
-    double first = 2 * (quat.w() * quat.z() + quat.x() * quat.y());
-    double second = 1 - 2 * (quat.x() * quat.x() + quat.z() * quat.z());
-    double yaw = std::atan2(first, second);
-    return yaw;
-}
+    //Eigen::Matrix3d tmp = transformation.block(0, 0, 3, 3);
+    //Eigen::Quaternion<double> quat(tmp);
+    //double first = 2 * (quat.w() * quat.z() + quat.x() * quat.y());
+    //double second = 1 - 2 * (quat.x() * quat.x() + quat.z() * quat.z());
+    //double yaw = std::atan2(first, second);
+    //return yaw;
+//}
 
-//TODO: Replace with RPY
-double calculatePitch(const Eigen::Matrix4d &transformation) {
+////TODO: Replace with RPY
+//double calculatePitch(const Eigen::Matrix4d &transformation) {
 
-    Eigen::Matrix3d tmp = transformation.block(0, 0, 3, 3);
-    Eigen::Quaternion<double> quat(tmp);
-    double first = 2 * (quat.w() * quat.y() - quat.y() * quat.x());
-    double pitch = std::asin(first);
-    return pitch;
-}
+    //Eigen::Matrix3d tmp = transformation.block(0, 0, 3, 3);
+    //Eigen::Quaternion<double> quat(tmp);
+    //double first = 2 * (quat.w() * quat.y() - quat.y() * quat.x());
+    //double pitch = std::asin(first);
+    //return pitch;
+//}
 void PoseEstimation::readMeshes(const std::filesystem::path &path) {
     std::string line;
     ROS_INFO_STREAM("Trying to open file " << path);

@@ -12,35 +12,6 @@ static constexpr float VOXEL_LENGHT(1.0 / 512.0);
 static constexpr float SDF_TRUNC(0.04);
 static constexpr int LOG_FREQUENCY(10);
 
-//void Integration::readImages(
-    //const fs::path &path,
-    //std::vector<std::shared_ptr<o3d::geometry::Image>> &imgs) {
-    //std::vector<fs::path> paths;
-    //auto it = fs::directory_iterator(path);
-    //std::copy(fs::begin(it), fs::end(it), std::back_inserter(paths));
-    //std::sort(paths.begin(), paths.end());
-    //imgs.resize(paths.size());
-    //std::size_t i(0);
-    //for (const auto &pth : paths) {
-        //auto &img = imgs[i];
-        //o3d::io::ReadImage(pth, *img);
-        //++i;
-    //}
-//}
-
-//void Integration::readImages(
-    //const fs::path &path, std::string s, // NOLINT
-    //std::vector<std::shared_ptr<o3d::geometry::Image>> &imgs) {
-    //fs::path extended = path / s;
-    //if (fs::exists(extended)) {
-        //readImages(extended, imgs);
-    //} else {
-        //std::stringstream ss;
-        //ss << "Cannot open path: " << extended;
-        //throw std::runtime_error(ss.str());
-    //}
-//}
-
 void Integration::readCameraIntrinsics(const fs::path &path) {
     if (fs::exists(path)) {
         if (!o3d::io::ReadIJsonConvertible(path, intrinsic)) {
@@ -58,11 +29,12 @@ void Integration::readCameraIntrinsics(const fs::path &path) {
 }
 
 Integration::Integration(const fs::path &camera,
-                         const std::string &_cameraFrame,
-                         const std::string &_publishTopic,
-                         bool debug,
-                         ros::NodeHandle& nh)
-    : cameraFrame(_cameraFrame), publishTopic(_publishTopic), debug_(debug) {
+                         std::string _cameraFrame,
+                         // const std::string &_cameraFrame,
+                         std::string _publishTopic, bool debug,
+                         ros::NodeHandle &nh)
+    : cameraFrame(std::move(_cameraFrame)),
+      publishTopic(std::move(_publishTopic)), debug_(debug) {
     readCameraIntrinsics(camera);
     paths = open_folder(
         "/home/fabian/Documents/work/transforms/src/integrate/data");

@@ -18,8 +18,9 @@ static constexpr int TOMM = 1000;
 static constexpr uint HEIGHT = 480;
 static constexpr uint WIDTH = 640;
 static constexpr std::size_t MAX_UINT(255);
+static constexpr std::size_t TEN(10);
+static constexpr std::size_t HUNDRED(10);
 
-// TODO: Part of util package
 std::string return_current_time_and_date() {
     auto now = std::chrono::system_clock::now();
     auto in_time_t = std::chrono::system_clock::to_time_t(now);
@@ -28,13 +29,12 @@ std::string return_current_time_and_date() {
     return ss.str();
 }
 
-// TODO: Part of util package
 fs::path generatePath(const fs::path &root, int iter,
-                      std::string ending) { // NOLINT
+                      const std::string& ending) {
     fs::path name;
-    if (iter < 10) {
+    if (iter < TEN) {
         name = "00" + std::to_string(iter) + ending;
-    } else if (iter < 100) {
+    } else if (iter < HUNDRED) {
         name = "0" + std::to_string(iter) + ending;
     } else {
         name = std::to_string(iter) + ending;
@@ -43,7 +43,6 @@ fs::path generatePath(const fs::path &root, int iter,
     return fn;
 }
 
-// TODO: Part of util folder
 Integration::Paths Integration::open_folder(const std::string &dest) {
     std::string current_date = return_current_time_and_date();
     std::filesystem::path second_root(current_date);
@@ -60,14 +59,12 @@ Integration::Paths Integration::open_folder(const std::string &dest) {
     return paths;
 }
 
-// TODO: Part of util folder
 void Integration::save_pointcloud(const PointCloud::Ptr &cloud,
                                   const fs::path &path, int iter) {
     fs::path fn = generatePath(path, iter, ".pcd");
     pcl::io::savePCDFile(fn, *cloud);
 }
 
-// TODO: Part of util folder
 void Integration::save_img(const std::shared_ptr<Image> &img,
                            const fs::path &path, int iter) {
     fs::path fn = generatePath(path, iter, ".png");
@@ -81,7 +78,6 @@ void Integration::save_img(const std::shared_ptr<Image> &img,
     }
 }
 
-// TODO: Part of util folder
 void Integration::save_transform(const tf::StampedTransform &transform,
                                  const fs::path &path, int iter) {
     fs::path fn = generatePath(path, iter, ".txt");
@@ -99,7 +95,6 @@ void Integration::save_transform(const tf::StampedTransform &transform,
     file.close();
 }
 
-//TODO: Combine wiht pose_estimation
 std::shared_ptr<Image>
 Integration::decipherDepth(const PointCloud::Ptr &cloud) {
     if (cloud->height != HEIGHT) {
@@ -203,16 +198,11 @@ void Integration::publishCloud(
     auto pcl_cloud = toPclPointCloud(cloud);
     pcl_ros::transformPointCloud(*pcl_cloud, *pcl_cloud,
                                  transforms[0].inverse());
-    //ros::Publisher pub = nh.advertise<PointCloud>("integrate/integratedCloud", 1);
     pcl_cloud->header.frame_id = "base_link";
     ros::Rate loop_rate(4);
     pcl::io::savePCDFileASCII("final_cloud.pcd", *pcl_cloud);
-    //while (nh.ok()) {
     pcl_conversions::toPCL(ros::Time::now(), pcl_cloud->header.stamp);
     pub.publish(pcl_cloud);
-    //ros::spinOnce();
-    //loop_rate.sleep();
-    //}
 }
 
 } // namespace integration
