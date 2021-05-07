@@ -26,6 +26,11 @@ find_package(catkin REQUIRED COMPONENTS
   utils
 )
 
+add_action_files(
+  DIRECTORY action
+  FILES MoveJoints.action
+)
+
 generate_messages(
   DEPENDENCIES actionlib_msgs std_msgs
 )

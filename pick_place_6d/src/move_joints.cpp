@@ -30,7 +30,7 @@ void MoveJointsAction::readJointPositions(const std::string &loc) {
             tmp.push_back(std::stod(val));
         }
         std::cout << "end line, vector size: " << tmp.size() << std::endl;
-        if (tmp.size() == 6) {
+        if (tmp.size() == N_JOINTS) {
             trajectory.push_back(std::move(tmp));
         }
     }
@@ -54,7 +54,7 @@ MoveJointsAction::MoveJointsAction(const std::string &location,
     ROS_WARN_STREAM("ActionSerice waiting for input");
 }
 
-void MoveJointsAction::cb(const pick_place::MoveJointsGoalConstPtr &) {
+void MoveJointsAction::cb(const new_pick_place::MoveJointsGoalConstPtr & x) {
     std::cout << "beginning with iteration" << std::endl;
     std::size_t step(0);
     std::size_t sz(trajectory.size());
