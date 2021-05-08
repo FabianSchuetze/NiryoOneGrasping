@@ -22,7 +22,7 @@ find_package(catkin REQUIRED COMPONENTS
   tf2_geometry_msgs
   pcl_ros
   cv_bridge
-  pick_place
+  new_pick_place
 )
 
 ###################################
@@ -49,7 +49,7 @@ catkin_package(
       genmsg
       pcl_ros
       cv_bridge
-      pick_place
+      new_pick_place
   DEPENDS 
     EIGEN3
     OpenCV

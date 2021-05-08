@@ -2,7 +2,7 @@
 #include <actionlib/client/simple_action_client.h>
 #include <actionlib/client/terminal_state.h>
 #include <filesystem>
-#include <pick_place/MoveJointsAction.h>
+#include <new_pick_place/MoveJointsAction.h>
 #include <ros/ros.h>
 #include <utils/utils.hpp>
 
@@ -10,22 +10,6 @@ using param = std::pair<std::string, std::string>;
 static constexpr std::size_t FREQUENCY(40);
 static constexpr std::size_t QUEUE(30);
 static std::string SUCCEEDED("SUCCEEDED");
-
-// TODO: Take from utils
-// template <typename... T>
-// void readParameters(const ros::NodeHandle &nh, T &... args) {
-// auto read_parameters = [&](auto &t) {
-// nh.getParam(t.first, t.second);
-// if constexpr (std::is_same_v<decltype(t), std::string>) {
-// if (t.second.empty()) {
-// ROS_WARN_STREAM("Rosparam " << t.first << " not identified");
-// throw std::runtime_error("Could not read all parameters");
-//}
-//}
-// ROS_WARN_STREAM("The parameters for " << t.first << " is " << t.second);
-//};
-//(..., read_parameters(args));
-//}
 
 int main(int argc, char **argv) {
     ros::init(argc, argv, "cluster");
@@ -36,7 +20,7 @@ int main(int argc, char **argv) {
     param cameraFrame("integrate/cameraFrame", "");
     param publishTopic("integrate/publishTopic", "");
     utils::readParameters(nh, camera, mover, cameraFrame, publishTopic, debug);
-    actionlib::SimpleActionClient<pick_place::MoveJointsAction> ac(mover.second,
+    actionlib::SimpleActionClient<new_pick_place::MoveJointsAction> ac(mover.second,
                                                                    true);
     ROS_WARN_STREAM("Waiting for server " << mover.second << "to start");
     ac.waitForServer();
@@ -46,7 +30,7 @@ int main(int argc, char **argv) {
     ros::Subscriber sub =
         nh.subscribe("/camera/depth_registered/points", QUEUE,
                      &integration::Integration::callback, &integrate);
-    pick_place::MoveJointsGoal goal;
+    new_pick_place::MoveJointsGoal goal;
     ac.sendGoal(goal);
     ros::Rate rate(FREQUENCY);
     while (ros::ok() && SUCCEEDED != ac.getState().toString()) {

@@ -23,7 +23,7 @@
   <build_depend> tf_conversions</build_depend>
   <build_depend> pcl_ros</build_depend>
   <build_depend> cv_bridge</build_depend>
-  <build_depend> pick_place</build_depend>
+  <build_depend> new_pick_place</build_depend>
   <exec_depend>roscpp</exec_depend>
   <exec_depend>actionlib</exec_depend>
   <exec_depend>actionlib_msgs</exec_depend>
@@ -35,7 +35,7 @@
   <exec_depend> tf_conversions</exec_depend>
   <exec_depend> pcl_ros</exec_depend>
   <exec_depend> cv_bridge</exec_depend>
-  <exec_depend> pick_place</exec_depend>
+  <exec_depend> new_pick_place</exec_depend>
 
 
 

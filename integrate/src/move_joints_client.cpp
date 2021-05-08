@@ -1,16 +1,17 @@
 #include <actionlib/client/simple_action_client.h>
 #include <actionlib/client/terminal_state.h>
 #include <ros/ros.h>
-#include <pick_place/MoveJointsAction.h>
+#include <new_pick_place/MoveJointsAction.h>
+
 int main(int argc, char **argv) {
     ros::init(argc, argv, "test_fibonacci");
     std::string server_name("pick_place/move_joints");
-    actionlib::SimpleActionClient<pick_place::MoveJointsAction> ac(server_name, true);
+    actionlib::SimpleActionClient<new_pick_place::MoveJointsAction> ac(server_name, true);
     ros::NodeHandle nh;
     ROS_WARN_STREAM("Waiting for action server " << server_name << "to start");
     ac.waitForServer();  // will wait for infinite time
     ROS_INFO("Action server started, sending goal.");
-    pick_place::MoveJointsGoal goal;
+    new_pick_place::MoveJointsGoal goal;
     ac.sendGoal(goal);
     bool finished_before_timeout = ac.waitForResult(ros::Duration(30.0));
     if (finished_before_timeout) {
