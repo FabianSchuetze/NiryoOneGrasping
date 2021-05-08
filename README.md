@@ -17,56 +17,41 @@ The easiest way to work with the repo is to install the docker container.
 
 Image Matching
 --------------
-Image matching produces fast and relatively robust results. In constrast to the
-three other techniques discussed, image matching does not need to integrate
-different RGBD frames into a global scene, but can instead work with one RGB
-image. However, the feature detection algorithms are not as robust as the
-geometric registration algorithms below, so the quality of the grasp pose is a
-bit lower. The instructions to invok grasping based on image matching are:   
+Image matching produces fast and relatively robust results. In contrast to the three other techniques discussed, image matching does not need to integrate different RGBD frames into a global scene but can instead work with only one image. However, the feature detection algorithms are not as robust as the geometric registration algorithms below, so the quality of the grasp pose is a bit lower. The instructions to invoke grasping based on image matching are:
 
 ```shell
 roslaunch generate_images broadcast_transform.launch
 roslaunch pose_detection visual_pose.launch
 roslaunch new_pick_place picking.launch
 ```
-![GPD](assets/clustering.gif)
-As can be seen in the acompanying video, the position estimates are robust, but
-the yaw angles flucuate slightly.
+![GPD](assets/visual.gif)
+As seen in the accompanying video, the position estimates are robust, but the yaw angles fluctuate slightly.
 
 
 Centroid Estimation
 ----------
-The advantage of estimating the centroid of segmented object lies in its
-flexibility: Whilst the other techniques presented require a template of the
-object, the centroid of a clustered object can be found for objects without
-template. The disadvantage of the approach however is that the centroid
-represents only a point but no orientation. Thus objects without a pronounced
-yaw can be grasped well, but other objects are often not grapsed well.
-
+Estimating the centroid determines the grasp location of objects with little yaw very flexibly because centroids can be calculated without any templates. However, the centroid represents only a point without orientation. Therefore, objects without pronounced yaw get grasped properly, while others might not be picked.
 ```shell
 roslaunch generate_images broadcast_transform.launch
 roslaunch integration integration_and_clustering.launch
 roslaunch new_pick_place picking.launch
 ```
+This video show objects for which no template is available. If the object is oriented similar to the robot, the gripper can pick up the object very well.
+![GPD](assets/clustering.gif)
+
 
 
 Geomertic Matching (Point Cloud Registration)
 ---------------------------------------------
-This approach allows computing grasp poses based in geometric matching of a 3D
-template with the segmented scene through ICP. The grasps position are in the
-center of the object and the grasp are approached in the negative x-direction
-of the grasp frame and the positive z-direction of the graps frame. Grasp
-orientations are indenpendet of the object shape and the gripper always grasps
-the obejct "from above". This makes grasping robust and leds to few collisions
-with other objects and the gripper when attempting to grasp a particular
-object. However, for objects which are not rectangular, the clusure from above
-might not be very firm, and object might slip out of the gripper's hand.
+This approach allows computing grasp poses based on matching a 3D template with the segmented scene through ICP. Grasps are centered in the object, and the gripper approaches objects from the negative x-direction and positive z-direction of the grasp frame. Because the gripper's pitch is fixed to Pi/2, few collisions with other objects occur even without setting cautious waypoints. However, the grasp orientation might not lead to firm force closure, and objects might slip out of the gripper's hand.
 
 ```shell
 roslaunch generate_images broadcast_transform.launch
 roslaunch integration integration_and_pose_estimation.launch
 roslaunch new_pick_place picking.launch
 ```
+The video for this grasping technique is very similar to the video shown for the GPD technique. The robot first circles the scene to integrate different RGBD images. Then, the ICP algorithm matches object templates with the scene to determines the object's pose. The gripper then approaches the objects "from above" to pick them up.
+
 
 GPD
 ---
