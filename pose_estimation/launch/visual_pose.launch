@@ -4,4 +4,5 @@
 value="/home/fabian/Documents/work/transforms/src/pose_estimation/data/meshes.txt"/>
         <param name="/estimated_poses" value="/visual"/>
 </node>
+<include file="$(find grasp_pose_broadcast)/launch/visual_pose_broadcaster.launch"/>
 </launch>

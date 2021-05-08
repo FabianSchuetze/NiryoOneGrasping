@@ -6,20 +6,6 @@
 static constexpr std::size_t QUEUE(10);
 using param = std::pair<std::string, std::string>;
 
-//TODO: Replace with utils
-//template <typename... T>
-//void readParameters(const ros::NodeHandle &nh, T &... args) {
-    //auto read_parameters = [&](auto &t) {
-        //nh.getParam(t.first, t.second);
-        //if (t.second.empty()) {
-            //ROS_ERROR_STREAM("Rosparam " << t.first << " not identified");
-            //throw std::runtime_error("Could not read all parameters");
-        //}
-        //ROS_WARN_STREAM("The parameters for " << t.first << " is " << t.second);
-    //};
-    //(..., read_parameters(args));
-//}
-
 int main(int argc, char **argv) {
     ros::init(argc, argv, "cluster");
     ros::NodeHandle nh;

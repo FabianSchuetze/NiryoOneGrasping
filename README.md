@@ -17,31 +17,38 @@ The easiest way to work with the repo is to install the docker container.
 
 Image Matching
 --------------
-Image matching produces fast a relatively robust results. In constrast to the
-three other techniques presented, image matching does not need to integrate
+Image matching produces fast and relatively robust results. In constrast to the
+three other techniques discussed, image matching does not need to integrate
 different RGBD frames into a global scene, but can instead work with one RGB
 image. However, the feature detection algorithms are not as robust as the
-ogeometric registration algorithms below, so the quality of the grasp pose is a
-bit lower, in particular the estimates of the yaw angle are not great.
+geometric registration algorithms below, so the quality of the grasp pose is a
+bit lower. The instructions to invok grasping based on image matching are:   
+
 ```shell
 roslaunch generate_images broadcast_transform.launch
 roslaunch pose_detection visual_pose.launch
 roslaunch new_pick_place picking.launch
 ```
+![GPD](assets/clustering.gif)
+As can be seen in the acompanying video, the position estimates are robust, but
+the yaw angles flucuate slightly.
+
 
 Centroid Estimation
 ----------
 The advantage of estimating the centroid of segmented object lies in its
 flexibility: Whilst the other techniques presented require a template of the
-object, the centroid of a clustered object can be found for all kinds of
-objects. The disadvantage of the approach however is that the centroid
+object, the centroid of a clustered object can be found for objects without
+template. The disadvantage of the approach however is that the centroid
 represents only a point but no orientation. Thus objects without a pronounced
 yaw can be grasped well, but other objects are often not grapsed well.
+
 ```shell
 roslaunch generate_images broadcast_transform.launch
 roslaunch integration integration_and_clustering.launch
 roslaunch new_pick_place picking.launch
 ```
+
 
 Geomertic Matching (Point Cloud Registration)
 ---------------------------------------------

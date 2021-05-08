@@ -3,7 +3,7 @@
 #include <tf2_eigen/tf2_eigen.h>
 constexpr std::size_t QUEUE(10);
 constexpr double BEND_ARM(1.5);
-constexpr double HAND_LENGTH(0.08);
+//constexpr double HAND_LENGTH(0.08);
 namespace GraspingFunction {
 utils::DOF
 centroidGraspPose(const geometry_msgs::TransformStamped &ros_transform,
@@ -14,7 +14,7 @@ centroidGraspPose(const geometry_msgs::TransformStamped &ros_transform,
     ROS_WARN_STREAM("The r,p, y: " << r << ", " << p << ", " << yw);
     double x = transform(0, 3);
     double y = transform(1, 3);
-    double z = transform(2, 3) + HAND_LENGTH;
+    double z = transform(2, 3);
     utils::DOF dof(x, y, z, 0, BEND_ARM, yaw);
     return dof;
 }

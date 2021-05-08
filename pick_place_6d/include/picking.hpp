@@ -42,8 +42,7 @@ class Picking {
     bool MoveEEF(const NiryoPose &);
     static std::vector<geometry_msgs::Pose>
     check(const geometry_msgs::PoseArray &);
-    static NiryoPose convertToNiryo(const Eigen::Isometry3d &,
-                                    const std::string &);
+    static NiryoPose convert(const Eigen::Isometry3d &, const std::string &);
     void sendTransform(const Eigen::Isometry3d &, std::string);
 };
 #endif

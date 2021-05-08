@@ -62,10 +62,11 @@ void Scene::decipherDepth(const PointCloud::Ptr &cloud) {
 void Scene::callback(const PointCloud::Ptr &point_cloud) {
     decipherImage(point_cloud);
     decipherDepth(point_cloud);
-    //if (!img().empty()) {
-        //cv::imshow("test", img());
-        //cv::waitKey(1);
-    //}
+    //TODO: Add debug variable specifying whether to show image
+    if (!img().empty()) {
+        cv::imshow("test", img());
+        cv::waitKey(1);
+    }
 }
 
 void Scene::deserialize(const fs::path &color_pth, const fs::path &depth_pth) {

@@ -98,5 +98,5 @@ target_link_libraries(pick_place_exe ${catkin_LIBRARIES} ${PROJECT_NAME})
 add_executable(simple_pick_place_exe src/simple_pick_place.cpp)
 target_link_libraries(simple_pick_place_exe ${catkin_LIBRARIES})
 
-add_executable(move_joints src/move_joints.cpp)
-target_link_libraries(move_joints ${catkin_LIBRARIES} ${PROJECT_NAME})
+#add_executable(move_joints src/move_joints.cpp)
+#target_link_libraries(move_joints ${catkin_LIBRARIES} ${PROJECT_NAME})
