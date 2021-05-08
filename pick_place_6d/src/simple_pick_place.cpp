@@ -13,7 +13,7 @@
 #include <sstream>
 
 #include "ros/ros.h"
-static constexpr double SAFTY_Z(0.01);
+static constexpr double SAFTY_Z(0.1);
 
 // typedef actionlib::SimpleActionClient<niryo_one_msgs::RobotMoveAction>
 // NiryoClient;
@@ -26,7 +26,7 @@ static constexpr double SAFTY_Z(0.01);
 
 Picking::EEFPosition computePosition(const std::vector<double> &goal,
                                      bool open_gripper) {
-    double z = goal[3];
+    double z = goal[2];
     if (z < SAFTY_Z) {
         z = SAFTY_Z;
     }

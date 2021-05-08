@@ -189,6 +189,11 @@ bool Picking::MoveEEF(const NiryoPose &pose) {
     niryo_one_msgs::RobotMoveActionGoal action;
     action.goal.cmd = cmd;
     ROS_INFO("Sending command:");
+    if (cmd.position.z < SAFTY_Z) {
+        ROS_ERROR_STREAM("Received z value " << cmd.position.z << ", " <<
+                "smaller than safty margins. Abort!");
+        throw std::runtime_error("");
+    }
     ROS_INFO("position: %.2f, %.2f, %.2f", cmd.position.x, cmd.position.y,
              cmd.position.z);
     ROS_INFO("rpy (r,p,y):  %.2f, %.2f, %2f", cmd.rpy.roll, cmd.rpy.pitch,
