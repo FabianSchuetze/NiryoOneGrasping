@@ -29,7 +29,6 @@ void MoveJointsAction::readJointPositions(const std::string &loc) {
         while (std::getline(ss, val, *separator)) {
             tmp.push_back(std::stod(val));
         }
-        //std::cout << "end line, vector size: " << tmp.size() << std::endl;
         if (tmp.size() == N_JOINTS) {
             trajectory.push_back(std::move(tmp));
         }
