@@ -1,5 +1,4 @@
 #include "move_joints_server.hpp"
-//#include "picking.hpp"
 #include "ros/ros.h"
 #include <filesystem>
 #include <fstream>
@@ -11,6 +10,7 @@ using param = std::pair<std::string, std::string>;
 
 namespace fs = std::filesystem;
 static constexpr std::size_t N_JOINTS(6);
+static constexpr std::size_t SLEEP_TIME(50);
 
 void MoveJointsAction::readJointPositions(const std::string &loc) {
     std::filesystem::path fn(loc);
@@ -29,7 +29,7 @@ void MoveJointsAction::readJointPositions(const std::string &loc) {
         while (std::getline(ss, val, *separator)) {
             tmp.push_back(std::stod(val));
         }
-        std::cout << "end line, vector size: " << tmp.size() << std::endl;
+        //std::cout << "end line, vector size: " << tmp.size() << std::endl;
         if (tmp.size() == N_JOINTS) {
             trajectory.push_back(std::move(tmp));
         }
@@ -41,10 +41,6 @@ MoveJointsAction::MoveJointsAction(const std::string &location,
     : as(
           nh, "pick_place/move_joints", [this](auto &&x) { cb(x); }, false) {
     as.start();
-    // ROS_WARN_STREAM("The cuent path is " << fs::current_path());
-    // std::pair<std::string, std::string>
-    // location("move_joints/joint_position_file", "");
-    // readParameters(location);
     if (!fs::exists(location)) {
         ROS_WARN_STREAM("The path " << location << "does not exists");
         throw std::runtime_error("The path does not exists");
@@ -59,15 +55,13 @@ void MoveJointsAction::cb(const new_pick_place::MoveJointsGoalConstPtr & x) {
     std::size_t step(0);
     std::size_t sz(trajectory.size());
     while (!as.isPreemptRequested() and ros::ok() and step < sz) {
-        std::this_thread::sleep_for(std::chrono::milliseconds(50));
+        std::this_thread::sleep_for(std::chrono::milliseconds(SLEEP_TIME));
         const std::vector<double> &joint_position = trajectory[step];
-        std::cout << "received value:\n";
-        for (const auto x : joint_position) {
-            std::cout << x << ", ";
-        }
-        std::cout << "Moving joints " << std::endl;
+        ROS_INFO_STREAM("Recived value: " << joint_position[0] << ", " <<
+                joint_position[1] << ", " << joint_position[2] << ", " <<
+                joint_position[3] << ", " << joint_position[4] << ", " <<
+                joint_position[5]);
         picker.moveJoints(joint_position);
-        // std::this_thread::sleep_for(std::chrono::seconds(0.2));
         feedback.fraction = static_cast<float>(step) / sz;
         as.publishFeedback(feedback);
         ++step;

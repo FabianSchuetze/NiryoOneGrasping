@@ -10,66 +10,40 @@
 #include <vector>
 
 class Picking {
-//<<<<<<< HEAD
-public:
-  using NiryoClient =
-      actionlib::SimpleActionClient<niryo_one_msgs::RobotMoveAction>;
-  using NiryoPose = std::pair<geometry_msgs::Point, niryo_one_msgs::RPY>;
-  struct EndEffectorPosition {
-    NiryoPose pose;
-    bool open;
-  };
-  Picking();
-  void connectToRobot(ros::NodeHandle &);
-  EndEffectorPosition PreGrasp_orientate(const Eigen::Isometry3d &);
-  EndEffectorPosition PreGrasp_descend(const Eigen::Isometry3d &);
-  EndEffectorPosition computeGrasp(const Eigen::Isometry3d &);
-  EndEffectorPosition Close(const Eigen::Isometry3d &);
-  EndEffectorPosition PostGrasp(const Eigen::Isometry3d &);
-  EndEffectorPosition FinalPositions(double x, double y, double z, bool,
-                                     std::string);
-  EndEffectorPosition StartingPose1();
-  EndEffectorPosition StartingPose();
-  void setGripper(ros::NodeHandle &);
-  void moveToPosition(const EndEffectorPosition &);
-   void moveJoints(const std::vector<double> &);
-  void callback(const geometry_msgs::PoseArray &);
-  void moveArm(const geometry_msgs::Pose &);
-//=======
-  //public:
-    //using NiryoClient =
-        //actionlib::SimpleActionClient<niryo_one_msgs::RobotMoveAction>;
-    //using NiryoPose = std::pair<geometry_msgs::Point, niryo_one_msgs::RPY>;
-    //struct EndEffectorPosition {
-        //NiryoPose pose;
-        //bool open;
-    //};
-    //Picking();
-    //void connectToRobot(ros::NodeHandle &);
-    //EndEffectorPosition PreGrasp_orientate(const Eigen::Isometry3d &);
-    //EndEffectorPosition PreGrasp_descend(const Eigen::Isometry3d &);
-    //EndEffectorPosition computeGrasp(const Eigen::Isometry3d &);
-    //EndEffectorPosition Close(const Eigen::Isometry3d &);
-    //EndEffectorPosition PostGrasp(const Eigen::Isometry3d &);
-    //EndEffectorPosition FinalPositions(double x, double y, double z, bool, std::string);
-    //void setGripper(ros::NodeHandle &);
-    //void moveToPosition(const EndEffectorPosition &);
-    //void moveJoints(const std::vector<double> &);
-    //void callback(const geometry_msgs::PoseArray &);
-    //void moveArm(const geometry_msgs::Pose &);
-//>>>>>>> 49c0d8e35be1725cd819dd3e11767ca2d6bc7dfa
+  public:
+    using NiryoClient =
+        actionlib::SimpleActionClient<niryo_one_msgs::RobotMoveAction>;
+    using NiryoPose = std::pair<geometry_msgs::Point, niryo_one_msgs::RPY>;
+    struct EEFPosition {
+        NiryoPose pose;
+        bool open;
+    };
+    Picking();
+    void connectToRobot(ros::NodeHandle &);
+    EEFPosition PreGrasp_orientate(const Eigen::Isometry3d &);
+    EEFPosition PreGrasp_descend(const Eigen::Isometry3d &);
+    EEFPosition computeGrasp(const Eigen::Isometry3d &);
+    EEFPosition Close(const Eigen::Isometry3d &);
+    EEFPosition PostGrasp(const Eigen::Isometry3d &);
+    static EEFPosition Position(double x, double y, double z, double roll,
+                                double pitch, double yaw, bool);
+    static void setGripper(ros::NodeHandle &);
+    void moveToPosition(const EEFPosition &);
+    void moveJoints(const std::vector<double> &);
+    void callback(const geometry_msgs::PoseArray &);
+    void moveArm(const geometry_msgs::Pose &);
 
-private:
-  tf2_ros::StaticTransformBroadcaster br;
-  NiryoClient robot;
-  template <typename T>
-  void establish_connection(const T &, const std::string &);
-  static EndEffectorPosition pose(const NiryoPose &, bool);
-  bool GripperAperture(bool);
-  bool MoveEEF(const NiryoPose &);
-  std::vector<geometry_msgs::Pose> check(const geometry_msgs::PoseArray &);
-  static NiryoPose convertToNiryo(const Eigen::Isometry3d &,
-                                  const std::string &);
-  void sendTransform(const Eigen::Isometry3d &, std::string);
+  private:
+    tf2_ros::StaticTransformBroadcaster br;
+    NiryoClient robot;
+    static void establish_connection(const NiryoClient &, const std::string &);
+    static EEFPosition pose(const NiryoPose &, bool);
+    bool GripperAperture(bool);
+    bool MoveEEF(const NiryoPose &);
+    static std::vector<geometry_msgs::Pose>
+    check(const geometry_msgs::PoseArray &);
+    static NiryoPose convertToNiryo(const Eigen::Isometry3d &,
+                                    const std::string &);
+    void sendTransform(const Eigen::Isometry3d &, std::string);
 };
 #endif
