@@ -1,6 +1,4 @@
-This repo provides four different grasping technologies with the Niryo One
-robot arm. These techniques range from the simple image matching to the more
-precise but more involved grasp pose detection.
+This repo provides four different grasping technologies with the Niryo One robot arm. These techniques range from simple image matching to more precise but more involved grasp pose detection.
 
 
 
@@ -11,10 +9,6 @@ Each approach requires setting up the camera, some form of graps generation,
 and a reception of the grasp frame to imply the robot to move.
 
 
-Installation
-------------
-The easiest way to work with the repo is to install the docker container.
-
 Image Matching
 --------------
 Image matching produces fast and relatively robust results. In contrast to the three other techniques discussed, image matching does not need to integrate different RGBD frames into a global scene but can instead work with only one image. However, the feature detection algorithms are not as robust as the geometric registration algorithms below, so the quality of the grasp pose is a bit lower. The instructions to invoke grasping based on image matching are:
@@ -24,9 +18,8 @@ roslaunch generate_images broadcast_transform.launch
 roslaunch pose_detection visual_pose.launch
 roslaunch new_pick_place picking.launch
 ```
+As seen in the accompanying video, the position estimates are robust, but the yaw angles fluctuate slightly.   
 ![GPD](assets/visual.gif)
-As seen in the accompanying video, the position estimates are robust, but the yaw angles fluctuate slightly.
-
 
 Centroid Estimation
 ----------
@@ -36,7 +29,8 @@ roslaunch generate_images broadcast_transform.launch
 roslaunch integration integration_and_clustering.launch
 roslaunch new_pick_place picking.launch
 ```
-This video show objects for which no template is available. If the object is oriented similar to the robot, the gripper can pick up the object very well.
+This video show objects for which no template is available. If the object is oriented similar to the robot, the gripper can pick up the object very well.   
+
 ![GPD](assets/clustering.gif)
 
 
@@ -55,13 +49,7 @@ The video for this grasping technique is very similar to the video shown for the
 
 GPD
 ---
-Interacting with GPD requires the gpd repo as a dependency. GPD consists of two
-different repos, the core [GPD module](https://github.com/atenpas/gpd), and the
-[GPD-ROS](https://github.com/atenpas/gpd_ros) repo. GPD provides advantageous
-graps poses directly on the point cloud of objects. In contrast, the techniques
-above grasp objects only from above, this technique can pick an object from
-any direction, if these directions are assumed to be more felicitious. To
-run GPD launch the following files:
+Interacting with GPD requires the GPD repo as a dependency. GPD consists of the core GPD module and the GPD-ROS repo. GPD provides grasp poses directly on the point cloud of objects and chooses a picking pose that maximizes force closure of the gripper. In contrast, the other techniques solely grasp "from above". To run GPD launch the following files:
 
 ```shell
 roslaunch generate_images broadcast_transform.launch
@@ -70,18 +58,8 @@ roslaunch new_pick_place picking.launch
 ```
 A vide of the result can be seen below:  
 ![GPD](assets/gpd.gif)
-At arm moves at first around a pre-specificed trajectory to collect rgbd
-images. The images are then registered and integrated into an entire scene.
-Then, a geometric registration is identifing the object in the scene. The
-identification allows passing the object mesh to GDP and also to locate the
-correct reference frame for the object. GDP then suggests different grasps.
-Finally, the graps is conducated by the robot. Rviz shows the different
-waypoints for the grasping trajectory. Whilst GPD can generate high quality
-grasps, approaching the object from another positions than from above requires
-a larger workspace for the robot. This requires extra care for selecting a safe
-trajectory so that the arm does not collide with the ground, itself of the
-object. 
-
+At arm moves at first around a pre-specified trajectory to collect RGBD
+images. The images are registered and integrated into an entire scene. The object's location needs to be determined through geometric registration first before picking it up. These steps are identical to the grasping technique described above. GDP then suggests different grasps for the identified object. Finally, the robot grasps the object. Rviz shows the waypoints for the grasping trajectory. Although GPD can generate high-quality grasps, approaching the object from other positions than from above requires a larger workspace for the robot. Extra care for selecting a safe trajectory is needed and to avoid collisions with the ground, itself, or the object.
 
 
 
