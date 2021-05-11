@@ -57,7 +57,7 @@ roslaunch integration integration_and_pose_estimation.launch
 roslaunch new_pick_place picking.launch
 ```
 A vide of the result can be seen below:  
-![GPD](assets/gpd.gif)
+![GPD](assets/gpd.gif)   
 At arm moves at first around a pre-specified trajectory to collect RGBD
 images. The images are registered and integrated into an entire scene. The object's location needs to be determined through geometric registration first before picking it up. These steps are identical to the grasping technique described above. GDP then suggests different grasps for the identified object. Finally, the robot grasps the object. Rviz shows the waypoints for the grasping trajectory. Although GPD can generate high-quality grasps, approaching the object from other positions than from above requires a larger workspace for the robot. Extra care for selecting a safe trajectory is needed and to avoid collisions with the ground, itself, or the object.
 
