@@ -19,7 +19,7 @@ static constexpr uint HEIGHT = 480;
 static constexpr uint WIDTH = 640;
 static constexpr std::size_t MAX_UINT(255);
 static constexpr std::size_t TEN(10);
-static constexpr std::size_t HUNDRED(10);
+static constexpr std::size_t HUNDRED(100);
 
 std::string return_current_time_and_date() {
     auto now = std::chrono::system_clock::now();
@@ -29,7 +29,7 @@ std::string return_current_time_and_date() {
     return ss.str();
 }
 
-fs::path generatePath(const fs::path &root, int iter,
+fs::path generatePath(const fs::path &root, std::size_t iter,
                       const std::string& ending) {
     fs::path name;
     if (iter < TEN) {
@@ -148,6 +148,9 @@ void Integration::callback(const PointCloud::Ptr &cloud) {
 void Integration::convertPointCloudsToRGBD() {
     std::size_t i(0);
     auto t1 = std::chrono::system_clock::now();
+    if (pointclouds.empty()) {
+        throw std::runtime_error("No Pointclouds available");
+    }
     for (const auto &cloud : pointclouds) {
         auto color = decipherImage(cloud);
         auto depth = decipherDepth(cloud);

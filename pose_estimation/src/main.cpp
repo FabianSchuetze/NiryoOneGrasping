@@ -180,9 +180,7 @@ int main(int argc, char **argv) {
             continue;
         }
         std::vector<std::pair<std::string, geometry_msgs::Pose>> named_poses;
-        // for (size_t i = 0; i < matches.size(); ++i) {
         for (auto [match, t] : matches) {
-            // auto [match, t] = matches[i];
             geometry_msgs::Pose pose;
             if (graspPose(t, scene, match, pose)) {
                 named_poses.emplace_back(t.name(), pose);

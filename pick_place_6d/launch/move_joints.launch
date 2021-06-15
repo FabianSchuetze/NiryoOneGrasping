@@ -1,5 +1,5 @@
 <launch>
-  <node pkg="pick_place" type="move_joints" name="move_joints" output="screen">
+  <node pkg="new_pick_place" type="move_joints" name="move_joints" output="screen">
       <param name="joint_position_file" type="string" value="/root/generate_samples/src/generate_samples/pick_place/data/joint_positions.txt"/>
 </node>
 </launch>
