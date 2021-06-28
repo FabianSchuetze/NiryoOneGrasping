@@ -9,6 +9,7 @@
 #include <tf/LinearMath/Transform.h>
 #include <tf/transform_listener.h>
 #include <tf_conversions/tf_eigen.h>
+#include <utils/utils.hpp>
 
 using o3d::geometry::Image;
 using PointCloud = pcl::PointCloud<pcl::PointXYZRGB>;
@@ -30,7 +31,7 @@ std::string return_current_time_and_date() {
 }
 
 fs::path generatePath(const fs::path &root, std::size_t iter,
-                      const std::string& ending) {
+                      const std::string &ending) {
     fs::path name;
     if (iter < TEN) {
         name = "00" + std::to_string(iter) + ending;
@@ -59,10 +60,30 @@ Integration::Paths Integration::open_folder(const std::string &dest) {
     return paths;
 }
 
+Integration::Paths Integration::read_folder(const fs::path &pth) {
+    ROS_WARN_STREAM("The path is " << pth << std::endl);
+    Paths paths;
+    paths.depth = pth / fs::path("depth");
+    paths.color = pth / fs::path("color");
+    paths.transform = pth / fs::path("transform");
+    paths.pointcloud = pth / fs::path("pointcloud");
+    return paths;
+}
+
+void Integration::save_pointcloud(const o3d::geometry::PointCloud &cloud,
+                                  const fs::path &pth) {
+    o3d::io::WritePointCloud(pth, cloud);
+}
 void Integration::save_pointcloud(const PointCloud::Ptr &cloud,
                                   const fs::path &path, int iter) {
     fs::path fn = generatePath(path, iter, ".pcd");
     pcl::io::savePCDFile(fn, *cloud);
+}
+
+void Integration::save_pose_graph(
+    const o3d::pipelines::registration::PoseGraph &pose_graph) const {
+    fs::path pose_pth = paths.transform / "pose_graph.json";
+    o3d::io::WritePoseGraph(pose_pth, pose_graph);
 }
 
 void Integration::save_img(const std::shared_ptr<Image> &img,
@@ -143,6 +164,57 @@ void Integration::callback(const PointCloud::Ptr &cloud) {
         return;
     }
     pointclouds.push_back(cloud);
+}
+
+//std::vector<fs::path> Integration::readFiles(const fs::path &root) {
+    //auto begin = fs::begin(std::filesystem::directory_iterator(root));
+    //auto end = fs::end(std::filesystem::directory_iterator(root));
+    //std::vector<fs::path> vec(std::distance(end, begin));
+    //if (vec.empty()) {
+        //throw std::runtime_error("Path is empty");
+    //}
+    //std::transform(begin, end, vec.begin(), [](auto x) { return x.path(); });
+    //std::sort(vec.begin(), vec.end());
+    //return vec;
+//}
+
+void Integration::readImages(
+    const fs::path &path,
+    std::vector<std::shared_ptr<o3d::geometry::Image>> &images) {
+    std::vector<fs::path> all_files = utils::filesInFolder(path);
+    for (const auto &file : all_files) {
+        auto img = std::make_shared<o3d::geometry::Image>();
+        o3d::io::ReadImage(file, *img);
+        images.push_back(img);
+    }
+}
+
+void Integration::readTransforms(const fs::path &pth) {
+    auto files = utils::filesInFolder(pth);
+    const std::string ending(".txt");
+    auto filter = [&](const std::string& x) {
+        if (ending.size() > x.size())
+            return false;
+        return std::equal(ending.rbegin(), ending.rend(), x.rbegin());
+    }; 
+    auto newEnd = std::remove_if(files.begin(), files.end(), filter);
+    char sep = ' ';
+    for (auto it = files.begin(); it != newEnd; ++it) {
+        Eigen::Matrix<double, 4, 4> mat = utils::readMatrix<double, 4, 4>(*it, &sep);
+        Eigen::Affine3d tmp;
+        tmp = mat;
+        //tf::Transform transform{};
+        tf::StampedTransform tt{};
+        //tt.
+        tf::transformEigenToTF(tmp, tt);
+        transforms.push_back(tt);
+    }
+}
+
+void Integration::readFiles() {
+    readImages(paths.color, colors);
+    readImages(paths.depth, depths);
+    readTransforms(paths.transform);
 }
 
 void Integration::convertPointCloudsToRGBD() {

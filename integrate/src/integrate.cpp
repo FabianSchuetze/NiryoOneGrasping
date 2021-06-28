@@ -28,9 +28,7 @@ void Integration::readCameraIntrinsics(const fs::path &path) {
     }
 }
 
-Integration::Integration(const fs::path &camera,
-                         std::string _cameraFrame,
-                         // const std::string &_cameraFrame,
+Integration::Integration(const fs::path &camera, std::string _cameraFrame,
                          std::string _publishTopic, bool debug,
                          ros::NodeHandle &nh)
     : cameraFrame(std::move(_cameraFrame)),
@@ -40,6 +38,12 @@ Integration::Integration(const fs::path &camera,
         "/home/fabian/Documents/work/transforms/src/integrate/data");
     pub = nh.advertise<PointCloud>("integrate/integratedCloud", 1, true);
 }
+
+Integration::Integration(const fs::path &camera, const fs::path &saved_data) {
+    readCameraIntrinsics(camera);
+    paths = read_folder(saved_data);
+}
+
 
 std::shared_ptr<o3d::geometry::RGBDImage>
 Integration::convertTORGBD(const o3d::geometry::Image &color,
@@ -79,12 +83,19 @@ Integration::registerImmediateRGBDPair(std::size_t source) {
     return {success, trans, info};
 }
 
+Eigen::Matrix4d test() {
+    Eigen::Matrix4d intrinsic;
+    intrinsic << 0.427, -0.871, 0.245, -0.086, -0.900, -0.434, 0.02, 0.246,
+             0.08, -0.231, -0.969, 0.319, 0, 0, 0, 1;
+    return intrinsic;
+}
+
 void Integration::initializePoseGraph() {
-    Eigen::Matrix4d trans_odometry = Eigen::Matrix4d::Identity(4, 4);
-    pose_graph.nodes_.emplace_back(trans_odometry);
+    //Eigen::Matrix4d trans_odometry = Eigen::Matrix4d::Identity(4, 4);
+    Eigen::Matrix4d trans_odometry = test();
+    // This could be alright -> need to do a few examples with our code
+    pose_graph.nodes_.emplace_back(trans_odometry.inverse());
     std::size_t sz = colors.size();
-    fs::path pose_pth("/home/fabian/Documents/work/transforms/src/integrate/"
-                      "data/pose_graph.json");
     for (std::size_t source = 0; source < sz - 1; ++source) {
         if ((source % LOG_FREQUENCY) == 0) {
             ROS_WARN_STREAM("Registering image " << source << "/" << sz);
@@ -99,7 +110,7 @@ void Integration::initializePoseGraph() {
         pose_graph.nodes_.emplace_back(trans_odometry_inv);
         pose_graph.edges_.emplace_back(source, source + 1, trans, info, false);
     }
-    o3d::io::WritePoseGraph(pose_pth, pose_graph);
+    save_pose_graph(pose_graph);
 }
 
 std::shared_ptr<o3d::geometry::PointCloud> Integration::createScene() {

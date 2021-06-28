@@ -1,0 +1,6 @@
+<launch>
+    <node pkg="integration" type="plain_integrate" name="integrate">
+        <param name="/saved_data" value="/home/fabian/Documents/work/transforms/src/integrate/data/2021-06-15-15-17"/>
+        <param name="/camera" value="/home/fabian/Documents/work/transforms/src/integrate/data/camera_intrinsic.json"/>
+</node>
+</launch>

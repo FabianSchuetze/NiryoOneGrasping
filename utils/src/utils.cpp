@@ -53,26 +53,29 @@ std::tuple<double, double, double> RPY(const Eigen::Isometry3d &transform) {
     Eigen::Quaternion<double> quat(tmp);
     tf::Quaternion q(quat.x(), quat.y(), quat.z(), quat.w());
     return RPY(q);
-    // tf::Matrix3x3 rotation(q);
-    // double roll(0.0), pitch(0.0), yaw(0.0);
-    // rotation.getRPY(roll, pitch, yaw);
-    // return {roll, pitch, yaw};
 }
 std::tuple<double, double, double> RPY(const geometry_msgs::Quaternion &quat) {
     tf::Quaternion q(quat.x, quat.y, quat.z, quat.w);
     return RPY(q);
-    // tf::Matrix3x3 rotation(q);
-    // double roll(0.0), pitch(0.0), yaw(0.0);
-    // rotation.getRPY(roll, pitch, yaw);
-    // return {roll, pitch, yaw};
 }
 std::string shortName(const std::string &input_name,
                       const std::string &extension) {
     const std::string fn = std::filesystem::path(input_name).filename();
     std::string delimiter = "_";
     std::string token = fn.substr(0, fn.find(delimiter));
-    // ROS_WARN_STREAM("Incoming: " << input_name << ", "
-    //<< "token: " << token);
     return token + extension;
+}
+
+std::vector<std::filesystem::path> filesInFolder(const std::filesystem::path &root) {
+    namespace fs = std::filesystem;
+    auto begin = fs::begin(std::filesystem::directory_iterator(root));
+    auto end = fs::end(std::filesystem::directory_iterator(root));
+    std::vector<fs::path> vec(std::distance(end, begin));
+    if (vec.empty()) {
+        throw std::runtime_error("Path is empty");
+    }
+    std::transform(begin, end, vec.begin(), [](auto x) { return x.path(); });
+    std::sort(vec.begin(), vec.end());
+    return vec;
 }
 } // namespace utils

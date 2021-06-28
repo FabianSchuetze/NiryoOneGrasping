@@ -5,6 +5,7 @@
 #include <open3d/Open3D.h>
 #include <pcl_ros/point_cloud.h>
 #include <vector>
+#include <utils/utils.hpp>
 namespace o3d = open3d;
 namespace ObjectPose {
 typedef o3d::geometry::PointCloud Pointcloud;
