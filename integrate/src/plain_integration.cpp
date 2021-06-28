@@ -19,23 +19,14 @@ int main(int argc, char **argv) {
     param saved_data("integrate/saved_data", "");
     utils::readParameters(nh, camera, debug, saved_data);
     integration::Integration integrate(camera.second, saved_data.second);
-                                       //nh);
-    //ros::Subscriber sub =
-        //nh.subscribe("/camera/depth_registered/points", QUEUE,
-                     //&integration::Integration::callback, &integrate);
-    //new_pick_place::MoveJointsGoal goal;
-    //ac.sendGoal(goal);
-    //ros::Rate rate(FREQUENCY);
-    //while (ros::ok() && SUCCEEDED != ac.getState().toString()) {
-        //auto state = ac.getState();
-        //ros::spinOnce();
-        //rate.sleep();
-    //}
-    //sub.shutdown();
     integrate.readFiles();
     //integrate.convertPointCloudsToRGBD();
     auto scene = integrate.createScene();
-    integrate.save_pointcloud(*scene, integrate.paths.pointcloud / "final.pcd");
+    ROS_WARN_STREAM("finsished scene" << std::endl);
+    std::filesystem::path save_location{integrate.paths.pointcloud / "final.pcd"};
+    ROS_WARN_STREAM("The path is: " << save_location);
+    bool success = integrate.save_pointcloud(*scene, save_location);
+    ROS_WARN_STREAM("Success: " << success);
     o3d::visualization::DrawGeometries({scene}, "Cluster");
     //integrate.publishCloud(scene);
     //sub.shutdown();

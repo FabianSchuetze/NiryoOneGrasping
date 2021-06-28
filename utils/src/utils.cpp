@@ -70,11 +70,11 @@ std::vector<std::filesystem::path> filesInFolder(const std::filesystem::path &ro
     namespace fs = std::filesystem;
     auto begin = fs::begin(std::filesystem::directory_iterator(root));
     auto end = fs::end(std::filesystem::directory_iterator(root));
-    std::vector<fs::path> vec(std::distance(end, begin));
+    std::vector<fs::path> vec{};
+    std::transform(begin, end, std::back_inserter(vec), [](auto x) { return x.path(); });
     if (vec.empty()) {
         throw std::runtime_error("Path is empty");
     }
-    std::transform(begin, end, vec.begin(), [](auto x) { return x.path(); });
     std::sort(vec.begin(), vec.end());
     return vec;
 }

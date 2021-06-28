@@ -70,9 +70,10 @@ Integration::Paths Integration::read_folder(const fs::path &pth) {
     return paths;
 }
 
-void Integration::save_pointcloud(const o3d::geometry::PointCloud &cloud,
+bool Integration::save_pointcloud(const o3d::geometry::PointCloud &cloud,
                                   const fs::path &pth) {
-    o3d::io::WritePointCloud(pth, cloud);
+    bool success = o3d::io::WritePointCloud(pth, cloud);
+    return success;
 }
 void Integration::save_pointcloud(const PointCloud::Ptr &cloud,
                                   const fs::path &path, int iter) {
@@ -166,18 +167,6 @@ void Integration::callback(const PointCloud::Ptr &cloud) {
     pointclouds.push_back(cloud);
 }
 
-//std::vector<fs::path> Integration::readFiles(const fs::path &root) {
-    //auto begin = fs::begin(std::filesystem::directory_iterator(root));
-    //auto end = fs::end(std::filesystem::directory_iterator(root));
-    //std::vector<fs::path> vec(std::distance(end, begin));
-    //if (vec.empty()) {
-        //throw std::runtime_error("Path is empty");
-    //}
-    //std::transform(begin, end, vec.begin(), [](auto x) { return x.path(); });
-    //std::sort(vec.begin(), vec.end());
-    //return vec;
-//}
-
 void Integration::readImages(
     const fs::path &path,
     std::vector<std::shared_ptr<o3d::geometry::Image>> &images) {
@@ -191,23 +180,24 @@ void Integration::readImages(
 
 void Integration::readTransforms(const fs::path &pth) {
     auto files = utils::filesInFolder(pth);
-    const std::string ending(".txt");
-    auto filter = [&](const std::string& x) {
-        if (ending.size() > x.size())
+    const std::string end(".txt");
+    auto filter = [&](const std::string &x) {
+        if (end.size() > x.size()) {
             return false;
-        return std::equal(ending.rbegin(), ending.rend(), x.rbegin());
-    }; 
-    auto newEnd = std::remove_if(files.begin(), files.end(), filter);
+        }
+        return std::equal(end.rbegin(), end.rend(), x.rbegin());
+    };
+    const auto separator =
+        std::stable_partition(files.begin(), files.end(), filter);
     char sep = ' ';
-    for (auto it = files.begin(); it != newEnd; ++it) {
-        Eigen::Matrix<double, 4, 4> mat = utils::readMatrix<double, 4, 4>(*it, &sep);
+    for (auto it = files.begin(); it != separator; ++it) {
         Eigen::Affine3d tmp;
-        tmp = mat;
-        //tf::Transform transform{};
-        tf::StampedTransform tt{};
-        //tt.
-        tf::transformEigenToTF(tmp, tt);
-        transforms.push_back(tt);
+        tmp = utils::readMatrix<double, 4, 4>(*it, &sep);
+        //std::cout << "File : " << *it << ", matrix:\n"
+                  //<< tmp.matrix() << std::endl;
+        tf::StampedTransform transform{};
+        tf::transformEigenToTF(tmp, transform);
+        transforms.push_back(transform);
     }
 }
 

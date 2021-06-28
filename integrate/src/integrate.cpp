@@ -1,6 +1,7 @@
 #include "integrate.hpp"
 #include <ros/ros.h>
 #include <thread>
+#include <tf_conversions/tf_eigen.h>
 using namespace o3d::pipelines::registration;
 namespace fs = std::filesystem;
 namespace integration {
@@ -83,17 +84,19 @@ Integration::registerImmediateRGBDPair(std::size_t source) {
     return {success, trans, info};
 }
 
-Eigen::Matrix4d test() {
-    Eigen::Matrix4d intrinsic;
-    intrinsic << 0.427, -0.871, 0.245, -0.086, -0.900, -0.434, 0.02, 0.246,
-             0.08, -0.231, -0.969, 0.319, 0, 0, 0, 1;
-    return intrinsic;
-}
-
+//Eigen::Matrix4d test() {
+    //Eigen::Matrix4d intrinsic;
+    //intrinsic << 0.427, -0.871, 0.245, -0.086, -0.900, -0.434, 0.02, 0.246,
+             //0.08, -0.231, -0.969, 0.319, 0, 0, 0, 1;
+    //return intrinsic;
+//}
+//
+//
 void Integration::initializePoseGraph() {
-    //Eigen::Matrix4d trans_odometry = Eigen::Matrix4d::Identity(4, 4);
-    Eigen::Matrix4d trans_odometry = test();
-    // This could be alright -> need to do a few examples with our code
+    Eigen::Matrix4d trans_odometry;
+    Eigen::Affine3d affine;
+    tf::transformTFToEigen(transforms[0], affine);
+    trans_odometry = affine.matrix();
     pose_graph.nodes_.emplace_back(trans_odometry.inverse());
     std::size_t sz = colors.size();
     for (std::size_t source = 0; source < sz - 1; ++source) {

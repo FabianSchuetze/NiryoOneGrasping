@@ -37,7 +37,7 @@ class Integration {
     void convertPointCloudsToRGBD();
     void readFiles();
     Paths paths;
-    static void save_pointcloud(const o3d::geometry::PointCloud &,
+    static bool save_pointcloud(const o3d::geometry::PointCloud &,
                                 const std::filesystem::path &);
 
   private:
